@@ -1,5 +1,5 @@
 #include<iostream>
-#include"Queue.h"
+#include"DataStructure.h"
 using namespace std;
 
 

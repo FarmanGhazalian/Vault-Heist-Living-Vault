@@ -2,6 +2,11 @@
 #include"BinaryTree.h"
 #include"DataStructure.h"
 
+
+TreeNode*& BinaryTree::getRoot()
+{
+	return root;
+}
 int BinaryTree::countNodes(TreeNode* root)
 {
 	if (root == NULL)
@@ -192,7 +197,363 @@ int* BinaryTree::postorderIterative()
 
 	while (!s.isEmpty())
 	{
-
+		TreeNode* temp = s.getTop();
+		arr[index] = temp->val;
+		index++;
+		s.pop();
+		if (temp->left != NULL)
+		{
+			s.push(temp->left);
+		}
+		if (temp->right != NULL)
+		{
+			s.push(temp->right);
+		}
 	}
+	int* reversedArr = new int[countNodes(root)];
+	for (int i = 0; i < countNodes(root); i++)
+	{
+		reversedArr[i] = arr[countNodes(root) - 1 - i];
+	}
+	return reversedArr;
 }
 
+int* BinaryTree::inorderIterative()
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	stack s;
+	int* arr = new int[countNodes(root)];
+	int index = 0;
+	TreeNode* temp = root;
+	while (temp != NULL || !s.isEmpty())
+	{
+		while (temp->left != NULL)
+		{
+			s.push(temp);
+			temp = temp->left;
+		}
+		temp  = s.getTop();
+		s.pop();
+		arr[index] = temp->val;
+		index++;
+		temp = temp->right;
+	}
+	return arr;
+}
+
+TreeNode* BinaryTree::buildFromPreInHelper(int pre[], int in[], int& preIndex, int start, int end)
+{
+	if (start > end)
+	{
+		return NULL;
+	}
+	int value = pre[preIndex];
+	preIndex++;
+	TreeNode* temp = new TreeNode(value);
+	int pos = start;
+	while (in[pos] != value)
+	{
+		pos++;
+	}
+	temp->left = buildFromPreInHelper(pre, in, preIndex, start, pos - 1);
+	temp->right = buildFromPreInHelper(pre, in, preIndex, pos + 1, end);
+	return temp;
+}
+
+void BinaryTree::buildFromPreIn(int pre[], int in[], int size)
+{
+	if (root != NULL)
+	{
+		destroyTree();
+		root = NULL;
+	}
+	int preIndex = 0;
+	root = buildFromPreInHelper(pre, in, preIndex, 0, size - 1);
+	return;
+}
+
+
+
+TreeNode* BinaryTree::buildFromPreInHelper(int pos[], int in[], int& posIndex, int start, int end)
+{
+	if (start > end)
+	{
+		return NULL;
+	}
+	int value = pos[posIndex];
+	posIndex--;
+	TreeNode* temp = new TreeNode(value);
+	int position = start;
+	while (in[position] != value)
+	{
+		position++;
+	}
+	temp->right = buildFromPreInHelper(pos, in, posIndex, position + 1, end);
+	temp->left = buildFromPreInHelper(pos, in, posIndex, start, position - 1);
+	return temp;
+}
+
+void BinaryTree::buildFromPreIn(int pos[], int in[], int size)
+{
+	if (root != NULL)
+	{
+		destroyTree();
+		root = NULL;
+	}
+	int posIndex = size - 1;
+	buildFromPreInHelper(pos, in, posIndex, 0, size-1);
+	return;
+}
+
+
+int BinaryTree::heightHelper(TreeNode* root)
+{
+	if (root == NULL)
+	{
+		return 0;
+	}
+	if (root->left == NULL && root->right == NULL)
+	{
+		return 1;
+	}
+	return 1 + max(heightHelper(root->left), heightHelper(root->right));
+}
+
+int BinaryTree::height() 
+{
+	return heightHelper(root);
+}
+
+int BinaryTree::diameterHelper(TreeNode* root, int& dia)
+{
+	if (root == NULL)
+	{
+		return 0;
+	}
+	int left = diameterHelper(root->left, dia);
+	int right = diameterHelper(root->right, dia);
+	dia = max(dia, left + right);
+	return 1 + max(left, right);
+}
+
+int BinaryTree::diameter()
+{
+	int dia = 0;
+	diameterHelper(root, dia);
+	return dia;
+}
+
+bool BinaryTree::PathToHelper(TreeNode* root, int target,int *arr,int& pathSize )
+{
+	if (root == NULL)
+	{
+		return false;
+	}
+	arr[pathSize] = root->val;
+	pathSize++;
+	if (root->val == target)
+	{
+		return true;
+	}
+	if (PathToHelper(root->left, target, arr, pathSize) || PathToHelper(root->right, target, arr, pathSize))
+	{
+		return true;
+	}
+	pathSize--;
+	return false;
+}
+
+int* BinaryTree::pathTo(int target)
+{
+	int pathSize = 0;
+	int* arr = new int[countNodes(root)];
+	if (!PathToHelper(root, target, arr, pathSize))
+	{
+		delete[]arr;
+		return NULL;
+	}
+	PathToHelper(root, target, arr, pathSize);
+	int* path = new int[pathSize];
+	for (int i = 0;i < pathSize;i++)
+	{
+		path[i] = arr[i];
+	}
+	delete[]arr;
+	return path;
+}
+
+TreeNode* BinaryTree::lcaHelper(TreeNode* root, int a, int b)
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	if (root->val == a || root->val == b)
+	{
+		return root;
+	}
+
+	TreeNode* left = lcaHelper(root->left, a, b);
+	TreeNode* right = lcaHelper(root->right, a, b);
+
+	if (left != NULL && right !=NULL)
+	{
+		return root;
+	}
+	if (left != NULL)
+	{
+		return left;
+	}
+	return right;
+}
+
+TreeNode* BinaryTree::lca(int a, int b)
+{
+	return lcaHelper(root, a, b);
+}
+
+void BinaryTree::MirrorHelper(TreeNode* root)
+{
+	if (root == NULL)
+	{
+		return;
+	}
+	MirrorHelper(root->left);
+	MirrorHelper(root->right);
+
+	TreeNode* temp = root->left;
+	root->left = root->right;
+	root->right = temp;
+	return;
+}
+
+
+void BinaryTree::Mirror()
+{
+	MirrorHelper(root);
+}
+
+bool BinaryTree::isSameTreeHelper(TreeNode* a, TreeNode* b)
+{
+	if (a == NULL && b == NULL)
+	{
+		return true;
+	}
+	if (a == NULL || b == NULL)
+	{
+		return false;
+	}
+	if (a->val != b->val)
+	{
+		return false;
+	}
+	return (isSameTreeHelper(a->left, b->left) && isSameTreeHelper(a->right, b->right));
+}
+
+bool BinaryTree::isSame(BinaryTree& other)
+{
+	return isSameTreeHelper(root, other.getRoot());
+}
+
+bool BinaryTree::isSymmetricHelper(TreeNode* a, TreeNode* b)
+{
+	if (a == NULL && b == NULL)
+	{
+		return true;
+	}
+	if (a == NULL || b == NULL)
+	{
+		return false;
+	}
+	if (a->val != b->val)
+	{
+		return false;
+	}
+	return (isSymmetricHelper(a->left, b->right) && isSymmetricHelper(a->right, b->left));
+}
+
+bool BinaryTree::isSymmetric()
+{
+	if (root = NULL)
+	{
+		return false;
+	}
+	if (root->left != NULL && root->right != NULL)
+	{
+		return isSymmetricHelper(root->left, root->right);
+	}
+	else if (root->left != NULL || root->right != NULL)
+	{
+		return false;
+	}
+	return true;
+}
+
+TreeNode* BinaryTree::cloneHelper(TreeNode* root)
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	TreeNode* temp = new TreeNode(root->val);
+	temp->left = cloneHelper(root->left);
+	temp->right = cloneHelper(root->right);
+
+	return temp;
+}
+
+BinaryTree BinaryTree::clone()
+{
+	BinaryTree newTree;
+	newTree.getRoot() = cloneHelper(root);
+	return newTree;
+}
+
+void BinaryTree::destroytreeHelper(TreeNode* root)
+{
+	if (root == NULL)
+	{
+		return;
+	}
+	destroytreeHelper(root->left);
+	destroytreeHelper(root->right);
+	delete root;
+	return;
+}
+void BinaryTree::destroyTree()
+{
+	destroytreeHelper(root);
+}
+
+TreeNode* generateRandomTree(int n)
+{
+	if (n <= 0)
+	{
+		return NULL;
+	}
+	TreeNode* temp = new TreeNode(1);
+	queue q;
+	q.Push(temp);
+	int currVal = 2;
+	while (currVal <= n && !q.isEmpty())
+	{
+		TreeNode* temp1 = q.getTop();
+		q.pop();
+		if (currVal <= n)
+		{
+			temp1->left = new TreeNode(currVal);
+			currVal++;
+			q.Push(temp1->left);
+		}
+		if (currVal <= n)
+		{
+			temp1->right = new TreeNode(currVal);
+			currVal++;
+			q.Push(temp1->right);
+		}
+	}
+	return temp;
+}

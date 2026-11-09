@@ -33,13 +33,13 @@ class stack
 {
 public:
 	queueNode* top;
+	stack()
+	{
+		top == NULL;
+	}
 	void push(TreeNode* n);
 	void pop();
 	TreeNode* getTop();
 	bool isEmpty();
 
-	stack()
-	{
-		top == NULL;
-	}
 };
