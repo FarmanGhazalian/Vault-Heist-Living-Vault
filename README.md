@@ -1,0 +1,2 @@
+# Vault-Heist-Living-Vault
+Vault Heist: The Living Vault — A 2D SFML-based data structures puzzle game featuring dynamic 20-level binary tree mechanics, model-event-renderer architecture, and interactive animation feedback.
