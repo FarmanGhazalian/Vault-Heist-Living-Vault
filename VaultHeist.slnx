@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="VaultHeist/VaultHeist.vcxproj" Id="91936d6e-3dc6-4007-a5c0-fe517a295f0a" />
+</Solution>
