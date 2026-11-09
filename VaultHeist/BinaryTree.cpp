@@ -1,69 +1,6 @@
 #include<iostream>
 #include"BinaryTree.h"
-
-int BinaryTree::countNodes(TreeNode* root)
-{
-	if (root == NULL)
-	{
-		return 0;
-	}
-	else
-	{
-		return 1 + countNodes(root->left) + countNodes(root->right);
-	}
-}
-void queue::Push(TreeNode* n)
-{
-	queueNode* temp = new queueNode(n);
-	if (top == NULL)
-	{
-		top = temp;
-		bottom = temp;
-		return;
-	}
-	else
-	{
-		bottom->next = temp;
-		bottom = temp;
-		return;
-	}
-}
-
-void queue::pop()
-{
-	if (top == NULL)
-	{
-		return;
-	}
-	else if (top == bottom)
-	{
-		delete top;
-		top = NULL;
-		bottom = NULL;
-		return;
-	}
-	else
-	{
-		queueNode* temp = top;
-		top = top->next;
-		delete temp;
-		return;
-	}
-}
-
-TreeNode* queue::getTop()
-{
-	return top->n;
-}
-
-bool queue::isEmpty()
-{
-	if (top == NULL)
-	{
-		return true;
-	}
-	return false;
-}
+#include"DataStructure.h"
 
 int BinaryTree::countNodes(TreeNode* root)
 {
@@ -174,6 +111,88 @@ int* BinaryTree::levelOrder()
 	int* arr = new int[countNodes(root)];
 	int index = 0;
 	levelOrderHelper(root, arr, index);
+	return arr;
 }
 
+void BinaryTree::insert(int val)
+{
+	if (root == NULL)
+	{
+		root = new TreeNode(val);
+		return;
+	}
+	else
+	{
+		queue q;
+		q.Push(root);
+		while (!q.isEmpty())
+		{
+			TreeNode* temp = q.getTop();
+			q.pop();
+			if (temp->left == NULL)
+			{
+				temp->left = new TreeNode(val);
+				return;
+			}
+			else
+			{
+				q.Push(temp->left);
+			}
+			if (temp->right == NULL)
+			{
+				temp->right = new TreeNode(val);
+				return;
+			}
+			else
+			{
+				q.Push(temp->right);
+			}
+		}
+	}
+}
+
+int* BinaryTree::preorderIterative()
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	stack s;
+	s.push(root);
+	int* arr = new int[countNodes(root)];
+	int index = 0;
+	while (!s.isEmpty())
+	{
+		TreeNode* temp = s.getTop();
+		arr[index] = temp->val;
+		index++;
+		s.pop();
+		if (temp->right != NULL)
+		{
+			s.push(temp->right);
+		}
+		if (temp->left != NULL)
+		{
+			s.push(temp->left);
+		}
+	}
+	return arr;
+}
+
+int* BinaryTree::postorderIterative()
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	stack s;
+	s.push(root);
+	int* arr = new int[countNodes(root)];
+	int index = 0;
+
+	while (!s.isEmpty())
+	{
+
+	}
+}
 

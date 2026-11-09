@@ -29,35 +29,16 @@ public:
 	int *inorderRecursive();
 	int *postorderRecursive();
 	int *levelOrder();
-	
+
+	int* preorderIterative();
+	int* inorderIterative();
+	int* postorderIterative();
+	void insert(int val);
+
+
+
+
 };
 
 
 
-class queueNode
-{
-public:
-	TreeNode* n;
-	queueNode* next;
-	queueNode(TreeNode* node)
-	{
-		n = node;
-		next = NULL;
-	}
-};
-
-class queue
-{
-public:
-	queueNode* top;
-	queueNode* bottom;
-	queue()
-	{
-		top = NULL;
-		bottom = NULL;
-	}
-	void Push(TreeNode* n);
-	void pop();
-	TreeNode* getTop();
-	bool isEmpty();
-};
