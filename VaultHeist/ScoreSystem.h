@@ -4,7 +4,7 @@ using namespace std;
 struct LevelState
 {
 	int capacity;
-	int optimaSteps;
+	int optimalSteps;
 	int steps;
 	int alarm;
 
@@ -18,8 +18,8 @@ struct LevelState
 
 	LevelState(int optimal)
 	{
-		optimaSteps = optimal;
-		capacity = ceil(1.5 * optimal) + 2;
+		optimalSteps = optimal;
+		capacity = ScoreSystem::computeCapacity(optimalSteps);
 		steps = 0;
 		alarm =0;
 
@@ -33,21 +33,16 @@ struct LevelState
 	}
 
 	void addStep();
-	void addpenalty();
+	void addpenalty(int extraAlarm = 1, int points = 0);
 	void useHint();
 	bool isFull();
-	int remianing();
+	int remaining();
 };
 
-class ScoreSystem
-{
-private:
-	int capacity;
+class ScoreSystem {
 public:
-	ScoreSystem(int cap)
-	{
-		capacity = cap;
-	}
 
-	s
+	static int computeCapacity(int optimalSteps);
+	static int stars(const LevelState& state);
+	static int score(const LevelState& state);
 };
