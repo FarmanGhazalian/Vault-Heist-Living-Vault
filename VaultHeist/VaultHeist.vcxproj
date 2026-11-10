@@ -156,8 +156,10 @@
     <ClCompile Include="ScoreSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Act1level1.h" />
     <ClInclude Include="BinaryTree.h" />
     <ClInclude Include="DataStructure.h" />
+    <ClInclude Include="ILevelLogic.h" />
     <ClInclude Include="ScoreSystem.h" />
     <ClInclude Include="TreeNode.h" />
   </ItemGroup>

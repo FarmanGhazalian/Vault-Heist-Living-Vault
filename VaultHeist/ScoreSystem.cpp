@@ -32,7 +32,7 @@ bool LevelState::isFull()
 	return false;
 }
 
-int LevelState::remaining()
+int LevelState::remaining() const
 {
 	return capacity - alarm;
 }

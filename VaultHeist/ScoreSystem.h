@@ -36,7 +36,7 @@ struct LevelState
 	void addpenalty(int extraAlarm = 1, int points = 0);
 	void useHint();
 	bool isFull();
-	int remaining();
+	int remaining()const;
 };
 
 class ScoreSystem {
