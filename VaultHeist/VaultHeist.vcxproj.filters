@@ -35,5 +35,8 @@
     <ClInclude Include="DataStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ScoreSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

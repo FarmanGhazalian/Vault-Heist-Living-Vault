@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="BinaryTree.h" />
     <ClInclude Include="DataStructure.h" />
+    <ClInclude Include="ScoreSystem.h" />
     <ClInclude Include="TreeNode.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
