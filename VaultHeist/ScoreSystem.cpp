@@ -25,7 +25,7 @@ void LevelState::useHint()
 
 bool LevelState::isFull()
 {
-	if (alarm >= capacity)
+	if (alarm >= alarmCap)
 	{
 		return true;
 	}
@@ -34,7 +34,7 @@ bool LevelState::isFull()
 
 int LevelState::remaining() const
 {
-	return capacity - alarm;
+	return alarmCap - alarm;
 }
 
 int  ScoreSystem::computeCapacity(int optimalSteps)
@@ -44,7 +44,7 @@ int  ScoreSystem::computeCapacity(int optimalSteps)
 
 int ScoreSystem::stars(const LevelState& state)
 {
-	if (!state.won || state.alarm >= state.capacity)
+	if (!state.won || state.alarm >= state.alarmCap)
 	{
 		return 0;
 	}

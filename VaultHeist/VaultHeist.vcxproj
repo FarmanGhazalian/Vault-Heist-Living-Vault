@@ -160,8 +160,12 @@
     <ClInclude Include="BinaryTree.h" />
     <ClInclude Include="DataStructure.h" />
     <ClInclude Include="ILevelLogic.h" />
+    <ClInclude Include="PlayerAction.h" />
     <ClInclude Include="ScoreSystem.h" />
     <ClInclude Include="TreeNode.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Act1Level1.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -3,7 +3,7 @@
 using namespace std;
 struct LevelState
 {
-	int capacity;
+	int alarmCap;
 	int optimalSteps;
 	int steps;
 	int alarm;
@@ -19,7 +19,7 @@ struct LevelState
 	LevelState(int optimal)
 	{
 		optimalSteps = optimal;
-		capacity = ScoreSystem::computeCapacity(optimalSteps);
+		alarmCap = ScoreSystem::computeCapacity(optimalSteps);
 		steps = 0;
 		alarm =0;
 

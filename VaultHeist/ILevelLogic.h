@@ -1,5 +1,6 @@
 #pragma once
 #include"ScoreSystem.h"
+#include"PlayerAction.h"
 
 class ILevelLogic
 {
@@ -13,6 +14,8 @@ public:
 	virtual void onValidStep() = 0;
 	virtual void onMistake(int extraAlarm = 1, int penaltyPoints = 0) = 0;
 	virtual void onHintRequested() = 0;
+
+	virtual ActionResult processAction(const PlayerAction& action) = 0;
 
 	const LevelState& getState() const 
 	{
