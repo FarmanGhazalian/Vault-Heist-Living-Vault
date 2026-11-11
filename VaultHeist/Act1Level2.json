@@ -1,0 +1,9 @@
+{
+  "levelId": "1.2",
+  "levelName": "Decode the Blueprint",
+  "optimalSteps": 5,
+  "traversalType": "PREORDER_INORDER",
+  "totalNodes": 5,
+  "preorderSequence": [ 1, 2, 4, 3, 5 ],
+  "inorderSequence": [ 4, 2, 1, 3, 5 ]
+}

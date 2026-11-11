@@ -3,8 +3,8 @@
   "levelName": "Vault Patrol Entry",
   "traversalType": "PREORDER",
   "optimalSteps": 5,
-  "maxAlarm": 10,
   "rootId": 101,
+  "totalNodes": 5,
   "nodes": [
     {
       "id": 101,
