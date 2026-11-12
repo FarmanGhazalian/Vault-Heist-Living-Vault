@@ -34,7 +34,6 @@ bool Level1DataLoader::loadJSON(const string& filePath)
     optimalSteps = data["optimalSteps"];
     traversalType = data["traversalType"];
 
-    // 4. Temporary flat array clear karke nodes extract karein
     int i = 0;
     for (const auto& item : data["nodes"]) {
         if (i < totalNodes)
@@ -64,7 +63,7 @@ int Act1Level1::FindRawIndex(int currentID)
 
 TreeNode* Act1Level1::BuildTree(int currentID)
 {
-    if (currentID == -2) return NULL;
+    if (currentID == -1) return NULL;
     int idx = FindRawIndex(currentID);
     if (idx == -1)return NULL;
 
