@@ -17,7 +17,8 @@ const int SELECT_NODE = 5;   // Level 1.4: Room select
 const int CLICK_LCA = 6;   // Level 1.4: Meeting room click
 const int TRACE_PATH = 7;   // Level 1.4: Path trace
 const int SWAP_CHILDREN = 8;   // Level 1.5: Swap rooms
-const int AUTO_MIRROR = 9;   // Level 1.5: Auto solve
+const int AUTO_MIRROR = 9;// Level 1.5: Auto solve
+const int CLICK_HINT = 10;
 
 // -------------------------------------------------------------
 // 1. Player Input Struct (GUI -> Backend)
@@ -29,7 +30,7 @@ struct PlayerAction
     int nodeB = -1;              // Doosra Room ID (agar chahiye ho)
     int value = 0;               // Extra numbers (height/diameter)
     int slot = -1;              // Slot number
-
+    int direction;
     int path[MAX_PATH_SIZE];     // Normal array (bina vector ke)
     int pathSize = 0;            // Total elements in path
 };

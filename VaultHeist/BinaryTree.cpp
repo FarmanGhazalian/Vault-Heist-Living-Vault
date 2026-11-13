@@ -528,7 +528,7 @@ void BinaryTree::destroyTree()
 	destroytreeHelper(root);
 }
 
-TreeNode* generateRandomTree(int n)
+TreeNode* BinaryTree::generateRandomtree(int n)
 {
 	if (n <= 0)
 	{
@@ -556,4 +556,34 @@ TreeNode* generateRandomTree(int n)
 		}
 	}
 	return temp;
+}
+
+
+TreeNode* BinaryTree::findNodeHelper(TreeNode* root,int value)
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	if (root->val == value)
+	{
+		return root;
+	}
+	if (value > root->val)
+	{
+		return findNodeHelper(root->right, value);
+	}
+	else if (value < root ->val)
+	{
+		return findNodeHelper(root->left, value);
+	}
+}
+
+TreeNode* BinaryTree::findNode( int value)
+{
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	return findNodeHelper(root, value);
 }

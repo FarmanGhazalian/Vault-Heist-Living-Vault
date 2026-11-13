@@ -13,6 +13,7 @@ void LevelState::addStep()
 void LevelState::addpenalty(int extraAlarm = 1, int points = 0)
 {
 	penaltyCount++;
+	steps++;
 	penaltyPoints += points;
 	alarm += extraAlarm;
 	return;
@@ -20,6 +21,8 @@ void LevelState::addpenalty(int extraAlarm = 1, int points = 0)
 
 void LevelState::useHint()
 {
+	steps++;
+	alarm++;
 	hintUsed = true;
 }
 

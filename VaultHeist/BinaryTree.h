@@ -24,6 +24,8 @@ private:
 	bool isSameTreeHelper(TreeNode* a, TreeNode* b);
 	bool isSymmetricHelper(TreeNode* a, TreeNode* b);
 	TreeNode* cloneHelper(TreeNode* root);
+	TreeNode* findNodeHelper(TreeNode* root,int val);
+
 public:
 	BinaryTree()
 	{
@@ -59,6 +61,7 @@ public:
 	BinaryTree clone();
 	void destroyTree();
 	TreeNode* generateRandomtree(int n);
+	TreeNode* findNode(int value);
 };
 
 
