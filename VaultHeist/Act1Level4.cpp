@@ -109,7 +109,8 @@ ActionResult Act1Level4::processAction(const PlayerAction& action)
 		}
 		return res;
 	}
-	if (!lcaFound)
+
+	if (!lcaFound  && action.type == CLICK_LCA)
 	{
 		if (action.nodeA == actualLCA) {
 			lcaFound = true;
@@ -123,7 +124,8 @@ ActionResult Act1Level4::processAction(const PlayerAction& action)
 			res.message = "Wrong Meeting Room! Find where the two escape routes intersect!";
 		}
 	}
-	else {
+	else if(action.type == TRACE_PATH)
+	{
 		if (action.nodeA == expectedPath[currentPathIndex])
 		{
 			currentPathIndex++;

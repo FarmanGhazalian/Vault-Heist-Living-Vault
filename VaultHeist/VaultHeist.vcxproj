@@ -154,6 +154,7 @@
     <ClCompile Include="Act1Level2.cpp" />
     <ClCompile Include="Act1Level3.cpp" />
     <ClCompile Include="Act1Level4.cpp" />
+    <ClCompile Include="Act1Level5.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BinaryTree.cpp" />
     <ClCompile Include="DataStructure.cpp" />
@@ -164,6 +165,7 @@
     <ClInclude Include="Act1Level2.h" />
     <ClInclude Include="Act1Level3.h" />
     <ClInclude Include="Act1Level4.h" />
+    <ClInclude Include="Act1Level5.h" />
     <ClInclude Include="BinaryTree.h" />
     <ClInclude Include="DataStructure.h" />
     <ClInclude Include="ILevelLogic.h" />
@@ -176,6 +178,7 @@
     <None Include="Act1Level2.json" />
     <None Include="Act1Level3.json" />
     <None Include="Act1Level4.json" />
+    <None Include="Act1Level5.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

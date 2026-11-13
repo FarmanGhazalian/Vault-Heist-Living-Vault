@@ -20,13 +20,14 @@ private:
 	int diameterHelper(TreeNode* root, int& dia);
 	bool PathToHelper(TreeNode* root, int target, int* arr, int& pathSize);
 	TreeNode* lcaHelper(TreeNode* root, int a, int b);
-	void MirrorHelper(TreeNode* root);
+	
 	bool isSameTreeHelper(TreeNode* a, TreeNode* b);
 	bool isSymmetricHelper(TreeNode* a, TreeNode* b);
 	TreeNode* cloneHelper(TreeNode* root);
 	TreeNode* findNodeHelper(TreeNode* root,int val);
 
 public:
+	void MirrorHelper(TreeNode* root);
 	BinaryTree()
 	{
 		root = NULL;

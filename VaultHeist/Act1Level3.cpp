@@ -151,80 +151,82 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 		}
 		return res;
 	}
-
-	currIndex = findIndex(action.nodeA);
-	if (currIndex == -1)
+	if(action.type == ENTER_HEIGHT)
 	{
-		onMistake(2, 50);
-		res.penaltyPoints = 50;
-		res.alarmDelta = 2;
-		res.message = "Node not found";
-		return res;
-	}
-
-	if (playerHeight[currIndex] != -1)
-	{
-		onMistake(2, 50);
-		res.penaltyPoints = 50;
-		res.alarmDelta = 2;
-		res.correct = true;
-		res.message = "Already solved!";
-		return res;
-	}
-
-	leftIndex = 2 * currIndex + 1;
-	rightIndex = 2 * currIndex + 2;
-
-	bool leftReady = (leftIndex >= totalNodes) || (playerHeight[leftIndex] != -1);
-	bool rightReady = (rightIndex >= totalNodes) || (playerHeight[rightIndex] != -1);
-
-	bool ready = (leftReady && rightReady);
-
-	if (!ready) {
-		res.message = "Wrong Order! Solve children nodes first!";
-	}
-	else if (action.nodeB != actualHeight[currIndex])
-	{
-		onMistake(2, 50);
-		res.penaltyPoints = 50;
-		res.alarmDelta = 2;
-		res.message = "Incorrect Height! Alarm increased!";
-	}
-	else
-	{
-		// Sahi height enter hui! Player ke array mein save kar dein
-		playerHeight[currIndex] = action.nodeB;
-		solvedCount++;
-		onValidStep();
-
-		if (solvedCount == totalNodes)
+		currIndex = findIndex(action.nodeA);
+		if (currIndex == -1)
 		{
-			heightsPhaseDone = true;
-			res.message = "All heights verified! Phase 2: Enter the Tree's Diameter.";
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
+			res.message = "Node not found";
+			return res;
 		}
-		else {
-			res.message = "Height verified!";
-		}
-	}
-	if (heightsPhaseDone)
-	{
-		if (action.nodeB == actualDiameter)
+
+		if (playerHeight[currIndex] != -1)
 		{
-			res.message = "Diameter Verified! Alarm Neutralized!";
-			state.finished = true;
-			state.won = true;
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
+			res.correct = true;
+			res.message = "Already solved!";
+			return res;
+		}
+
+		leftIndex = 2 * currIndex + 1;
+		rightIndex = 2 * currIndex + 2;
+
+		bool leftReady = (leftIndex >= totalNodes) || (playerHeight[leftIndex] != -1);
+		bool rightReady = (rightIndex >= totalNodes) || (playerHeight[rightIndex] != -1);
+
+		bool ready = (leftReady && rightReady);
+
+		if (!ready) {
+			res.message = "Wrong Order! Solve children nodes first!";
+		}
+		else if (action.nodeB != actualHeight[currIndex])
+		{
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
+			res.message = "Incorrect Height! Alarm increased!";
+		}
+		else
+		{
+			// Sahi height enter hui! Player ke array mein save kar dein
+			playerHeight[currIndex] = action.nodeB;
+			solvedCount++;
 			onValidStep();
 
+			if (solvedCount == totalNodes)
+			{
+				heightsPhaseDone = true;
+				res.message = "All heights verified! Phase 2: Enter the Tree's Diameter.";
+			}
+			else {
+				res.message = "Height verified!";
+			}
 		}
-		else {
+		if (heightsPhaseDone && action.type == ENTER_DIAMETER)
+		{
+			if (action.nodeB == actualDiameter)
+			{
+				res.message = "Diameter Verified! Alarm Neutralized!";
+				state.finished = true;
+				state.won = true;
+				onValidStep();
 
-			res.accepted = false;
-			res.correct = false;
-			res.alarmDelta = 2;
-			res.penaltyPoints = 50;
-			res.message = "Wrong Diameter! Recalculate the longest path!";
+			}
+			else {
+
+				res.accepted = false;
+				res.correct = false;
+				res.alarmDelta = 2;
+				res.penaltyPoints = 50;
+				res.message = "Wrong Diameter! Recalculate the longest path!";
+			}
+
 		}
-
 	}
 	if (!isWon() && state.alarm >= state.alarmCap) {
 		state.finished = true;

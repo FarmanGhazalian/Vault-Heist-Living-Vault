@@ -124,32 +124,34 @@ ActionResult Act1Level2::processAction(const PlayerAction& action)
         }
         return res;
     }
+    if(action.type == PLACE_TOKEN)
+    {
 
+        bool isCorrect = verifyPlacementNode(action.nodeA, action.direction, action.nodeB);
 
-    bool isCorrect = verifyPlacementNode(action.nodeA, action.direction, action.nodeB);
-
-    if (isCorrect) {
-        onValidStep();
-        res.correct = true;
-        res.message = "Blueprint Node Verified!";
-        if (correctlyPlacementCount == totalNodes) {
-            state.finished = true;
-            state.won = true;
-            res.message = "Blueprint Decoded Successfully!";
+        if (isCorrect) {
+            onValidStep();
+            res.correct = true;
+            res.message = "Blueprint Node Verified!";
+            if (correctlyPlacementCount == totalNodes) {
+                state.finished = true;
+                state.won = true;
+                res.message = "Blueprint Decoded Successfully!";
+            }
         }
-    }
-    else {
-        onMistake(2, 50);
-        res.penaltyPoints = 50;
-        res.alarmDelta = 2;
-        res.correct = false;
-        res.message = "Wrong Slot! Security Alert!";
-    }
+        else {
+            onMistake(2, 50);
+            res.penaltyPoints = 50;
+            res.alarmDelta = 2;
+            res.correct = false;
+            res.message = "Wrong Slot! Security Alert!";
+        }
 
-    if (!state.won && state.alarm >= state.alarmCap) {
-        state.finished = true;
-        state.won = false;
-        res.message = "Alarm Triggered! Vault Lockdown!";
+        if (!state.won && state.alarm >= state.alarmCap) {
+            state.finished = true;
+            state.won = false;
+            res.message = "Alarm Triggered! Vault Lockdown!";
+        }
     }
 
     return res;
