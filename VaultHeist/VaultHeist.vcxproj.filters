@@ -33,6 +33,9 @@
     <ClCompile Include="Act1Level2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Act1Level3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TreeNode.h">
@@ -59,9 +62,13 @@
     <ClInclude Include="Act1Level2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Act1Level3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Act1Level1.json" />
     <None Include="Act1Level2.json" />
+    <None Include="Act1Level3.json" />
   </ItemGroup>
 </Project>
