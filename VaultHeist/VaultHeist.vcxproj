@@ -153,6 +153,7 @@
     <ClCompile Include="Act1Level1.cpp" />
     <ClCompile Include="Act1Level2.cpp" />
     <ClCompile Include="Act1Level3.cpp" />
+    <ClCompile Include="Act1Level4.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BinaryTree.cpp" />
     <ClCompile Include="DataStructure.cpp" />

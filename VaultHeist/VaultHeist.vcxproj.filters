@@ -36,6 +36,9 @@
     <ClCompile Include="Act1Level3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Act1Level4.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TreeNode.h">
