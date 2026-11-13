@@ -10,12 +10,12 @@ private:
 	TreeNode* root;
 	int countNodes(TreeNode* root);
 	void destroytreeHelper(TreeNode* root);
-	void preorderHelper(TreeNode* node, int * arr, int index);
-	void inorderHelper(TreeNode* node, int* arr, int index);
-	void postorderHelper(TreeNode* node, int* arr, int index);
+	void preorderHelper(TreeNode* node, int * arr, int& index);
+	void inorderHelper(TreeNode* node, int* arr, int& index);
+	void postorderHelper(TreeNode* node, int* arr, int& index);
 	void levelOrderHelper(TreeNode* root, int* arr, int& index);
 	TreeNode* buildFromPreInHelper(int pre[], int in[], int& preIndex, int start, int end);
-	TreeNode* buildFromPosInHelper(int pre[], int in[], int& preIndex, int start, int end);
+	TreeNode* buildFromPosInHelper(int pos[], int in[], int& posIndex, int start, int end);
 	int heightHelper(TreeNode* root);
 	int diameterHelper(TreeNode* root, int& dia);
 	bool PathToHelper(TreeNode* root, int target, int* arr, int& pathSize);
@@ -50,7 +50,7 @@ public:
 	int* postorderIterative();
 	void insert(int val);
 	void buildFromPreIn(int pre[], int in[], int size);
-	void buildFromPreIn(int pos[], int in[], int size);
+	void buildFromPosIn(int pos[], int in[], int size);
 	int TreeHeight(TreeNode* root);
 	int height();
 	int diameter();
@@ -69,6 +69,3 @@ public:
 
 	int* getPath(TreeNode* lca, int nodeA, int nodeB, int& length) const;
 };
-
-
-

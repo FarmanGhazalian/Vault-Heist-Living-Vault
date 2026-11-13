@@ -32,7 +32,7 @@ public:
     
     bool getTotalNodes(const string& filePath);
     
-    TempNodeData* rawNodes = new  TempNodeData[totalNodes];
+    TempNodeData* rawNodes = nullptr;
     
     bool loadJSON(const string& filePath);
 };

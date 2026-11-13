@@ -1,10 +1,10 @@
 {
   "levelId": "1.1",
   "levelName": "Vault Patrol Entry",
-  "traversalType": "PREORDER",
-  "optimalSteps": 5,
+  "traversalType": "INORDER",
+  "optimalSteps": 9,
   "rootId": 101,
-  "totalNodes": 5,
+  "totalNodes": 9,
   "nodes": [
     {
       "id": 101,
@@ -21,18 +21,42 @@
     {
       "id": 103,
       "value": 75,
-      "left": -1,
-      "right": -1
+      "left": 106,
+      "right": 107
     },
     {
       "id": 104,
       "value": 10,
-      "left": -1,
-      "right": -1
+      "left": 108,
+      "right": 109
     },
     {
       "id": 105,
       "value": 30,
+      "left": -1,
+      "right": -1
+    },
+    {
+      "id": 106,
+      "value": 55,
+      "left": -1,
+      "right": -1
+    },
+    {
+      "id": 107,
+      "value": 80,
+      "left": -1,
+      "right": -1
+    },
+    {
+      "id": 108,
+      "value": 5,
+      "left": -1,
+      "right": -1
+    },
+    {
+      "id": 109,
+      "value": 15,
       "left": -1,
       "right": -1
     }

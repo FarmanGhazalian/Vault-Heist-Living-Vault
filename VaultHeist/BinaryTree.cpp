@@ -18,37 +18,37 @@ int BinaryTree::countNodes(TreeNode* root)
 		return 1 + countNodes(root->left) + countNodes(root->right);
 	}
 }
-void BinaryTree::preorderHelper(TreeNode* node, int* arr, int index)
+void BinaryTree::preorderHelper(TreeNode* node, int* arr, int& index)
 {
 	if (node == NULL)
 	{
 		return;
 	}
-	arr[index] = node->val;
-	preorderHelper(node->left, arr, index+1 );
-	preorderHelper(node->right, arr, index+1 );
+	arr[index++] = node->val;
+	preorderHelper(node->left, arr, index);
+	preorderHelper(node->right, arr, index);
 }
 
-void BinaryTree::inorderHelper(TreeNode* node, int* arr, int index)
+void BinaryTree::inorderHelper(TreeNode* node, int* arr, int& index)
 {
 	if (node == NULL)
 	{
 		return;
 	}
-	inorderHelper(node->left, arr, index+1 );
-	arr[index] = node->val;
-	inorderHelper(node->right, arr, index+1 );
+	inorderHelper(node->left, arr, index);
+	arr[index++] = node->val;
+	inorderHelper(node->right, arr, index);
 }
 
-void BinaryTree::postorderHelper(TreeNode* node, int* arr, int index)
+void BinaryTree::postorderHelper(TreeNode* node, int* arr, int& index)
 {
 	if (node == NULL)
 	{
 		return;
 	}
-	postorderHelper(node->left, arr, index + 1);
-	postorderHelper(node->right, arr, index + 1);
-	arr[index] = node->val;
+	postorderHelper(node->left, arr, index);
+	postorderHelper(node->right, arr, index);
+	arr[index++] = node->val;
 }
 
 void BinaryTree::setRoot(TreeNode* newRoot)
@@ -215,6 +215,7 @@ int* BinaryTree::postorderIterative()
 	{
 		reversedArr[i] = arr[countNodes(root) - 1 - i];
 	}
+	delete[] arr;
 	return reversedArr;
 }
 
@@ -230,12 +231,12 @@ int* BinaryTree::inorderIterative()
 	TreeNode* temp = root;
 	while (temp != NULL || !s.isEmpty())
 	{
-		while (temp->left != NULL)
+		while (temp != NULL)
 		{
 			s.push(temp);
 			temp = temp->left;
 		}
-		temp  = s.getTop();
+		temp = s.getTop();
 		s.pop();
 		arr[index] = temp->val;
 		index++;
@@ -275,9 +276,7 @@ void BinaryTree::buildFromPreIn(int pre[], int in[], int size)
 	return;
 }
 
-
-
-TreeNode* BinaryTree::buildFromPreInHelper(int pos[], int in[], int& posIndex, int start, int end)
+TreeNode* BinaryTree::buildFromPosInHelper(int pos[], int in[], int& posIndex, int start, int end)
 {
 	if (start > end)
 	{
@@ -291,12 +290,12 @@ TreeNode* BinaryTree::buildFromPreInHelper(int pos[], int in[], int& posIndex, i
 	{
 		position++;
 	}
-	temp->right = buildFromPreInHelper(pos, in, posIndex, position + 1, end);
-	temp->left = buildFromPreInHelper(pos, in, posIndex, start, position - 1);
+	temp->right = buildFromPosInHelper(pos, in, posIndex, position + 1, end);
+	temp->left = buildFromPosInHelper(pos, in, posIndex, start, position - 1);
 	return temp;
 }
 
-void BinaryTree::buildFromPreIn(int pos[], int in[], int size)
+void BinaryTree::buildFromPosIn(int pos[], int in[], int size)
 {
 	if (root != NULL)
 	{
@@ -304,10 +303,14 @@ void BinaryTree::buildFromPreIn(int pos[], int in[], int size)
 		root = NULL;
 	}
 	int posIndex = size - 1;
-	buildFromPreInHelper(pos, in, posIndex, 0, size-1);
+	root = buildFromPosInHelper(pos, in, posIndex, 0, size - 1);
 	return;
 }
 
+int BinaryTree::TreeHeight(TreeNode* node)
+{
+	return heightHelper(node);
+}
 
 int BinaryTree::heightHelper(TreeNode* root)
 {
@@ -375,7 +378,6 @@ int* BinaryTree::pathTo(int target)
 		delete[]arr;
 		return NULL;
 	}
-	PathToHelper(root, target, arr, pathSize);
 	int* path = new int[pathSize];
 	for (int i = 0;i < pathSize;i++)
 	{
@@ -430,7 +432,6 @@ void BinaryTree::MirrorHelper(TreeNode* root)
 	return;
 }
 
-
 void BinaryTree::Mirror()
 {
 	MirrorHelper(root);
@@ -477,7 +478,7 @@ bool BinaryTree::isSymmetricHelper(TreeNode* a, TreeNode* b)
 
 bool BinaryTree::isSymmetric()
 {
-	if (root = NULL)
+	if (root == NULL)
 	{
 		return false;
 	}
@@ -558,8 +559,7 @@ TreeNode* BinaryTree::generateRandomtree(int n)
 	return temp;
 }
 
-
-TreeNode* BinaryTree::findNodeHelper(TreeNode* root,int value)
+TreeNode* BinaryTree::findNodeHelper(TreeNode* root, int value)
 {
 	if (root == NULL)
 	{
@@ -569,17 +569,15 @@ TreeNode* BinaryTree::findNodeHelper(TreeNode* root,int value)
 	{
 		return root;
 	}
-	if (value > root->val)
+	TreeNode* left = findNodeHelper(root->left, value);
+	if (left != NULL)
 	{
-		return findNodeHelper(root->right, value);
+		return left;
 	}
-	else if (value < root ->val)
-	{
-		return findNodeHelper(root->left, value);
-	}
+	return findNodeHelper(root->right, value);
 }
 
-TreeNode* BinaryTree::findNode( int value)
+TreeNode* BinaryTree::findNode(int value)
 {
 	if (root == NULL)
 	{
@@ -587,8 +585,6 @@ TreeNode* BinaryTree::findNode( int value)
 	}
 	return findNodeHelper(root, value);
 }
-
-
 
 bool BinaryTree::fillPath(TreeNode* curr, int target, int arr[], int& idx) const
 {

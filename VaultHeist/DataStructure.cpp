@@ -1,13 +1,19 @@
-#include<iostream>
-#include"DataStructure.h"
+#include <iostream>
+#include "DataStructure.h"
 using namespace std;
 
-
+queue::~queue()
+{
+	while (!isEmpty())
+	{
+		pop();
+	}
+}
 
 void queue::Push(TreeNode* n)
 {
 	queueNode* temp = new queueNode(n);
-	if (top == NULL)
+	if (top == nullptr)
 	{
 		top = temp;
 		bottom = temp;
@@ -23,15 +29,15 @@ void queue::Push(TreeNode* n)
 
 void queue::pop()
 {
-	if (top == NULL)
+	if (top == nullptr)
 	{
 		return;
 	}
 	else if (top == bottom)
 	{
 		delete top;
-		top = NULL;
-		bottom = NULL;
+		top = nullptr;
+		bottom = nullptr;
 		return;
 	}
 	else
@@ -45,22 +51,27 @@ void queue::pop()
 
 TreeNode* queue::getTop()
 {
+	if (top == nullptr) return nullptr;
 	return top->n;
 }
 
 bool queue::isEmpty()
 {
-	if (top == NULL)
+	return (top == nullptr);
+}
+
+stack::~stack()
+{
+	while (!isEmpty())
 	{
-		return true;
+		pop();
 	}
-	return false;
 }
 
 void stack::push(TreeNode* n)
 {
 	queueNode* temp = new queueNode(n);
-	if (top == NULL)
+	if (top == nullptr)
 	{
 		top = temp;
 		return;
@@ -75,7 +86,7 @@ void stack::push(TreeNode* n)
 
 void stack::pop()
 {
-	if (top == NULL)
+	if (top == nullptr)
 	{
 		return;
 	}
@@ -90,15 +101,11 @@ void stack::pop()
 
 bool stack::isEmpty()
 {
-	if (top == NULL)
-	{
-		return true;
-	}
-	return false;
+	return (top == nullptr);
 }
-
 
 TreeNode* stack::getTop()
 {
+	if (top == nullptr) return nullptr;
 	return top->n;
 }

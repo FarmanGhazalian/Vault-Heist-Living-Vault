@@ -10,7 +10,7 @@ void LevelState::addStep()
 	return;
 }
 
-void LevelState::addpenalty(int extraAlarm = 1, int points = 0)
+void LevelState::addpenalty(int extraAlarm, int points)
 {
 	penaltyCount++;
 	steps++;
@@ -56,7 +56,7 @@ int ScoreSystem::stars(const LevelState& state)
 	{
 		baseStar = 3;
 	}
-	if (state.steps <= 1.5 * state.optimalSteps && state.penaltyCount <= 1)
+	else if (state.steps <= 1.25 * state.optimalSteps && state.penaltyCount <= 1)
 	{
 		baseStar = 2;
 	}
@@ -69,7 +69,7 @@ int ScoreSystem::stars(const LevelState& state)
 
 int ScoreSystem::score(const LevelState& state)
 {
-	if (!state.won && state.alarm >= state.penaltyCount)
+	if (!state.won || state.alarm >= state.alarmCap)
 	{
 		return 0;
 	}

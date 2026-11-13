@@ -8,7 +8,7 @@ void L2_data::generate()
     inArr = new int[totalNodes];
     return;
 }
-bool loadData::loadJSON(const string& filePath)
+bool Level2DataLoader::loadJSON(const string& filePath)
 {
     ifstream file(filePath);
     if (!file.is_open())
@@ -33,7 +33,7 @@ bool loadData::loadJSON(const string& filePath)
 
     for (size_t i = 0; i < data.totalNodes; i++)
     {
-        data.inArr[i] = j["preorderSequence"][i].get<int>();
+        data.preArr[i] = j["preorderSequence"][i].get<int>();
     }
 
     file.close();
@@ -48,6 +48,10 @@ bool Act1Level2::verifyPlacementNode(int parentVal, int direction, int placedVal
         return solTree.getRoot() != NULL && solTree.getRoot()->val == placedVal;
     }
     TreeNode* parentNode = solTree.findNode(parentVal);
+    if (parentNode == NULL)
+    {
+        return false;
+    }
     if (direction == 0 && parentNode->left != NULL)
     {
         return (parentNode->left->val == placedVal);
@@ -69,6 +73,7 @@ bool Act1Level2::initLevel(const string& jsonPath)
     }
     totalNodes = loader.data.totalNodes;
     correctlyPlacementCount = 0;
+    state = LevelState(loader.data.optimalSteps);
 
     solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, totalNodes);
     return true;
@@ -78,7 +83,7 @@ void Act1Level2::onValidStep()
     state.addStep();
 }
 
-void Act1Level2::onMistake(int extraAlarm = 1, int penaltyPoints = 0)
+void Act1Level2::onMistake(int extraAlarm, int penaltyPoints)
 {
     state.addpenalty(extraAlarm, penaltyPoints);
 }
@@ -88,7 +93,7 @@ void Act1Level2::onHintRequested()
     state.useHint();
 }
 
-string getHint()
+string Act1Level2::getHint()
 {
     return "The first node in Preorder is always the Root. Use Inorder to see which nodes go to its Left and Right!";
 }
@@ -131,6 +136,7 @@ ActionResult Act1Level2::processAction(const PlayerAction& action)
 
         if (isCorrect) {
             onValidStep();
+            correctlyPlacementCount++;
             res.correct = true;
             res.message = "Blueprint Node Verified!";
             if (correctlyPlacementCount == totalNodes) {

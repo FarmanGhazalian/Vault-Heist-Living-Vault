@@ -39,7 +39,7 @@ struct L2_data
 
 
 
-class loadData
+class Level2DataLoader
 {
 public:
     L2_data data;
@@ -57,7 +57,7 @@ public:
     BinaryTree solTree;
     int totalNodes;
     int correctlyPlacementCount;
-    loadData loader;
+    Level2DataLoader loader;
 
     bool verifyPlacementNode(int parentVal, int direction, int placedVal);
 

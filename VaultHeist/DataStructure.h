@@ -1,5 +1,6 @@
 #pragma once
-#include"TreeNode.h"
+#include "TreeNode.h"
+
 class queueNode
 {
 public:
@@ -8,7 +9,7 @@ public:
 	queueNode(TreeNode* node)
 	{
 		n = node;
-		next = NULL;
+		next = nullptr;
 	}
 };
 
@@ -24,9 +25,10 @@ public:
 
 	queue()
 	{
-		top = NULL;
-		bottom = NULL;
+		top = nullptr;
+		bottom = nullptr;
 	}
+	~queue();
 };
 
 class stack
@@ -35,11 +37,11 @@ public:
 	queueNode* top;
 	stack()
 	{
-		top == NULL;
+		top = nullptr;
 	}
+	~stack();
 	void push(TreeNode* n);
 	void pop();
 	TreeNode* getTop();
 	bool isEmpty();
-
 };

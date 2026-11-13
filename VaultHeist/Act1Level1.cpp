@@ -33,6 +33,11 @@ bool Level1DataLoader::loadJSON(const string& filePath)
     rootId = data["rootId"];
     optimalSteps = data["optimalSteps"];
     traversalType = data["traversalType"];
+    totalNodes = data["totalNodes"];
+    if (rawNodes == nullptr)
+    {
+        rawNodes = new TempNodeData[totalNodes];
+    }
 
     int i = 0;
     for (const auto& item : data["nodes"]) {
@@ -93,6 +98,8 @@ bool Act1Level1::initLevel(const std::string& jsonPath)
 
     TreeNode* root = BuildTree(data.rootId);
     gameTree.setRoot(root);
+    sequenceSize = data.totalNodes;
+    state = LevelState(data.optimalSteps);
     if (expectedSequence != NULL)
     {
         delete[]expectedSequence;
@@ -123,7 +130,7 @@ void Act1Level1::onValidStep()
     state.addStep();
 }
 
-void Act1Level1::onMistake(int extraAlarm = 1, int penaltyPoints = 0)
+void Act1Level1::onMistake(int extraAlarm, int penaltyPoints)
 {
     state.addpenalty(extraAlarm, penaltyPoints);
 }

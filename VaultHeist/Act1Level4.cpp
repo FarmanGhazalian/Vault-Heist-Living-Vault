@@ -7,7 +7,7 @@ void L4_data::generate()
 	inArr = new int[totalNodes];
 }
 
-bool loadData::loadJSON(const string& filePath)
+bool Level4DataLoader::loadJSON(const string& filePath)
 {
 	ifstream file(filePath);
 	if (!file.is_open())
@@ -45,6 +45,21 @@ string Act1Level4::getHint()
 	return "Hint: First click the Lowest Common Ancestor (where paths from Room #" + to_string(roomA) + " and Room #" + std::to_string(roomB) + " meet), then click the path nodes step-by-step from Room #" + to_string(roomA) + " to Room #" + std::to_string(roomB) + "!";
 }
 
+void Act1Level4::onValidStep()
+{
+	state.addStep();
+}
+
+void Act1Level4::onMistake(int extraAlarm, int penaltyPoints)
+{
+	state.addpenalty(extraAlarm, penaltyPoints);
+}
+
+void Act1Level4::onHintRequested()
+{
+	state.useHint();
+}
+
 bool Act1Level4::initLevel(const std::string& jsonPath)
 {
 	if (!loader.loadJSON(jsonPath)) return false;
@@ -57,20 +72,20 @@ bool Act1Level4::initLevel(const std::string& jsonPath)
 	expectedPathLength = 0;
 	lcaFound = false;
 
-	for (int i = 0; i < loader.data.totalNodes; i++)
-	{
-		expectedPath[i] = -1;
-	}
-
 	solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, loader.data.totalNodes);
-
+	state = LevelState(loader.data.optimalSteps);
 
 	TreeNode* lcaNode = solTree.lca(roomA, roomB);
 	if (lcaNode != nullptr)
 	{
 		actualLCA = lcaNode->val;
 	}
-	solTree.getPath(lcaNode, roomA, roomB, expectedPathLength);
+	if (expectedPath != nullptr)
+	{
+		delete[] expectedPath;
+	}
+	expectedPath = solTree.getPath(lcaNode, roomA, roomB, expectedPathLength);
+	pathCount = expectedPathLength;
 
 	return true;
 }

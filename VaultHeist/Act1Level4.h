@@ -28,7 +28,7 @@ struct L4_data
 
 
 
-class loadData
+class Level4DataLoader
 {
 public:
     L4_data data;
@@ -41,7 +41,7 @@ public:
 
 class Act1Level4 : public ILevelLogic {
 private:
-	loadData loader;
+	Level4DataLoader loader;
 	BinaryTree solTree;
 
 	int roomA = -1;
@@ -60,8 +60,12 @@ protected:
 public:
 	Act1Level4() : ILevelLogic(loader.data.optimalSteps)
 	{
-		expectedPath = new int[loader.data.totalNodes];
+		expectedPath = nullptr;
 	}
+
+	void onValidStep() override;
+	void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
+	void onHintRequested() override;
 
 	bool initLevel(const std::string& jsonPath);
 

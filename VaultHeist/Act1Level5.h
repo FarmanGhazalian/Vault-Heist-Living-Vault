@@ -23,7 +23,7 @@ struct L5_data
     void generate();
 };
 
-class loadData
+class Level5DataLoader
 {
 public:
     L5_data data;
@@ -33,34 +33,32 @@ public:
 
 class Act1Level5 : public ILevelLogic {
 private:
-    loadData loader;
+    Level5DataLoader loader;
     BinaryTree currentTree;
     BinaryTree mirrorTree;
 
     TreeNode** swappedNodes;
     int swappedCount = 0;
 
+    bool isLeaf(TreeNode* node) const;
+    bool isNodeSwapped(TreeNode* node) const;
+    bool areChildrenReady(TreeNode* node) const;
 
+public:
     Act1Level5() : ILevelLogic(loader.data.optimalSteps)
     {
         swappedCount = 0;
-        swappedNodes = new TreeNode*[loader.data.totalNodes];
-        for (int i = 0; i < loader.data.totalNodes; i++) 
-            swappedNodes[i] = nullptr;
+        swappedNodes = nullptr;
     }
 
-    bool isLeaf(TreeNode* node) const {
-        return (node != nullptr && node->left == nullptr && node->right == nullptr);
-    }
-
-    bool isNodeSwapped(TreeNode* node) const {
-        for (int i = 0; i < swappedCount; i++) {
-            if (swappedNodes[i] == node) return true;
+    ~Act1Level5()
+    {
+        if (swappedNodes != nullptr)
+        {
+            delete[] swappedNodes;
+            swappedNodes = nullptr;
         }
-        return false;
     }
-
-    bool areChildrenReady(TreeNode* node)const;
 
     void onValidStep()
     {

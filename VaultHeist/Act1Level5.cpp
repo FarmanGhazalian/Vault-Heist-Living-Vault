@@ -10,7 +10,7 @@ void L5_data::generate()
 }
 
 
-bool loadData::loadJSON(const string& filePath)
+bool Level5DataLoader::loadJSON(const string& filePath)
 {
 	ifstream file(filePath);
 	if (!file.is_open())
@@ -85,14 +85,17 @@ bool Act1Level5::initLevel(const std::string& jsonPath)
 	if (!loader.loadJSON(jsonPath)) return false;
 
 	swappedCount = 0;
+	if (swappedNodes != nullptr)
+	{
+		delete[] swappedNodes;
+	}
+	swappedNodes = new TreeNode*[loader.data.totalNodes];
 	for (int i = 0; i < loader.data.totalNodes; i++) swappedNodes[i] = nullptr;
 
-
+	state = LevelState(loader.data.optimalSteps);
 	currentTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, loader.data.totalNodes);
 
-
-	mirrorTree.buildFromPreIn(loader.data.preArr, loader.data.preArr, loader.data.totalNodes);
-
+	mirrorTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, loader.data.totalNodes);
 	mirrorTree.Mirror();
 
 	return true;
@@ -133,7 +136,8 @@ ActionResult Act1Level5::processAction(const PlayerAction& action)
         currentTree.MirrorHelper(currentTree.getRoot());
         onValidStep();
 
-        if (state.alarm >= state.alarmCap) {
+        if (state.alarm >= state.alarmCap)
+        {
             state.finished = true;
             state.won = false;
             res.correct = false;

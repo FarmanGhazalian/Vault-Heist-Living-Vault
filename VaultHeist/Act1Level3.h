@@ -29,7 +29,7 @@ public:
 };
 
 
-class loadData
+class Level3DataLoader
 {
 public:
 	L3_data data;
@@ -38,7 +38,7 @@ public:
 };
 
 
-class Act1Level3 : ILevelLogic
+class Act1Level3 : public ILevelLogic
 {
 private:
 	BinaryTree solTree;
@@ -51,7 +51,7 @@ private:
 	int actualDiameter = 0;
 	int* actualHeight;
 	int* playerHeight;
-	loadData loader;
+	Level3DataLoader loader;
 
 	int findIndex(int nodeVal);
 public:

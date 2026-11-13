@@ -1,6 +1,15 @@
 #pragma once
-#include<cmath>
-using namespace std;
+#include <cmath>
+
+struct LevelState;
+
+class ScoreSystem {
+public:
+	static int computeCapacity(int optimalSteps);
+	static int stars(const LevelState& state);
+	static int score(const LevelState& state);
+};
+
 struct LevelState
 {
 	int alarmCap;
@@ -16,16 +25,16 @@ struct LevelState
 	bool finished;
 	bool won;
 
-	LevelState(int optimal)
+	LevelState(int optimal = 0)
 	{
 		optimalSteps = optimal;
 		alarmCap = ScoreSystem::computeCapacity(optimalSteps);
 		steps = 0;
-		alarm =0;
+		alarm = 0;
 
-		penaltyCount =0;
-		penaltyPoints =0;
-		bonus =0;
+		penaltyCount = 0;
+		penaltyPoints = 0;
+		bonus = 0;
 
 		hintUsed = false;
 		finished = false;
@@ -36,13 +45,5 @@ struct LevelState
 	void addpenalty(int extraAlarm = 1, int points = 0);
 	void useHint();
 	bool isFull();
-	int remaining()const;
-};
-
-class ScoreSystem {
-public:
-
-	static int computeCapacity(int optimalSteps);
-	static int stars(const LevelState& state);
-	static int score(const LevelState& state);
+	int remaining() const;
 };

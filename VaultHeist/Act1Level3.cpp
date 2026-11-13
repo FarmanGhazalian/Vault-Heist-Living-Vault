@@ -9,7 +9,7 @@ void L3_data::generate()
 	return;
 }
 
-bool loadData::loadJSON(const string& filePath)
+bool Level3DataLoader::loadJSON(const string& filePath)
 {
 	ifstream file(filePath);
 	if (!file.is_open())
@@ -49,6 +49,7 @@ int Act1Level3::findIndex(int nodeVal)
 			return i;
 		}
 	}
+	return -1;
 }
 
 
@@ -71,9 +72,13 @@ TreeNode* Act1Level3::GenerateH(TreeNode* root, int index)
 	{
 		return NULL;
 	}
-	actualHeight[index] = solTree.TreeHeight(root);
-	GenerateH(root->left, 2 * index + 1);
-	GenerateH(root->right, 2 * index + 2);
+	int idx = findIndex(root->val);
+	if (idx >= 0 && idx < totalNodes)
+	{
+		actualHeight[idx] = solTree.TreeHeight(root);
+	}
+	GenerateH(root->left, 0);
+	GenerateH(root->right, 0);
 	return root;
 }
 
@@ -90,10 +95,11 @@ bool Act1Level3::initLevel(const string& jsonPath)
 		return false;
 	}
 	totalNodes = loader.data.totalNodes;
+	solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, totalNodes);
+	state = LevelState(loader.data.optimalSteps);
 	generate();
 	genrateHeight();
 	actualDiameter = solTree.diameter();
-	solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, totalNodes);
 	return true;
 }
 
@@ -103,7 +109,7 @@ void Act1Level3::onValidStep()
 	state.addStep();
 }
 
-void Act1Level3::onMistake(int extraAlarm = 1, int penaltyPoints = 0)
+void Act1Level3::onMistake(int extraAlarm, int penaltyPoints)
 {
 	state.addpenalty(extraAlarm, penaltyPoints);
 }
@@ -207,26 +213,26 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 				res.message = "Height verified!";
 			}
 		}
-		if (heightsPhaseDone && action.type == ENTER_DIAMETER)
+	}
+	else if (heightsPhaseDone && action.type == ENTER_DIAMETER)
+	{
+		if (action.nodeB == actualDiameter)
 		{
-			if (action.nodeB == actualDiameter)
-			{
-				res.message = "Diameter Verified! Alarm Neutralized!";
-				state.finished = true;
-				state.won = true;
-				onValidStep();
-
-			}
-			else {
-
-				res.accepted = false;
-				res.correct = false;
-				res.alarmDelta = 2;
-				res.penaltyPoints = 50;
-				res.message = "Wrong Diameter! Recalculate the longest path!";
-			}
+			res.message = "Diameter Verified! Alarm Neutralized!";
+			state.finished = true;
+			state.won = true;
+			onValidStep();
 
 		}
+		else {
+
+			res.accepted = false;
+			res.correct = false;
+			res.alarmDelta = 2;
+			res.penaltyPoints = 50;
+			res.message = "Wrong Diameter! Recalculate the longest path!";
+		}
+
 	}
 	if (!isWon() && state.alarm >= state.alarmCap) {
 		state.finished = true;
