@@ -587,3 +587,49 @@ TreeNode* BinaryTree::findNode( int value)
 	}
 	return findNodeHelper(root, value);
 }
+
+
+
+bool BinaryTree::fillPath(TreeNode* curr, int target, int arr[], int& idx) const
+{
+	if (curr == nullptr) 
+		return false;
+
+	arr[idx++] = curr->val;
+	if (curr->val == target)
+		return true;
+
+	if (fillPath(curr->left, target, arr, idx) || fillPath(curr->right, target, arr, idx))
+	{
+		return true;
+	}
+
+	idx--;
+	return false;
+}
+
+int* BinaryTree::getPath(TreeNode* lca, int nodeA, int nodeB, int& length) const 
+{
+	if (lca == nullptr)
+		return nullptr;
+
+	int pathA[64], lenA = 0;
+	int pathB[64], lenB = 0;
+
+	if (!fillPath(lca, nodeA, pathA, lenA) || !fillPath(lca, nodeB, pathB, lenB)) {
+		return nullptr;
+	}
+
+	int totalSize = lenA + lenB - 1;
+	int* finalPath = new int[totalSize];
+	length = totalSize;
+	int k = 0;
+	for (int i = lenA - 1; i >= 0; i--) {
+		finalPath[k++] = pathA[i];
+	}
+	for (int i = 1; i < lenB; i++) {
+		finalPath[k++] = pathB[i];
+	}
+
+	return finalPath;
+}

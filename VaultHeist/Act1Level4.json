@@ -1,0 +1,10 @@
+{
+  "levelId": "1.4",
+  "levelName": "Where Escape Routes Meet",
+  "optimalSteps": 5,
+  "totalNodes": 7,
+  "preorderSequence": [ 1, 2, 4, 5, 3, 6, 7 ],
+  "inorderSequence": [ 4, 2, 5, 1, 6, 3, 7 ],
+  "roomA": 4,
+  "roomB": 6
+}

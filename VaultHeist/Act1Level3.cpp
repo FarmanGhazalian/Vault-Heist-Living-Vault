@@ -33,7 +33,7 @@ bool loadData::loadJSON(const string& filePath)
 
 	for (int i = 0; i < data.totalNodes; i++)
 	{
-		data.inArr[i] = j["preorderSequence"][i].get<int>();
+		data.preArr[i] = j["preorderSequence"][i].get<int>();
 	}
 	file.close();
 	return true;
@@ -225,6 +225,11 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 			res.message = "Wrong Diameter! Recalculate the longest path!";
 		}
 
+	}
+	if (!isWon() && state.alarm >= state.alarmCap) {
+		state.finished = true;
+		state.won = false;
+		res.message = "Alarm Reached the Root! Vault Lockdown!";
 	}
 	return res;
 }

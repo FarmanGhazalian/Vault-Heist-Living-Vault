@@ -61,7 +61,8 @@ bool Act1Level2::verifyPlacementNode(int parentVal, int direction, int placedVal
 
 
 
-bool Act1Level2::initLevel(const string& jsonPath) {
+bool Act1Level2::initLevel(const string& jsonPath) 
+{
     if (!loader.loadJSON(jsonPath))
     {
         return false;

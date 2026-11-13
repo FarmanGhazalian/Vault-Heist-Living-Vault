@@ -62,6 +62,11 @@ public:
 	void destroyTree();
 	TreeNode* generateRandomtree(int n);
 	TreeNode* findNode(int value);
+
+
+	bool fillPath(TreeNode* curr, int target, int arr[], int& idx) const;
+
+	int* getPath(TreeNode* lca, int nodeA, int nodeB, int& length) const;
 };
 
 

@@ -65,10 +65,14 @@
     <ClInclude Include="Act1Level3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Act1Level4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Act1Level1.json" />
     <None Include="Act1Level2.json" />
     <None Include="Act1Level3.json" />
+    <None Include="Act1Level4.json" />
   </ItemGroup>
 </Project>
