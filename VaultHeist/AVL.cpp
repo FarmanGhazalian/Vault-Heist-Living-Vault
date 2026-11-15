@@ -1,62 +1,95 @@
 #include "AVL.h"
 
-int AVL::getHeight(TreeNode* node)
+int AVL::max(int a, int b)
 {
-	if (node == NULL)
-	{
-		return 0;
-	}
-	return node->height;
+	return (a > b) ? a : b;
 }
 
-int AVL::updateHeightsHelper(TreeNode* node)
+int AVL::height(TreeNode* N)
+{
+	if (N == NULL)
+		return 0;
+	return N->height;
+}
+
+int AVL::getHeight(TreeNode* node)
+{
+	return height(node);
+}
+
+void AVL::updateHeights(TreeNode* node)
 {
 	if (node == NULL)
-	{
-		return 0;
-	}
-
-	int lh = updateHeightsHelper(node->left);
-	int rh = updateHeightsHelper(node->right);
-
-	if (lh > rh)
-	{
-		node->height = 1 + lh;
-	}
-	else
-	{
-		node->height = 1 + rh;
-	}
-
-	return node->height;
+		return;
+	updateHeights(node->left);
+	updateHeights(node->right);
+	node->height = 1 + max(height(node->left), height(node->right));
 }
 
 void AVL::updateHeights()
 {
-	updateHeightsHelper(getRoot());
+	updateHeights(getRoot());
 }
 
-int AVL::getBalance(TreeNode* node)
+int AVL::getBalance(TreeNode* N)
 {
-	if (node == NULL)
-	{
+	if (N == NULL)
 		return 0;
-	}
-	return getHeight(node->left) - getHeight(node->right);
+	return height(N->left) - height(N->right);
+}
+
+TreeNode* AVL::rightRotate(TreeNode* z)
+{
+	TreeNode* y = z->left;
+	TreeNode* T3 = y->right;
+
+	// Perform rotation
+	y->right = z;
+	z->left = T3;
+
+	// Update heights
+	z->height = max(height(z->left), height(z->right)) + 1;
+	y->height = max(height(y->left), height(y->right)) + 1;
+
+	// Return new root
+	return y;
+}
+
+TreeNode* AVL::leftRotate(TreeNode* z)
+{
+	TreeNode* y = z->right;
+	TreeNode* T2 = y->left;
+
+	// Perform rotation
+	y->left = z;
+	z->right = T2;
+
+	// Update heights
+	z->height = max(height(z->left), height(z->right)) + 1;
+	y->height = max(height(y->left), height(y->right)) + 1;
+
+	// Return new root
+	return y;
+}
+
+TreeNode* AVL::rotateRight(TreeNode* node)
+{
+	return rightRotate(node);
+}
+
+TreeNode* AVL::rotateLeft(TreeNode* node)
+{
+	return leftRotate(node);
 }
 
 void AVL::countUnbalancedHelper(TreeNode* node, int& count)
 {
 	if (node == NULL)
-	{
 		return;
-	}
 
 	int bal = getBalance(node);
 	if (bal < -1 || bal > 1)
-	{
 		count++;
-	}
 
 	countUnbalancedHelper(node->left, count);
 	countUnbalancedHelper(node->right, count);
@@ -65,9 +98,7 @@ void AVL::countUnbalancedHelper(TreeNode* node, int& count)
 void AVL::getUnbalancedHelper(TreeNode* node, int* arr, int& index)
 {
 	if (node == NULL)
-	{
 		return;
-	}
 
 	int bal = getBalance(node);
 	if (bal < -1 || bal > 1)
@@ -87,9 +118,7 @@ int* AVL::getUnbalancedNodes(int& count)
 	countUnbalancedHelper(getRoot(), count);
 
 	if (count == 0)
-	{
 		return NULL;
-	}
 
 	int* arr = new int[count];
 	int index = 0;
@@ -101,9 +130,7 @@ int* AVL::getUnbalancedNodes(int& count)
 void AVL::findDeepestUnbalanced(TreeNode* node, int currentDepth, int& maxDepth, TreeNode*& deepest)
 {
 	if (node == NULL)
-	{
 		return;
-	}
 
 	findDeepestUnbalanced(node->left, currentDepth + 1, maxDepth, deepest);
 	findDeepestUnbalanced(node->right, currentDepth + 1, maxDepth, deepest);
@@ -131,165 +158,36 @@ TreeNode* AVL::findUnbalancedNode()
 int AVL::getProblem(TreeNode* node)
 {
 	if (node == NULL)
-	{
 		return -1;
-	}
 
 	int bal = getBalance(node);
 
+	// Left Left or Left Right
 	if (bal > 1)
 	{
-		int leftBal = getBalance(node->left);
-		if (leftBal >= 0)
-		{
+		if (getBalance(node->left) >= 0)
 			return 0; // LL
-		}
 		else
-		{
 			return 2; // LR
-		}
 	}
+	// Right Right or Right Left
 	else if (bal < -1)
 	{
-		int rightBal = getBalance(node->right);
-		if (rightBal <= 0)
-		{
+		if (getBalance(node->right) <= 0)
 			return 1; // RR
-		}
 		else
-		{
 			return 3; // RL
-		}
 	}
 
 	return -1;
 }
 
-TreeNode* AVL::rotateLeft(TreeNode* node)
-{
-	if (node == NULL || node->right == NULL)
-	{
-		return node;
-	}
-
-	TreeNode* newRoot = node->right;
-	TreeNode* temp = newRoot->left;
-
-	newRoot->left = node;
-	node->right = temp;
-
-	int lh = getHeight(node->left);
-	int rh = getHeight(node->right);
-	if (lh > rh)
-	{
-		node->height = 1 + lh;
-	}
-	else
-	{
-		node->height = 1 + rh;
-	}
-
-	lh = getHeight(newRoot->left);
-	rh = getHeight(newRoot->right);
-	if (lh > rh)
-	{
-		newRoot->height = 1 + lh;
-	}
-	else
-	{
-		newRoot->height = 1 + rh;
-	}
-
-	return newRoot;
-}
-
-TreeNode* AVL::rotateRight(TreeNode* node)
-{
-	if (node == NULL || node->left == NULL)
-	{
-		return node;
-	}
-
-	TreeNode* newRoot = node->left;
-	TreeNode* temp = newRoot->right;
-
-	newRoot->right = node;
-	node->left = temp;
-
-	int lh = getHeight(node->left);
-	int rh = getHeight(node->right);
-	if (lh > rh)
-	{
-		node->height = 1 + lh;
-	}
-	else
-	{
-		node->height = 1 + rh;
-	}
-
-	lh = getHeight(newRoot->left);
-	rh = getHeight(newRoot->right);
-	if (lh > rh)
-	{
-		newRoot->height = 1 + lh;
-	}
-	else
-	{
-		newRoot->height = 1 + rh;
-	}
-
-	return newRoot;
-}
-
-TreeNode* AVL::rotateSubtree(TreeNode* current, int targetVal, int direction)
-{
-	if (current == NULL)
-	{
-		return NULL;
-	}
-
-	if (current->val == targetVal)
-	{
-		if (direction == 0)
-		{
-			return rotateLeft(current);
-		}
-		else
-		{
-			return rotateRight(current);
-		}
-	}
-
-	if (targetVal < current->val)
-	{
-		current->left = rotateSubtree(current->left, targetVal, direction);
-	}
-	else
-	{
-		current->right = rotateSubtree(current->right, targetVal, direction);
-	}
-
-	return current;
-}
-
-void AVL::applyRotation(int pivotVal, int direction)
-{
-	TreeNode*& r = getRoot();
-	r = rotateSubtree(r, pivotVal, direction);
-	updateHeights();
-}
-
 int AVL::updateSizesHelper(TreeNode* node)
 {
 	if (node == NULL)
-	{
 		return 0;
-	}
 
-	int ls = updateSizesHelper(node->left);
-	int rs = updateSizesHelper(node->right);
-	node->size = ls + rs + 1;
-
+	node->size = updateSizesHelper(node->left) + updateSizesHelper(node->right) + 1;
 	return node->size;
 }
 
@@ -306,18 +204,12 @@ TreeNode* AVL::findKth(int k)
 	{
 		int leftSize = 0;
 		if (curr->left != NULL)
-		{
 			leftSize = curr->left->size;
-		}
 
 		if (k == leftSize + 1)
-		{
 			return curr;
-		}
 		else if (k <= leftSize)
-		{
 			curr = curr->left;
-		}
 		else
 		{
 			k = k - (leftSize + 1);
