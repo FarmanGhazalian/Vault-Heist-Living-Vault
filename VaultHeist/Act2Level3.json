@@ -1,0 +1,6 @@
+{
+  "levelId": 23,
+  "levelName": "Steal and Collapse",
+  "initialKeys": [50, 30, 70, 20, 40, 60, 80],
+  "deleteKeys": [20, 30, 50]
+}

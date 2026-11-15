@@ -1,0 +1,6 @@
+{
+  "levelId": 22,
+  "levelName": "Stash Loot",
+  "initialKeys": [50, 30, 70, 20, 80],
+  "insertKeys": [40, 65, 10]
+}

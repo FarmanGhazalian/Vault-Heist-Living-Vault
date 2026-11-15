@@ -1,0 +1,6 @@
+{
+  "levelId": 25,
+  "levelName": "The Lazy Architect",
+  "keys": [10, 20, 30, 40, 50, 60, 70],
+  "targets": [30, 60]
+}

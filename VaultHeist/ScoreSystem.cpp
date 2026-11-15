@@ -40,6 +40,15 @@ int LevelState::remaining() const
 	return alarmCap - alarm;
 }
 
+void LevelState::reduceCapacity(int amount)
+{
+	alarmCap -= amount;
+	if (alarmCap < alarm)
+	{
+		alarmCap = alarm;
+	}
+}
+
 int  ScoreSystem::computeCapacity(int optimalSteps)
 {
 	return ceil(1.5 * optimalSteps) + 2;

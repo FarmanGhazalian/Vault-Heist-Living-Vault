@@ -46,4 +46,5 @@ struct LevelState
 	void useHint();
 	bool isFull();
 	int remaining() const;
+	void reduceCapacity(int amount);
 };
