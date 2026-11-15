@@ -1,6 +1,7 @@
 {
-  "levelId": 21,
+  "levelId": "2.1",
   "levelName": "Search Heist",
   "target": 65,
+  "optimalSteps": 4,
   "keys": [50, 30, 70, 20, 40, 60, 80, 65]
 }

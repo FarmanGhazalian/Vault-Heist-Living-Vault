@@ -18,6 +18,8 @@ public:
 	int state;
 	sf::Vector2f position;
 	bool isVisited;
+	int height;
+	int size;
 
 	TreeNode(int value = 0, int name = 0)
 	{
@@ -29,5 +31,7 @@ public:
 		position.x = 0.0f;
 		position.y = 0.0f;
 		isVisited = false;
+		height = 1;
+		size = 1;
 	}
 };

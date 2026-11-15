@@ -1,297 +1,326 @@
 #include "Act2Level5.h"
 
-Level2_5Data::Level2_5Data()
+bool Level2_5DataLoader::loadJSON(const string& filePath)
 {
-    levelId = 25;
-    levelName = "The Lazy Architect";
-    totalKeys = 0;
-    keys = nullptr;
-    totalTargets = 0;
-    targets = nullptr;
-}
+	ifstream file(filePath);
+	if (!file.is_open())
+	{
+		string fallback = "VaultHeist/" + filePath;
+		file.open(fallback);
+		if (!file.is_open())
+		{
+			return false;
+		}
+	}
 
-Level2_5Data::~Level2_5Data()
-{
-    if (keys != nullptr)
-    {
-        delete[] keys;
-        keys = nullptr;
-    }
-    if (targets != nullptr)
-    {
-        delete[] targets;
-        targets = nullptr;
-    }
-}
+	json j;
+	file >> j;
+	file.close();
 
-bool Level2_5Data::loadJSON(const string& filePath)
-{
-    ifstream file(filePath);
-    if (!file.is_open())
-    {
-        return false;
-    }
+	if (j["levelId"].is_string())
+	{
+		data.levelId = 25;
+	}
+	else
+	{
+		data.levelId = j["levelId"];
+	}
 
-    json j;
-    file >> j;
-    file.close();
+	data.levelName = j["levelName"];
+	data.optimalSteps = j["optimalSteps"];
 
-    if (j.contains("levelName"))
-    {
-        levelName = j["levelName"].get<string>();
-    }
+	auto keysArr = j["keys"];
+	data.totalKeys = (int)keysArr.size();
 
-    auto keysJson = j["keys"];
-    totalKeys = (int)keysJson.size();
-    if (keys != nullptr)
-    {
-        delete[] keys;
-    }
-    keys = new int[totalKeys];
-    for (int i = 0; i < totalKeys; i++)
-    {
-        keys[i] = keysJson[i].get<int>();
-    }
+	if (data.keys != NULL)
+	{
+		delete[] data.keys;
+		data.keys = NULL;
+	}
 
-    auto targetsJson = j["targets"];
-    totalTargets = (int)targetsJson.size();
-    if (targets != nullptr)
-    {
-        delete[] targets;
-    }
-    targets = new int[totalTargets];
-    for (int i = 0; i < totalTargets; i++)
-    {
-        targets[i] = targetsJson[i].get<int>();
-    }
-    return true;
+	data.keys = new int[data.totalKeys];
+	for (int i = 0; i < data.totalKeys; i++)
+	{
+		data.keys[i] = keysArr[i];
+	}
+
+	auto targetsArr = j["targets"];
+	data.totalTargets = (int)targetsArr.size();
+
+	if (data.targets != NULL)
+	{
+		delete[] data.targets;
+		data.targets = NULL;
+	}
+
+	data.targets = new int[data.totalTargets];
+	for (int i = 0; i < data.totalTargets; i++)
+	{
+		data.targets[i] = targetsArr[i];
+	}
+
+	return true;
 }
 
 Act2Level5::Act2Level5() : ILevelLogic(0)
 {
-    currentTargetIdx = 0;
-    currentPath = nullptr;
-    currentPathLength = 0;
-    currentPathIdx = 0;
-    validStepsSinceLastShrink = 0;
+	currentTargetIdx = 0;
+	currentPath = NULL;
+	currentPathLength = 0;
+	currentPathIdx = 0;
+	validStepsSinceLastShrink = 0;
 }
 
 Act2Level5::~Act2Level5()
 {
-    if (currentPath != nullptr)
-    {
-        delete[] currentPath;
-        currentPath = nullptr;
-    }
+	if (currentPath != NULL)
+	{
+		delete[] currentPath;
+		currentPath = NULL;
+	}
 }
 
 void Act2Level5::computeCurrentPath()
 {
-    if (currentPath != nullptr)
-    {
-        delete[] currentPath;
-        currentPath = nullptr;
-    }
-    currentPathLength = 0;
-    currentPathIdx = 0;
+	if (currentPath != NULL)
+	{
+		delete[] currentPath;
+		currentPath = NULL;
+	}
 
-    if (currentTargetIdx < data.totalTargets)
-    {
-        int target = data.targets[currentTargetIdx];
-        currentPath = bst.getPath(target, currentPathLength);
-    }
+	currentPathLength = 0;
+	currentPathIdx = 0;
+
+	if (currentTargetIdx < loader.data.totalTargets)
+	{
+		int target = loader.data.targets[currentTargetIdx];
+		currentPath = bst.pathTo(target);
+
+		if (currentPath != NULL)
+		{
+			TreeNode* curr = bst.getRoot();
+			while (curr != NULL)
+			{
+				currentPathLength++;
+				if (curr->val == target)
+				{
+					break;
+				}
+				if (target < curr->val)
+				{
+					curr = curr->left;
+				}
+				else
+				{
+					curr = curr->right;
+				}
+			}
+		}
+	}
 }
 
 bool Act2Level5::initLevel(const string& jsonPath)
 {
-    if (!data.loadJSON(jsonPath))
-    {
-        return false;
-    }
+	if (!loader.loadJSON(jsonPath))
+	{
+		return false;
+	}
 
-    bst.clear();
-    // Insert keys in sorted order -> creates degenerate right chain corridor of height N
-    for (int i = 0; i < data.totalKeys; i++)
-    {
-        bst.insert(data.keys[i]);
-    }
+	bst.destroyTree();
 
-    // Compute optimal steps: sum of path lengths across all targets
-    int totalOptimal = 0;
-    for (int i = 0; i < data.totalTargets; i++)
-    {
-        int len = 0;
-        int* p = bst.getPath(data.targets[i], len);
-        if (p != nullptr)
-        {
-            delete[] p;
-        }
-        totalOptimal += len;
-    }
+	for (int i = 0; i < loader.data.totalKeys; i++)
+	{
+		bst.insert(loader.data.keys[i]);
+	}
 
-    state = LevelState(totalOptimal);
-    currentTargetIdx = 0;
-    validStepsSinceLastShrink = 0;
-    computeCurrentPath();
-    return true;
+	state = LevelState(loader.data.optimalSteps);
+	currentTargetIdx = 0;
+	validStepsSinceLastShrink = 0;
+	computeCurrentPath();
+
+	return true;
 }
 
 void Act2Level5::onValidStep()
 {
-    state.addStep();
-    validStepsSinceLastShrink++;
-    // After every 2 valid steps, remaining capacity shrinks by 1
-    if (validStepsSinceLastShrink >= 2)
-    {
-        state.reduceCapacity(1);
-        validStepsSinceLastShrink = 0;
-    }
+	state.addStep();
+	validStepsSinceLastShrink++;
+
+	if (validStepsSinceLastShrink >= 2)
+	{
+		state.reduceCapacity(1);
+		validStepsSinceLastShrink = 0;
+	}
 }
 
 void Act2Level5::onMistake(int extraAlarm, int penaltyPoints)
 {
-    state.addpenalty(extraAlarm, penaltyPoints);
+	state.addpenalty(extraAlarm, penaltyPoints);
 }
 
 void Act2Level5::onHintRequested()
 {
-    state.useHint();
+	state.useHint();
 }
 
 ActionResult Act2Level5::processAction(const PlayerAction& action)
 {
-    ActionResult result;
+	ActionResult result;
 
-    if (isFinished() || state.isFull())
-    {
-        result.accepted = false;
-        result.correct = false;
-        result.message = "Level locked or already finished!";
-        return result;
-    }
+	if (isFinished() || state.isFull())
+	{
+		result.accepted = false;
+		result.correct = false;
+		result.message = "Level locked or already finished!";
+		return result;
+	}
 
-    if (currentTargetIdx >= data.totalTargets)
-    {
-        result.accepted = false;
-        result.message = "All boss targets already secured!";
-        return result;
-    }
+	if (currentTargetIdx >= loader.data.totalTargets)
+	{
+		result.accepted = false;
+		result.message = "All boss targets already secured!";
+		return result;
+	}
 
-    if (action.type == CLICK_HINT)
-    {
-        result.accepted = true;
-        result.correct = true;
-        onHintRequested();
-        if (currentPathIdx < currentPathLength)
-        {
-            result.message = "Hint: Boss path node is " + to_string(currentPath[currentPathIdx]) + " (Target: " + to_string(data.targets[currentTargetIdx]) + "). Capacity Left: " + to_string(getCapacityLeft());
-        }
-        else
-        {
-            result.message = "Hint: Current target already reached!";
-        }
-        return result;
-    }
+	if (action.type == CLICK_HINT)
+	{
+		result.accepted = true;
 
-    if (action.type == CLICK_NODE)
-    {
-        result.accepted = true;
+		if (state.hintUsed)
+		{
+			result.correct = false;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 50;
+			onMistake(1, 50);
 
-        if (currentPathIdx < currentPathLength && action.nodeA == currentPath[currentPathIdx])
-        {
-            result.correct = true;
-            result.alarmDelta = 1;
-            result.penaltyPoints = 0;
+			if (state.isFull())
+			{
+				state.finished = true;
+				state.won = false;
+				result.message = "Hint already used. ALARM CAP REACHED!";
+			}
+			else
+			{
+				result.message = "Hint already used.";
+			}
+			return result;
+		}
 
-            onValidStep();
-            currentPathIdx++;
+		result.correct = true;
+		onHintRequested();
 
-            if (currentPathIdx >= currentPathLength)
-            {
-                currentTargetIdx++;
-                if (currentTargetIdx >= data.totalTargets)
-                {
-                    state.finished = true;
-                    state.won = true;
-                    result.message = "Boss Defeated! The Lazy Architect's corridor breached.";
-                }
-                else
-                {
-                    computeCurrentPath();
-                    result.message = "Target secured! Next corridor target: " + to_string(data.targets[currentTargetIdx]) + " (Capacity left: " + to_string(getCapacityLeft()) + ")";
-                }
-            }
-            else
-            {
-                result.message = "Correct corridor step! Capacity left: " + to_string(getCapacityLeft());
-            }
-        }
-        else
-        {
-            result.correct = false;
-            result.alarmDelta = 2;
-            result.penaltyPoints = 50;
-            onMistake(2, 50);
+		if (currentPathIdx < currentPathLength)
+		{
+			result.message = "Hint: Next corridor node is " + to_string(currentPath[currentPathIdx]);
+		}
+		else
+		{
+			result.message = "Hint: Current target reached!";
+		}
+		return result;
+	}
 
-            if (state.isFull())
-            {
-                state.finished = true;
-                state.won = false;
-                result.message = "ALARM CAP REACHED! Architect locked down the corridor.";
-            }
-            else
-            {
-                result.message = "Wrong corridor node! Alarm Increased (+2). Capacity left: " + to_string(getCapacityLeft());
-            }
-        }
-        return result;
-    }
+	if (action.type == CLICK_NODE)
+	{
+		result.accepted = true;
 
-    result.accepted = false;
-    result.message = "Unsupported action type! Expected CLICK_NODE (0).";
-    return result;
+		if (currentPathIdx < currentPathLength && action.nodeA == currentPath[currentPathIdx])
+		{
+			result.correct = true;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 0;
+
+			onValidStep();
+			currentPathIdx++;
+
+			if (currentPathIdx >= currentPathLength)
+			{
+				currentTargetIdx++;
+
+				if (currentTargetIdx >= loader.data.totalTargets)
+				{
+					state.finished = true;
+					state.won = true;
+					result.message = "Boss Defeated! The Lazy Architect's corridor breached.";
+				}
+				else
+				{
+					computeCurrentPath();
+					result.message = "Target secured! Next corridor target: " + to_string(loader.data.targets[currentTargetIdx]);
+				}
+			}
+			else
+			{
+				result.message = "Correct corridor step! Capacity left: " + to_string(getCapacityLeft());
+			}
+		}
+		else
+		{
+			result.correct = false;
+			result.alarmDelta = 2;
+			result.penaltyPoints = 50;
+
+			onMistake(2, 50);
+
+			if (state.isFull())
+			{
+				state.finished = true;
+				state.won = false;
+				result.message = "ALARM CAP REACHED! Architect locked down the corridor.";
+			}
+			else
+			{
+				result.message = "Wrong corridor node! Alarm Increased (+2).";
+			}
+		}
+		return result;
+	}
+
+	result.accepted = false;
+	result.message = "Unsupported action type! Expected CLICK_NODE (0).";
+	return result;
 }
 
-int Act2Level5::getCurrentTarget() const
+int Act2Level5::getCurrentTarget()
 {
-    if (currentTargetIdx < data.totalTargets)
-    {
-        return data.targets[currentTargetIdx];
-    }
-    return -1;
+	if (currentTargetIdx < loader.data.totalTargets)
+	{
+		return loader.data.targets[currentTargetIdx];
+	}
+	return -1;
 }
 
-int Act2Level5::getCurrentPathIndex() const
+int Act2Level5::getCurrentPathIndex()
 {
-    return currentPathIdx;
+	return currentPathIdx;
 }
 
-int Act2Level5::getCurrentPathLength() const
+int Act2Level5::getCurrentPathLength()
 {
-    return currentPathLength;
+	return currentPathLength;
 }
 
 int Act2Level5::getHeight()
 {
-    return bst.height();
+	return bst.height();
 }
 
-int Act2Level5::getCapacityLeft() const
+int Act2Level5::getCapacityLeft()
 {
-    return state.remaining();
+	return state.remaining();
 }
 
-int Act2Level5::getCompletedTargets() const
+int Act2Level5::getCompletedTargets()
 {
-    return currentTargetIdx;
+	return currentTargetIdx;
 }
 
-int Act2Level5::getTotalTargets() const
+int Act2Level5::getTotalTargets()
 {
-    return data.totalTargets;
+	return loader.data.totalTargets;
 }
 
-TreeNode* Act2Level5::getTreeRoot() const
+TreeNode* Act2Level5::getTreeRoot()
 {
-    return bst.getRoot();
+	return bst.getRoot();
 }

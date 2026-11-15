@@ -1,214 +1,252 @@
 #include "Act2Level1.h"
 
-Level2_1Data::Level2_1Data()
+bool Level2_1DataLoader::loadJSON(const string& filePath)
 {
-    levelId = 21;
-    levelName = "Search Heist";
-    target = 0;
-    totalKeys = 0;
-    keys = nullptr;
-}
+	ifstream file(filePath);
+	if (!file.is_open())
+	{
+		string fallback = "VaultHeist/" + filePath;
+		file.open(fallback);
+		if (!file.is_open())
+		{
+			return false;
+		}
+	}
 
-Level2_1Data::~Level2_1Data()
-{
-    if (keys != nullptr)
-    {
-        delete[] keys;
-        keys = nullptr;
-    }
-}
+	json j;
+	file >> j;
+	file.close();
 
-bool Level2_1Data::loadJSON(const string& filePath)
-{
-    ifstream file(filePath);
-    if (!file.is_open())
-    {
-        return false;
-    }
+	if (j["levelId"].is_string())
+	{
+		data.levelId = 21;
+	}
+	else
+	{
+		data.levelId = j["levelId"];
+	}
 
-    json j;
-    file >> j;
-    file.close();
+	data.levelName = j["levelName"];
+	data.target = j["target"];
+	data.optimalSteps = j["optimalSteps"];
 
-    if (j.contains("levelName"))
-    {
-        levelName = j["levelName"].get<string>();
-    }
-    target = j["target"].get<int>();
+	auto keysArr = j["keys"];
+	data.totalKeys = (int)keysArr.size();
 
-    auto keysJson = j["keys"];
-    totalKeys = (int)keysJson.size();
-    if (keys != nullptr)
-    {
-        delete[] keys;
-    }
-    keys = new int[totalKeys];
-    for (int i = 0; i < totalKeys; i++)
-    {
-        keys[i] = keysJson[i].get<int>();
-    }
-    return true;
+	if (data.keys != NULL)
+	{
+		delete[] data.keys;
+		data.keys = NULL;
+	}
+
+	data.keys = new int[data.totalKeys];
+	for (int i = 0; i < data.totalKeys; i++)
+	{
+		data.keys[i] = keysArr[i];
+	}
+
+	return true;
 }
 
 Act2Level1::Act2Level1() : ILevelLogic(0)
 {
-    expectedPath = nullptr;
-    pathLength = 0;
-    currentIndex = 0;
+	expectedPath = NULL;
+	pathLength = 0;
+	currentIndex = 0;
 }
 
 Act2Level1::~Act2Level1()
 {
-    if (expectedPath != nullptr)
-    {
-        delete[] expectedPath;
-        expectedPath = nullptr;
-    }
+	if (expectedPath != NULL)
+	{
+		delete[] expectedPath;
+		expectedPath = NULL;
+	}
 }
 
 bool Act2Level1::initLevel(const string& jsonPath)
 {
-    if (!data.loadJSON(jsonPath))
-    {
-        return false;
-    }
+	if (!loader.loadJSON(jsonPath))
+	{
+		return false;
+	}
 
-    bst.clear();
-    for (int i = 0; i < data.totalKeys; i++)
-    {
-        bst.insert(data.keys[i]);
-    }
+	bst.destroyTree();
 
-    if (expectedPath != nullptr)
-    {
-        delete[] expectedPath;
-        expectedPath = nullptr;
-    }
+	for (int i = 0; i < loader.data.totalKeys; i++)
+	{
+		bst.insert(loader.data.keys[i]);
+	}
 
-    expectedPath = bst.getPath(data.target, pathLength);
-    if (expectedPath == nullptr || pathLength == 0)
-    {
-        return false;
-    }
+	if (expectedPath != NULL)
+	{
+		delete[] expectedPath;
+		expectedPath = NULL;
+	}
 
-    // Optimal steps = path length (model computes this)
-    state = LevelState(pathLength);
-    currentIndex = 0;
-    return true;
+	expectedPath = bst.pathTo(loader.data.target);
+	if (expectedPath == NULL)
+	{
+		return false;
+	}
+
+	pathLength = 0;
+	TreeNode* curr = bst.getRoot();
+	while (curr != NULL)
+	{
+		pathLength++;
+		if (curr->val == loader.data.target)
+		{
+			break;
+		}
+		if (loader.data.target < curr->val)
+		{
+			curr = curr->left;
+		}
+		else
+		{
+			curr = curr->right;
+		}
+	}
+
+	state = LevelState(loader.data.optimalSteps);
+	currentIndex = 0;
+
+	return true;
 }
 
 void Act2Level1::onValidStep()
 {
-    state.addStep();
+	state.addStep();
 }
 
 void Act2Level1::onMistake(int extraAlarm, int penaltyPoints)
 {
-    state.addpenalty(extraAlarm, penaltyPoints);
+	state.addpenalty(extraAlarm, penaltyPoints);
 }
 
 void Act2Level1::onHintRequested()
 {
-    state.useHint();
+	state.useHint();
 }
 
 ActionResult Act2Level1::processAction(const PlayerAction& action)
 {
-    ActionResult result;
+	ActionResult result;
 
-    if (isFinished() || state.isFull())
-    {
-        result.accepted = false;
-        result.correct = false;
-        result.message = "Level locked or already finished!";
-        return result;
-    }
+	if (isFinished() || state.isFull())
+	{
+		result.accepted = false;
+		result.correct = false;
+		result.message = "Level locked or already finished!";
+		return result;
+	}
 
-    if (action.type == CLICK_HINT)
-    {
-        result.accepted = true;
-        result.correct = true;
-        onHintRequested();
-        if (currentIndex < pathLength)
-        {
-            result.message = "Hint: Next patrol node in path has value " + to_string(expectedPath[currentIndex]);
-        }
-        else
-        {
-            result.message = "Hint: You have reached the target room!";
-        }
-        return result;
-    }
+	if (action.type == CLICK_HINT)
+	{
+		result.accepted = true;
 
-    if (action.type == CLICK_NODE)
-    {
-        result.accepted = true;
+		if (state.hintUsed)
+		{
+			result.correct = false;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 50;
+			onMistake(1, 50);
 
-        if (currentIndex < pathLength && action.nodeA == expectedPath[currentIndex])
-        {
-            result.correct = true;
-            result.alarmDelta = 1;
-            result.penaltyPoints = 0;
+			if (state.isFull())
+			{
+				state.finished = true;
+				state.won = false;
+				result.message = "Hint already used. ALARM CAP REACHED!";
+			}
+			else
+			{
+				result.message = "Hint already used.";
+			}
+			return result;
+		}
 
-            onValidStep();
-            currentIndex++;
+		result.correct = true;
+		onHintRequested();
 
-            if (currentIndex >= pathLength)
-            {
-                state.finished = true;
-                state.won = true;
-                result.message = "Target Key Found! Search Heist Cleared.";
-            }
-            else
-            {
-                result.message = "Correct patrol path step! Move to next node.";
-            }
-        }
-        else
-        {
-            result.correct = false;
-            result.alarmDelta = 2;
-            result.penaltyPoints = 50;
+		if (currentIndex < pathLength)
+		{
+			result.message = "Hint: Next patrol node is " + to_string(expectedPath[currentIndex]);
+		}
+		else
+		{
+			result.message = "Hint: Target reached!";
+		}
+		return result;
+	}
 
-            onMistake(2, 50);
+	if (action.type == CLICK_NODE)
+	{
+		result.accepted = true;
 
-            if (state.isFull())
-            {
-                state.finished = true;
-                state.won = false;
-                result.message = "ALARM CAP REACHED! Vault Lockdown Initiated.";
-            }
-            else
-            {
-                result.message = "Wrong patrol path node! Alarm Increased (+2).";
-            }
-        }
-    }
-    else
-    {
-        result.accepted = false;
-        result.message = "Unsupported action type!";
-    }
+		if (currentIndex < pathLength && action.nodeA == expectedPath[currentIndex])
+		{
+			result.correct = true;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 0;
 
-    return result;
+			onValidStep();
+			currentIndex++;
+
+			if (currentIndex >= pathLength)
+			{
+				state.finished = true;
+				state.won = true;
+				result.message = "Target Key Found! Search Heist Cleared.";
+			}
+			else
+			{
+				result.message = "Correct patrol step! Move to next node.";
+			}
+		}
+		else
+		{
+			result.correct = false;
+			result.alarmDelta = 2;
+			result.penaltyPoints = 50;
+
+			onMistake(2, 50);
+
+			if (state.isFull())
+			{
+				state.finished = true;
+				state.won = false;
+				result.message = "ALARM CAP REACHED! Vault Lockdown Initiated.";
+			}
+			else
+			{
+				result.message = "Wrong patrol step! Alarm Increased (+2).";
+			}
+		}
+		return result;
+	}
+
+	result.accepted = false;
+	result.message = "Unsupported action type!";
+	return result;
 }
 
-int Act2Level1::getTarget() const
+int Act2Level1::getTarget()
 {
-    return data.target;
+	return loader.data.target;
 }
 
-int Act2Level1::getCurrentIndex() const
+int Act2Level1::getCurrentIndex()
 {
-    return currentIndex;
+	return currentIndex;
 }
 
-int Act2Level1::getPathLength() const
+int Act2Level1::getPathLength()
 {
-    return pathLength;
+	return pathLength;
 }
 
-TreeNode* Act2Level1::getTreeRoot() const
+TreeNode* Act2Level1::getTreeRoot()
 {
-    return bst.getRoot();
+	return bst.getRoot();
 }

@@ -1,263 +1,282 @@
 #include "Act2Level4.h"
 
-Level2_4Data::Level2_4Data()
+bool Level2_4DataLoader::loadJSON(const string& filePath)
 {
-    levelId = 24;
-    levelName = "Range Raid";
-    lo = 0;
-    hi = 0;
-    totalKeys = 0;
-    keys = nullptr;
-}
+	ifstream file(filePath);
+	if (!file.is_open())
+	{
+		string fallback = "VaultHeist/" + filePath;
+		file.open(fallback);
+		if (!file.is_open())
+		{
+			return false;
+		}
+	}
 
-Level2_4Data::~Level2_4Data()
-{
-    if (keys != nullptr)
-    {
-        delete[] keys;
-        keys = nullptr;
-    }
-}
+	json j;
+	file >> j;
+	file.close();
 
-bool Level2_4Data::loadJSON(const string& filePath)
-{
-    ifstream file(filePath);
-    if (!file.is_open())
-    {
-        return false;
-    }
+	if (j["levelId"].is_string())
+	{
+		data.levelId = 24;
+	}
+	else
+	{
+		data.levelId = j["levelId"];
+	}
 
-    json j;
-    file >> j;
-    file.close();
+	data.levelName = j["levelName"];
+	data.optimalSteps = j["optimalSteps"];
+	data.lo = j["lo"];
+	data.hi = j["hi"];
 
-    if (j.contains("levelName"))
-    {
-        levelName = j["levelName"].get<string>();
-    }
-    lo = j["lo"].get<int>();
-    hi = j["hi"].get<int>();
+	auto keysArr = j["keys"];
+	data.totalKeys = (int)keysArr.size();
 
-    auto keysJson = j["keys"];
-    totalKeys = (int)keysJson.size();
-    if (keys != nullptr)
-    {
-        delete[] keys;
-    }
-    keys = new int[totalKeys];
-    for (int i = 0; i < totalKeys; i++)
-    {
-        keys[i] = keysJson[i].get<int>();
-    }
-    return true;
+	if (data.keys != NULL)
+	{
+		delete[] data.keys;
+		data.keys = NULL;
+	}
+
+	data.keys = new int[data.totalKeys];
+	for (int i = 0; i < data.totalKeys; i++)
+	{
+		data.keys[i] = keysArr[i];
+	}
+
+	return true;
 }
 
 Act2Level4::Act2Level4() : ILevelLogic(0)
 {
-    rangeValues = nullptr;
-    collected = nullptr;
-    rangeCount = 0;
-    collectedCount = 0;
+	rangeValues = NULL;
+	collected = NULL;
+	rangeCount = 0;
+	collectedCount = 0;
 }
 
 Act2Level4::~Act2Level4()
 {
-    if (rangeValues != nullptr)
-    {
-        delete[] rangeValues;
-        rangeValues = nullptr;
-    }
-    if (collected != nullptr)
-    {
-        delete[] collected;
-        collected = nullptr;
-    }
+	if (rangeValues != NULL)
+	{
+		delete[] rangeValues;
+		rangeValues = NULL;
+	}
+	if (collected != NULL)
+	{
+		delete[] collected;
+		collected = NULL;
+	}
 }
 
-int Act2Level4::findValueIndex(int val) const
+int Act2Level4::findValueIndex(int val)
 {
-    for (int i = 0; i < rangeCount; i++)
-    {
-        if (rangeValues[i] == val)
-        {
-            return i;
-        }
-    }
-    return -1;
+	for (int i = 0; i < rangeCount; i++)
+	{
+		if (rangeValues[i] == val)
+		{
+			return i;
+		}
+	}
+	return -1;
 }
 
 bool Act2Level4::initLevel(const string& jsonPath)
 {
-    if (!data.loadJSON(jsonPath))
-    {
-        return false;
-    }
+	if (!loader.loadJSON(jsonPath))
+	{
+		return false;
+	}
 
-    bst.clear();
-    for (int i = 0; i < data.totalKeys; i++)
-    {
-        bst.insert(data.keys[i]);
-    }
+	bst.destroyTree();
 
-    if (rangeValues != nullptr)
-    {
-        delete[] rangeValues;
-        rangeValues = nullptr;
-    }
-    if (collected != nullptr)
-    {
-        delete[] collected;
-        collected = nullptr;
-    }
+	for (int i = 0; i < loader.data.totalKeys; i++)
+	{
+		bst.insert(loader.data.keys[i]);
+	}
 
-    rangeValues = bst.rangeToArray(data.lo, data.hi, rangeCount);
-    if (rangeCount > 0)
-    {
-        collected = new bool[rangeCount];
-        for (int i = 0; i < rangeCount; i++)
-        {
-            collected[i] = false;
-        }
-    }
+	if (rangeValues != NULL)
+	{
+		delete[] rangeValues;
+		rangeValues = NULL;
+	}
+	if (collected != NULL)
+	{
+		delete[] collected;
+		collected = NULL;
+	}
 
-    // Optimal steps = count of values in range
-    state = LevelState(rangeCount);
-    collectedCount = 0;
-    return true;
+	rangeValues = bst.rangeToArray(loader.data.lo, loader.data.hi, rangeCount);
+	if (rangeCount > 0)
+	{
+		collected = new bool[rangeCount];
+		for (int i = 0; i < rangeCount; i++)
+		{
+			collected[i] = false;
+		}
+	}
+
+	state = LevelState(loader.data.optimalSteps);
+	collectedCount = 0;
+
+	return true;
 }
 
 void Act2Level4::onValidStep()
 {
-    state.addStep();
+	state.addStep();
 }
 
 void Act2Level4::onMistake(int extraAlarm, int penaltyPoints)
 {
-    state.addpenalty(extraAlarm, penaltyPoints);
+	state.addpenalty(extraAlarm, penaltyPoints);
 }
 
 void Act2Level4::onHintRequested()
 {
-    state.useHint();
+	state.useHint();
 }
 
 ActionResult Act2Level4::processAction(const PlayerAction& action)
 {
-    ActionResult result;
+	ActionResult result;
 
-    if (isFinished() || state.isFull())
-    {
-        result.accepted = false;
-        result.correct = false;
-        result.message = "Level locked or already finished!";
-        return result;
-    }
+	if (isFinished() || state.isFull())
+	{
+		result.accepted = false;
+		result.correct = false;
+		result.message = "Level locked or already finished!";
+		return result;
+	}
 
-    if (action.type == CLICK_HINT)
-    {
-        result.accepted = true;
-        result.correct = true;
-        onHintRequested();
-        int remainingToFind = rangeCount - collectedCount;
-        for (int i = 0; i < rangeCount; i++)
-        {
-            if (!collected[i])
-            {
-                result.message = "Hint: Node " + to_string(rangeValues[i]) + " is within [" + to_string(data.lo) + ", " + to_string(data.hi) + "]. (" + to_string(remainingToFind) + " remaining)";
-                return result;
-            }
-        }
-        result.message = "Hint: All range nodes already collected!";
-        return result;
-    }
+	if (action.type == CLICK_HINT)
+	{
+		result.accepted = true;
 
-    if (action.type == CLICK_NODE)
-    {
-        result.accepted = true;
-        int idx = findValueIndex(action.nodeA);
+		if (state.hintUsed)
+		{
+			result.correct = false;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 50;
+			onMistake(1, 50);
 
-        if (idx != -1)
-        {
-            // Value is within range array
-            if (!collected[idx])
-            {
-                // First time collecting this value -> valid step
-                collected[idx] = true;
-                collectedCount++;
+			if (state.isFull())
+			{
+				state.finished = true;
+				state.won = false;
+				result.message = "Hint already used. ALARM CAP REACHED!";
+			}
+			else
+			{
+				result.message = "Hint already used.";
+			}
+			return result;
+		}
 
-                result.correct = true;
-                result.alarmDelta = 1;
-                result.penaltyPoints = 0;
-                onValidStep();
+		result.correct = true;
+		onHintRequested();
 
-                if (collectedCount >= rangeCount)
-                {
-                    state.finished = true;
-                    state.won = true;
-                    result.message = "Range Raid Complete! All loot in range secured.";
-                }
-                else
-                {
-                    result.message = "Secured " + to_string(action.nodeA) + "! (" + to_string(collectedCount) + "/" + to_string(rangeCount) + " collected)";
-                }
-            }
-            else
-            {
-                // Already collected -> reject with message, NO penalty
-                result.correct = false;
-                result.alarmDelta = 0;
-                result.penaltyPoints = 0;
-                result.message = "Node " + to_string(action.nodeA) + " already collected! Click another uncollected node.";
-            }
-        }
-        else
-        {
-            // Not in range array -> mistake (alarm + penalty)
-            result.correct = false;
-            result.alarmDelta = 2;
-            result.penaltyPoints = 50;
-            onMistake(2, 50);
+		int remainingToFind = rangeCount - collectedCount;
+		for (int i = 0; i < rangeCount; i++)
+		{
+			if (!collected[i])
+			{
+				result.message = "Hint: Node " + to_string(rangeValues[i]) + " is within range (" + to_string(remainingToFind) + " left).";
+				return result;
+			}
+		}
 
-            if (state.isFull())
-            {
-                state.finished = true;
-                state.won = false;
-                result.message = "ALARM CAP REACHED! Vault Lockdown Initiated.";
-            }
-            else
-            {
-                result.message = "Node " + to_string(action.nodeA) + " is outside range [" + to_string(data.lo) + ", " + to_string(data.hi) + "]! Alarm Increased (+2).";
-            }
-        }
-        return result;
-    }
+		result.message = "Hint: All range nodes already collected!";
+		return result;
+	}
 
-    result.accepted = false;
-    result.message = "Unsupported action type! Expected CLICK_NODE (0).";
-    return result;
+	if (action.type == CLICK_NODE)
+	{
+		result.accepted = true;
+		int idx = findValueIndex(action.nodeA);
+
+		if (idx != -1)
+		{
+			if (!collected[idx])
+			{
+				collected[idx] = true;
+				collectedCount++;
+
+				result.correct = true;
+				result.alarmDelta = 1;
+				result.penaltyPoints = 0;
+
+				onValidStep();
+
+				if (collectedCount >= rangeCount)
+				{
+					state.finished = true;
+					state.won = true;
+					result.message = "Range Raid Complete! All loot in range secured.";
+				}
+				else
+				{
+					result.message = "Secured " + to_string(action.nodeA) + "! (" + to_string(collectedCount) + "/" + to_string(rangeCount) + " collected)";
+				}
+			}
+			else
+			{
+				result.correct = false;
+				result.alarmDelta = 0;
+				result.penaltyPoints = 0;
+				result.message = "Node " + to_string(action.nodeA) + " already collected!";
+			}
+		}
+		else
+		{
+			result.correct = false;
+			result.alarmDelta = 2;
+			result.penaltyPoints = 50;
+
+			onMistake(2, 50);
+
+			if (state.isFull())
+			{
+				state.finished = true;
+				state.won = false;
+				result.message = "ALARM CAP REACHED! Vault Lockdown Initiated.";
+			}
+			else
+			{
+				result.message = "Node " + to_string(action.nodeA) + " is outside range [" + to_string(loader.data.lo) + ", " + to_string(loader.data.hi) + "]! Alarm Increased (+2).";
+			}
+		}
+		return result;
+	}
+
+	result.accepted = false;
+	result.message = "Unsupported action type! Expected CLICK_NODE (0).";
+	return result;
 }
 
-int Act2Level4::getLo() const
+int Act2Level4::getLo()
 {
-    return data.lo;
+	return loader.data.lo;
 }
 
-int Act2Level4::getHi() const
+int Act2Level4::getHi()
 {
-    return data.hi;
+	return loader.data.hi;
 }
 
-int Act2Level4::getCollectedCount() const
+int Act2Level4::getCollectedCount()
 {
-    return collectedCount;
+	return collectedCount;
 }
 
-int Act2Level4::getTotalToCollect() const
+int Act2Level4::getTotalToCollect()
 {
-    return rangeCount;
+	return rangeCount;
 }
 
-TreeNode* Act2Level4::getTree() const
+TreeNode* Act2Level4::getTree()
 {
-    return bst.getRoot();
+	return bst.getRoot();
 }

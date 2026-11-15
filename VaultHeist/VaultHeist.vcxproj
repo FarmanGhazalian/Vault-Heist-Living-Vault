@@ -178,6 +178,12 @@
     <ClCompile Include="Act2Level3.cpp" />
     <ClCompile Include="Act2Level4.cpp" />
     <ClCompile Include="Act2Level5.cpp" />
+    <ClCompile Include="Act3Level1.cpp" />
+    <ClCompile Include="Act3Level2.cpp" />
+    <ClCompile Include="Act3Level3.cpp" />
+    <ClCompile Include="Act3Level4.cpp" />
+    <ClCompile Include="Act3Level5.cpp" />
+    <ClCompile Include="AVL.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -186,6 +192,12 @@
     <ClInclude Include="Act2Level3.h" />
     <ClInclude Include="Act2Level4.h" />
     <ClInclude Include="Act2Level5.h" />
+    <ClInclude Include="AVL.h" />
+    <ClInclude Include="Act3Level1.h" />
+    <ClInclude Include="Act3Level2.h" />
+    <ClInclude Include="Act3Level3.h" />
+    <ClInclude Include="Act3Level4.h" />
+    <ClInclude Include="Act3Level5.h" />
     <ClInclude Include="Act1level1.h" />
     <ClInclude Include="Act1Level2.h" />
     <ClInclude Include="Act1Level3.h" />
@@ -218,6 +230,11 @@
     <None Include="Act1Level3.json" />
     <None Include="Act1Level4.json" />
     <None Include="Act1Level5.json" />
+    <None Include="Act3Level1.json" />
+    <None Include="Act3Level2.json" />
+    <None Include="Act3Level3.json" />
+    <None Include="Act3Level4.json" />
+    <None Include="Act3Level5.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

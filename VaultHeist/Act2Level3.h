@@ -6,56 +6,82 @@
 #include "ILevelLogic.h"
 #include "PlayerAction.h"
 #include "BST.h"
-#include "ScoreSystem.h"
 
-using json = nlohmann::json;
 using namespace std;
+using json = nlohmann::json;
 
-struct Level2_3Data
+struct L2_3_data
 {
-    int levelId = 23;
-    string levelName = "Steal and Collapse";
-    int totalInitialKeys = 0;
-    int* initialKeys = nullptr;
-    int totalDeleteKeys = 0;
-    int* deleteKeys = nullptr;
+	int levelId;
+	string levelName;
+	int optimalSteps;
+	int totalInitialKeys;
+	int* initialKeys;
+	int totalDeleteKeys;
+	int* deleteKeys;
 
-    Level2_3Data();
-    ~Level2_3Data();
-    bool loadJSON(const string& filePath);
+	L2_3_data()
+	{
+		levelId = 0;
+		levelName = "";
+		optimalSteps = 0;
+		totalInitialKeys = 0;
+		initialKeys = NULL;
+		totalDeleteKeys = 0;
+		deleteKeys = NULL;
+	}
+
+	~L2_3_data()
+	{
+		if (initialKeys != NULL)
+		{
+			delete[] initialKeys;
+			initialKeys = NULL;
+		}
+		if (deleteKeys != NULL)
+		{
+			delete[] deleteKeys;
+			deleteKeys = NULL;
+		}
+	}
+};
+
+class Level2_3DataLoader
+{
+public:
+	L2_3_data data;
+
+	bool loadJSON(const string& filePath);
 };
 
 class Act2Level3 : public ILevelLogic
 {
 private:
-    BST bst;
-    Level2_3Data data;
+	BST bst;
+	Level2_3DataLoader loader;
 
-    int currentTargetIdx = 0;
-
-    // Last deletion info for GUI animation
-    int lastDeletedKey = -1;
-    int lastDeleteCase = -1;
-    int lastSuccessorKey = -1;
+	int currentTargetIdx;
+	int lastDeletedKey;
+	int lastDeleteCase;
+	int lastSuccessorKey;
 
 public:
-    Act2Level3();
-    ~Act2Level3();
+	Act2Level3();
+	~Act2Level3();
 
-    bool initLevel(const string& jsonPath);
+	bool initLevel(const string& jsonPath);
 
-    void onValidStep() override;
-    void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
-    void onHintRequested() override;
+	void onValidStep() override;
+	void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
+	void onHintRequested() override;
 
-    ActionResult processAction(const PlayerAction& action) override;
+	ActionResult processAction(const PlayerAction& action) override;
 
-    // Getters for GUI
-    int getCurrentTarget() const;
-    int getCompletedDeletions() const;
-    int getTotalDeletions() const;
-    int getLastDeletedKey() const;
-    int getLastDeleteCase() const;
-    int getLastSuccessorKey() const;
-    TreeNode* getTreeRoot() const;
+	int getCurrentTarget();
+	int getCompletedDeletions();
+	int getTotalDeletions();
+	int getLastDeletedKey();
+	int getLastDeleteCase();
+	int getLastSuccessorKey();
+	TreeNode* getTreeRoot();
 };

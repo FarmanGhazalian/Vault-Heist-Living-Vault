@@ -6,54 +6,77 @@
 #include "ILevelLogic.h"
 #include "PlayerAction.h"
 #include "BST.h"
-#include "ScoreSystem.h"
 
-using json = nlohmann::json;
 using namespace std;
+using json = nlohmann::json;
 
-struct Level2_4Data
+struct L2_4_data
 {
-    int levelId = 24;
-    string levelName = "Range Raid";
-    int lo = 0;
-    int hi = 0;
-    int totalKeys = 0;
-    int* keys = nullptr;
+	int levelId;
+	string levelName;
+	int optimalSteps;
+	int lo;
+	int hi;
+	int totalKeys;
+	int* keys;
 
-    Level2_4Data();
-    ~Level2_4Data();
-    bool loadJSON(const string& filePath);
+	L2_4_data()
+	{
+		levelId = 0;
+		levelName = "";
+		optimalSteps = 0;
+		lo = 0;
+		hi = 0;
+		totalKeys = 0;
+		keys = NULL;
+	}
+
+	~L2_4_data()
+	{
+		if (keys != NULL)
+		{
+			delete[] keys;
+			keys = NULL;
+		}
+	}
+};
+
+class Level2_4DataLoader
+{
+public:
+	L2_4_data data;
+
+	bool loadJSON(const string& filePath);
 };
 
 class Act2Level4 : public ILevelLogic
 {
 private:
-    BST bst;
-    Level2_4Data data;
+	BST bst;
+	Level2_4DataLoader loader;
 
-    int* rangeValues = nullptr;
-    bool* collected = nullptr;
-    int rangeCount = 0;
-    int collectedCount = 0;
+	int* rangeValues;
+	bool* collected;
+	int rangeCount;
+	int collectedCount;
 
-    int findValueIndex(int val) const;
+	int findValueIndex(int val);
 
 public:
-    Act2Level4();
-    ~Act2Level4();
+	Act2Level4();
+	~Act2Level4();
 
-    bool initLevel(const string& jsonPath);
+	bool initLevel(const string& jsonPath);
 
-    void onValidStep() override;
-    void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
-    void onHintRequested() override;
+	void onValidStep() override;
+	void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
+	void onHintRequested() override;
 
-    ActionResult processAction(const PlayerAction& action) override;
+	ActionResult processAction(const PlayerAction& action) override;
 
-    // Getters for GUI
-    int getLo() const;
-    int getHi() const;
-    int getCollectedCount() const;
-    int getTotalToCollect() const;
-    TreeNode* getTree() const;
+	int getLo();
+	int getHi();
+	int getCollectedCount();
+	int getTotalToCollect();
+	TreeNode* getTree();
 };

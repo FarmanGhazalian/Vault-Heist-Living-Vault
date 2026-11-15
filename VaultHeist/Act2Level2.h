@@ -6,55 +6,83 @@
 #include "ILevelLogic.h"
 #include "PlayerAction.h"
 #include "BST.h"
-#include "ScoreSystem.h"
 
-using json = nlohmann::json;
 using namespace std;
+using json = nlohmann::json;
 
-struct Level2_2Data
+struct L2_2_data
 {
-    int levelId = 22;
-    string levelName = "Stash Loot";
-    int totalInitialKeys = 0;
-    int* initialKeys = nullptr;
-    int totalInsertKeys = 0;
-    int* insertKeys = nullptr;
+	int levelId;
+	string levelName;
+	int optimalSteps;
+	int totalInitialKeys;
+	int* initialKeys;
+	int totalInsertKeys;
+	int* insertKeys;
 
-    Level2_2Data();
-    ~Level2_2Data();
-    bool loadJSON(const string& filePath);
+	L2_2_data()
+	{
+		levelId = 0;
+		levelName = "";
+		optimalSteps = 0;
+		totalInitialKeys = 0;
+		initialKeys = NULL;
+		totalInsertKeys = 0;
+		insertKeys = NULL;
+	}
+
+	~L2_2_data()
+	{
+		if (initialKeys != NULL)
+		{
+			delete[] initialKeys;
+			initialKeys = NULL;
+		}
+		if (insertKeys != NULL)
+		{
+			delete[] insertKeys;
+			insertKeys = NULL;
+		}
+	}
+};
+
+class Level2_2DataLoader
+{
+public:
+	L2_2_data data;
+
+	bool loadJSON(const string& filePath);
 };
 
 class Act2Level2 : public ILevelLogic
 {
 private:
-    BST bst;
-    Level2_2Data data;
+	BST bst;
+	Level2_2DataLoader loader;
 
-    int currentKeyIdx = 0;
-    int* currentPath = nullptr;
-    int currentPathLength = 0;
-    int currentPathIdx = 0;
+	int currentKeyIdx;
+	int* currentPath;
+	int currentPathLength;
+	int currentPathIdx;
 
-    void computeCurrentPath();
+	void computeCurrentPath();
 
 public:
-    Act2Level2();
-    ~Act2Level2();
+	Act2Level2();
+	~Act2Level2();
 
-    bool initLevel(const string& jsonPath);
+	bool initLevel(const string& jsonPath);
 
-    void onValidStep() override;
-    void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
-    void onHintRequested() override;
+	void onValidStep() override;
+	void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
+	void onHintRequested() override;
 
-    ActionResult processAction(const PlayerAction& action) override;
+	ActionResult processAction(const PlayerAction& action) override;
 
-    // Getters for GUI
-    int getCurrentKey() const;
-    int getCurrentPathIndex() const;
-    int getCurrentPathLength() const;
-    int getCompletedInsertions() const;
-    int getTotalInsertions() const;
-    TreeNode* getTreeRoot() const;
+	int getCurrentKey();
+	int getCurrentPathIndex();
+	int getCurrentPathLength();
+	int getCompletedInsertions();
+	int getTotalInsertions();
+	TreeNode* getTreeRoot();
 };
