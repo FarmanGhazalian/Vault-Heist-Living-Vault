@@ -29,7 +29,7 @@ bool Level3_2DataLoader::loadJSON(const string& filePath)
 	data.levelName    = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto keysArr   = j["keys"];
+	const json& keysArr = j["keys"];
 	data.totalKeys = (int)keysArr.size();
 
 	if (data.keys != NULL)
@@ -80,7 +80,8 @@ bool Act3Level2::initLevel(const string& jsonPath)
 	storedProblem     = avl.getProblem(unbalanced);
 	phase             = 1;
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = 2; // 1 step select unbalanced node + 1 step choose rotation case
+	state = LevelState(dynSteps);
 
 	return true;
 }
@@ -169,9 +170,9 @@ ActionResult Act3Level2::processAction(const PlayerAction& action)
 			else
 			{
 				result.correct       = false;
-				result.alarmDelta    = 2;
-				result.penaltyPoints = 50;
-				onMistake(2, 50);
+				result.alarmDelta    = 1;
+				result.penaltyPoints = 0;
+				onMistake(1, 0);
 
 				if (state.isFull())
 				{

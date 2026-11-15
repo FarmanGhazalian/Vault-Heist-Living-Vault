@@ -17,6 +17,13 @@ int AVL::getHeight(TreeNode* node)
 	return height(node);
 }
 
+int AVL::getSize(TreeNode* node)
+{
+	if (node == NULL)
+		return 0;
+	return node->size;
+}
+
 void AVL::updateHeights(TreeNode* node)
 {
 	if (node == NULL)
@@ -51,6 +58,10 @@ TreeNode* AVL::rightRotate(TreeNode* z)
 	z->height = max(height(z->left), height(z->right)) + 1;
 	y->height = max(height(y->left), height(y->right)) + 1;
 
+	// Update sizes
+	z->size = getSize(z->left) + getSize(z->right) + 1;
+	y->size = getSize(y->left) + getSize(y->right) + 1;
+
 	// Return new root
 	return y;
 }
@@ -67,6 +78,10 @@ TreeNode* AVL::leftRotate(TreeNode* z)
 	// Update heights
 	z->height = max(height(z->left), height(z->right)) + 1;
 	y->height = max(height(y->left), height(y->right)) + 1;
+
+	// Update sizes
+	z->size = getSize(z->left) + getSize(z->right) + 1;
+	y->size = getSize(y->left) + getSize(y->right) + 1;
 
 	// Return new root
 	return y;
@@ -218,4 +233,37 @@ TreeNode* AVL::findKth(int k)
 	}
 
 	return NULL;
+}
+
+TreeNode* AVL::applyRotationHelper(TreeNode* current, int pivotValue, int direction)
+{
+	if (current == NULL)
+		return NULL;
+
+	if (current->val == pivotValue)
+	{
+		if (direction == 1)
+			return rightRotate(current);
+		else if (direction == 0)
+			return leftRotate(current);
+		return current;
+	}
+
+	if (pivotValue < current->val)
+	{
+		current->left = applyRotationHelper(current->left, pivotValue, direction);
+	}
+	else
+	{
+		current->right = applyRotationHelper(current->right, pivotValue, direction);
+	}
+
+	current->height = max(height(current->left), height(current->right)) + 1;
+	current->size = getSize(current->left) + getSize(current->right) + 1;
+	return current;
+}
+
+void AVL::applyRotation(int pivotValue, int direction)
+{
+	getRoot() = applyRotationHelper(getRoot(), pivotValue, direction);
 }

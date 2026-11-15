@@ -29,7 +29,7 @@ bool Level2_2DataLoader::loadJSON(const string& filePath)
 	data.levelName = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto initArr = j["initialKeys"];
+	const json& initArr = j["initialKeys"];
 	data.totalInitialKeys = (int)initArr.size();
 
 	if (data.initialKeys != NULL)
@@ -44,7 +44,7 @@ bool Level2_2DataLoader::loadJSON(const string& filePath)
 		data.initialKeys[i] = initArr[i];
 	}
 
-	auto insArr = j["insertKeys"];
+	const json& insArr = j["insertKeys"];
 	data.totalInsertKeys = (int)insArr.size();
 
 	if (data.insertKeys != NULL)
@@ -111,7 +111,28 @@ bool Act2Level2::initLevel(const string& jsonPath)
 		bst.insert(loader.data.initialKeys[i]);
 	}
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = 0;
+	BST tempBst;
+	for (int i = 0; i < loader.data.totalInitialKeys; i++)
+	{
+		tempBst.insert(loader.data.initialKeys[i]);
+	}
+	for (int i = 0; i < loader.data.totalInsertKeys; i++)
+	{
+		int pLen = 0;
+		int* p = tempBst.getInsertPath(loader.data.insertKeys[i], pLen);
+		dynSteps += pLen + 1;
+		if (p != NULL)
+		{
+			delete[] p;
+		}
+		tempBst.insert(loader.data.insertKeys[i]);
+	}
+	if (dynSteps <= 0)
+	{
+		dynSteps = loader.data.optimalSteps;
+	}
+	state = LevelState(dynSteps);
 	currentKeyIdx = 0;
 	computeCurrentPath();
 
@@ -221,10 +242,10 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 			else
 			{
 				result.correct = false;
-				result.alarmDelta = 2;
-				result.penaltyPoints = 50;
+				result.alarmDelta = 1;
+				result.penaltyPoints = 0;
 
-				onMistake(2, 50);
+				onMistake(1, 0);
 
 				if (state.isFull())
 				{
@@ -294,10 +315,10 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 		else
 		{
 			result.correct = false;
-			result.alarmDelta = 2;
-			result.penaltyPoints = 50;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 0;
 
-			onMistake(2, 50);
+			onMistake(1, 0);
 
 			if (state.isFull())
 			{

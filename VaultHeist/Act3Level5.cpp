@@ -30,7 +30,7 @@ bool Level3_5DataLoader::loadJSON(const string& filePath)
 	data.optimalSteps = j["optimalSteps"];
 	data.k            = j["k"];
 
-	auto keysArr   = j["keys"];
+	const json& keysArr = j["keys"];
 	data.totalKeys = (int)keysArr.size();
 
 	if (data.keys != NULL)
@@ -121,7 +121,8 @@ bool Act3Level5::initLevel(const string& jsonPath)
 		}
 	}
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = (pathLength > 0) ? pathLength : loader.data.optimalSteps;
+	state = LevelState(dynSteps);
 	currentIndex = 0;
 
 	return true;
@@ -219,9 +220,9 @@ ActionResult Act3Level5::processAction(const PlayerAction& action)
 		else
 		{
 			result.correct       = false;
-			result.alarmDelta    = 2;
-			result.penaltyPoints = 50;
-			onMistake(2, 50);
+			result.alarmDelta    = 1;
+			result.penaltyPoints = 0;
+			onMistake(1, 0);
 
 			if (state.isFull())
 			{

@@ -40,7 +40,8 @@ bool Level1DataLoader::loadJSON(const string& filePath)
     }
 
     int i = 0;
-    for (const auto& item : data["nodes"]) {
+    for (size_t idx = 0; idx < (size_t)totalNodes && idx < data["nodes"].size(); idx++) {
+        const json& item = data["nodes"][idx];
         if (i < totalNodes)
         {
             rawNodes[i].id = item["id"];
@@ -174,10 +175,10 @@ ActionResult Act1Level1::processAction(const PlayerAction& action)
         else
         {
             result.correct = false;
-            result.alarmDelta = 2;
-            result.penaltyPoints = 50;
+            result.alarmDelta = 1;
+            result.penaltyPoints = 0;
 
-            onMistake(2, 50);
+            onMistake(1, 0);
 
             if (state.isFull()) {
                 state.finished = true;

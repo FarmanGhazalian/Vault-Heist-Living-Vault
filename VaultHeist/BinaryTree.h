@@ -28,14 +28,10 @@ private:
 
 public:
 	void MirrorHelper(TreeNode* root);
-	BinaryTree()
-	{
-		root = NULL;
-	}
-	~BinaryTree()
-	{
-		destroyTree();
-	}
+	BinaryTree();
+	BinaryTree(const BinaryTree& other);
+	BinaryTree& operator=(const BinaryTree& other);
+	~BinaryTree();
 
 	TreeNode*& getRoot();
 

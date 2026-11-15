@@ -29,7 +29,7 @@ bool Level4_3DataLoader::loadJSON(const string& filePath)
 	data.levelName    = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto valsArr     = j["values"];
+	const json& valsArr = j["values"];
 	data.totalValues = (int)valsArr.size();
 
 	if (data.values != NULL)
@@ -104,7 +104,12 @@ bool Act4Level3::initLevel(const string& jsonPath)
 	}
 
 	phase = 0; // start in EXTRACT phase
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = heap.countSortSwaps();
+	if (dynSteps <= 0)
+	{
+		dynSteps = loader.data.optimalSteps;
+	}
+	state = LevelState(dynSteps);
 
 	return true;
 }
@@ -221,8 +226,8 @@ ActionResult Act4Level3::processAction(const PlayerAction& action)
 			{
 				result.correct       = false;
 				result.alarmDelta    = 1;
-				result.penaltyPoints = 50;
-				onMistake(1, 50);
+				result.penaltyPoints = 0;
+				onMistake(1, 0);
 
 				if (state.isFull())
 				{
@@ -262,8 +267,8 @@ ActionResult Act4Level3::processAction(const PlayerAction& action)
 			{
 				result.correct       = false;
 				result.alarmDelta    = 1;
-				result.penaltyPoints = 50;
-				onMistake(1, 50);
+				result.penaltyPoints = 0;
+				onMistake(1, 0);
 
 				if (state.isFull())
 				{

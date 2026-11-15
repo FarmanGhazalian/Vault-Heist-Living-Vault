@@ -30,7 +30,7 @@ bool Level4_4DataLoader::loadJSON(const string& filePath)
 	data.optimalSteps = j["optimalSteps"];
 	data.timeLimit    = j["timeLimit"];
 
-	auto valsArr     = j["values"];
+	const json& valsArr = j["values"];
 	data.totalValues = (int)valsArr.size();
 
 	if (data.values != NULL)
@@ -79,7 +79,12 @@ bool Act4Level4::initLevel(const string& jsonPath)
 
 	phase    = 0;
 	timeLeft = (float)loader4.data.timeLimit;
-	state    = LevelState(loader4.data.optimalSteps);
+	int dynSteps = heap.countSortSwaps();
+	if (dynSteps <= 0)
+	{
+		dynSteps = loader4.data.optimalSteps;
+	}
+	state    = LevelState(dynSteps);
 
 	return true;
 }

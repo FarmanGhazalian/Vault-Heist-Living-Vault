@@ -7,6 +7,31 @@ TreeNode*& BinaryTree::getRoot()
 {
 	return root;
 }
+
+BinaryTree::BinaryTree()
+{
+	root = NULL;
+}
+
+BinaryTree::BinaryTree(const BinaryTree& other)
+{
+	root = cloneHelper(other.root);
+}
+
+BinaryTree& BinaryTree::operator=(const BinaryTree& other)
+{
+	if (this != &other)
+	{
+		destroyTree();
+		root = cloneHelper(other.root);
+	}
+	return *this;
+}
+
+BinaryTree::~BinaryTree()
+{
+	destroyTree();
+}
 int BinaryTree::countNodes(TreeNode* root)
 {
 	if (root == NULL)
@@ -500,6 +525,9 @@ TreeNode* BinaryTree::cloneHelper(TreeNode* root)
 		return NULL;
 	}
 	TreeNode* temp = new TreeNode(root->val);
+	temp->NodeId = root->NodeId;
+	temp->height = root->height;
+	temp->size = root->size;
 	temp->left = cloneHelper(root->left);
 	temp->right = cloneHelper(root->right);
 

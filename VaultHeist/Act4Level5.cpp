@@ -13,6 +13,12 @@ bool Act4Level5::initLevel(const string& jsonPath)
 		return false;
 	}
 	building = true;
+	int dynSteps = heap.countBuildSwaps() + heap.countSortSwaps();
+	if (dynSteps <= 0)
+	{
+		dynSteps = loader.data.optimalSteps;
+	}
+	state = LevelState(dynSteps);
 	return true;
 }
 
@@ -120,8 +126,8 @@ ActionResult Act4Level5::processAction(const PlayerAction& action)
 			{
 				result.correct       = false;
 				result.alarmDelta    = 1;
-				result.penaltyPoints = 50;
-				onMistake(1, 50);
+				result.penaltyPoints = 0;
+				onMistake(1, 0);
 
 				if (state.isFull())
 				{

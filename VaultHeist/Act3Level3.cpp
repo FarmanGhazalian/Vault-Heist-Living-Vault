@@ -29,7 +29,7 @@ bool Level3_3DataLoader::loadJSON(const string& filePath)
 	data.levelName    = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto keysArr   = j["keys"];
+	const json& keysArr = j["keys"];
 	data.totalKeys = (int)keysArr.size();
 
 	if (data.keys != NULL)
@@ -118,7 +118,8 @@ bool Act3Level3::initLevel(const string& jsonPath)
 	phase  = 1;
 	rotIdx = 0;
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = 1 + totalRotations; // 1 step choose problem + totalRotations rotation steps
+	state = LevelState(dynSteps);
 
 	return true;
 }
@@ -243,6 +244,7 @@ ActionResult Act3Level3::processAction(const PlayerAction& action)
 				result.correct       = true;
 				result.alarmDelta    = 1;
 				result.penaltyPoints = 0;
+				avl.applyRotation(action.nodeA, action.direction);
 				onValidStep();
 				rotIdx++;
 

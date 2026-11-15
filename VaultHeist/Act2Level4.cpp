@@ -31,7 +31,7 @@ bool Level2_4DataLoader::loadJSON(const string& filePath)
 	data.lo = j["lo"];
 	data.hi = j["hi"];
 
-	auto keysArr = j["keys"];
+	const json& keysArr = j["keys"];
 	data.totalKeys = (int)keysArr.size();
 
 	if (data.keys != NULL)
@@ -118,7 +118,8 @@ bool Act2Level4::initLevel(const string& jsonPath)
 		}
 	}
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = (rangeCount > 0) ? rangeCount : loader.data.optimalSteps;
+	state = LevelState(dynSteps);
 	collectedCount = 0;
 
 	return true;
@@ -232,10 +233,10 @@ ActionResult Act2Level4::processAction(const PlayerAction& action)
 		else
 		{
 			result.correct = false;
-			result.alarmDelta = 2;
-			result.penaltyPoints = 50;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 0;
 
-			onMistake(2, 50);
+			onMistake(1, 0);
 
 			if (state.isFull())
 			{

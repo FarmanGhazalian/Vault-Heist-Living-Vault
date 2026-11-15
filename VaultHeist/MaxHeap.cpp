@@ -265,7 +265,6 @@ bool MaxHeap::isValidSwap(int i, int j) const
 		return false;
 	}
 
-	// Check sibling condition: child c must be >= sibling
 	int left = 2 * p + 1;
 	int right = 2 * p + 2;
 	int sibling = (c == left) ? right : left;
@@ -310,4 +309,98 @@ bool MaxHeap::isSorted() const
 		}
 	}
 	return true;
+}
+
+int MaxHeap::countBuildSwaps() const
+{
+	if (data == NULL || count <= 1)
+	{
+		return 0;
+	}
+
+	MaxHeap copy(*this);
+	int swaps = 0;
+	for (int i = copy.count / 2 - 1; i >= 0; i--)
+	{
+		int curr = i;
+		while (true)
+		{
+			int largest = curr;
+			int left = 2 * curr + 1;
+			int right = 2 * curr + 2;
+
+			if (left < copy.count && copy.data[left] > copy.data[largest])
+			{
+				largest = left;
+			}
+			if (right < copy.count && copy.data[right] > copy.data[largest])
+			{
+				largest = right;
+			}
+
+			if (largest != curr)
+			{
+				copy.swapValues(curr, largest);
+				swaps++;
+				curr = largest;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	return swaps;
+}
+
+int MaxHeap::countSortSwaps() const
+{
+	if (data == NULL || count <= 1)
+	{
+		return 0;
+	}
+
+	MaxHeap copy(*this);
+	if (!copy.isMaxHeap())
+	{
+		copy.buildMaxHeap();
+	}
+
+	int swaps = 0;
+	int sz = copy.count;
+	while (sz > 1)
+	{
+		copy.swapValues(0, sz - 1);
+		swaps++;
+		sz--;
+
+		int curr = 0;
+		while (true)
+		{
+			int largest = curr;
+			int left = 2 * curr + 1;
+			int right = 2 * curr + 2;
+
+			if (left < sz && copy.data[left] > copy.data[largest])
+			{
+				largest = left;
+			}
+			if (right < sz && copy.data[right] > copy.data[largest])
+			{
+				largest = right;
+			}
+
+			if (largest != curr)
+			{
+				copy.swapValues(curr, largest);
+				swaps++;
+				curr = largest;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	return swaps;
 }

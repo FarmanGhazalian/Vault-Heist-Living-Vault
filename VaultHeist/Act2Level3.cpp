@@ -29,7 +29,7 @@ bool Level2_3DataLoader::loadJSON(const string& filePath)
 	data.levelName = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto initArr = j["initialKeys"];
+	const json& initArr = j["initialKeys"];
 	data.totalInitialKeys = (int)initArr.size();
 
 	if (data.initialKeys != NULL)
@@ -44,7 +44,7 @@ bool Level2_3DataLoader::loadJSON(const string& filePath)
 		data.initialKeys[i] = initArr[i];
 	}
 
-	auto delArr = j["deleteKeys"];
+	const json& delArr = j["deleteKeys"];
 	data.totalDeleteKeys = (int)delArr.size();
 
 	if (data.deleteKeys != NULL)
@@ -88,7 +88,8 @@ bool Act2Level3::initLevel(const string& jsonPath)
 		bst.insert(loader.data.initialKeys[i]);
 	}
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = (loader.data.totalDeleteKeys > 0) ? loader.data.totalDeleteKeys : loader.data.optimalSteps;
+	state = LevelState(dynSteps);
 	currentTargetIdx = 0;
 	lastDeletedKey = -1;
 	lastDeleteCase = -1;
@@ -223,10 +224,10 @@ ActionResult Act2Level3::processAction(const PlayerAction& action)
 		else
 		{
 			result.correct = false;
-			result.alarmDelta = 2;
-			result.penaltyPoints = 50;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 0;
 
-			onMistake(2, 50);
+			onMistake(1, 0);
 
 			if (state.isFull())
 			{

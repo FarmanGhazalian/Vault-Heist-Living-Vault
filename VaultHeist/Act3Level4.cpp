@@ -29,7 +29,7 @@ bool Level3_4DataLoader::loadJSON(const string& filePath)
 	data.levelName    = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto baseArr      = j["keys"];
+	const json& baseArr      = j["keys"];
 	data.totalBaseKeys = (int)baseArr.size();
 
 	if (data.baseKeys != NULL)
@@ -44,7 +44,7 @@ bool Level3_4DataLoader::loadJSON(const string& filePath)
 		data.baseKeys[i] = baseArr[i];
 	}
 
-	auto insArr         = j["insertKeys"];
+	const json& insArr         = j["insertKeys"];
 	data.totalInsertKeys = (int)insArr.size();
 
 	if (data.insertKeys != NULL)
@@ -107,7 +107,8 @@ bool Act3Level4::initLevel(const string& jsonPath)
 	currentRound = 0;
 	setupRound();
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = (loader.data.totalInsertKeys > 0) ? loader.data.totalInsertKeys : loader.data.optimalSteps;
+	state = LevelState(dynSteps);
 
 	return true;
 }

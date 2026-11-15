@@ -29,7 +29,7 @@ bool Level2_5DataLoader::loadJSON(const string& filePath)
 	data.levelName = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto keysArr = j["keys"];
+	const json& keysArr = j["keys"];
 	data.totalKeys = (int)keysArr.size();
 
 	if (data.keys != NULL)
@@ -44,7 +44,7 @@ bool Level2_5DataLoader::loadJSON(const string& filePath)
 		data.keys[i] = keysArr[i];
 	}
 
-	auto targetsArr = j["targets"];
+	const json& targetsArr = j["targets"];
 	data.totalTargets = (int)targetsArr.size();
 
 	if (data.targets != NULL)
@@ -133,7 +133,33 @@ bool Act2Level5::initLevel(const string& jsonPath)
 		bst.insert(loader.data.keys[i]);
 	}
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = 0;
+	for (int i = 0; i < loader.data.totalTargets; i++)
+	{
+		int target = loader.data.targets[i];
+		TreeNode* curr = bst.getRoot();
+		while (curr != NULL)
+		{
+			dynSteps++;
+			if (curr->val == target)
+			{
+				break;
+			}
+			if (target < curr->val)
+			{
+				curr = curr->left;
+			}
+			else
+			{
+				curr = curr->right;
+			}
+		}
+	}
+	if (dynSteps <= 0)
+	{
+		dynSteps = loader.data.optimalSteps;
+	}
+	state = LevelState(dynSteps);
 	currentTargetIdx = 0;
 	validStepsSinceLastShrink = 0;
 	computeCurrentPath();
@@ -257,10 +283,10 @@ ActionResult Act2Level5::processAction(const PlayerAction& action)
 		else
 		{
 			result.correct = false;
-			result.alarmDelta = 2;
-			result.penaltyPoints = 50;
+			result.alarmDelta = 1;
+			result.penaltyPoints = 0;
 
-			onMistake(2, 50);
+			onMistake(1, 0);
 
 			if (state.isFull())
 			{

@@ -29,7 +29,7 @@ bool Level3_1DataLoader::loadJSON(const string& filePath)
 	data.levelName    = j["levelName"];
 	data.optimalSteps = j["optimalSteps"];
 
-	auto keysArr   = j["keys"];
+	const json& keysArr = j["keys"];
 	data.totalKeys = (int)keysArr.size();
 
 	if (data.keys != NULL)
@@ -116,7 +116,8 @@ bool Act3Level1::initLevel(const string& jsonPath)
 	}
 	foundCount = 0;
 
-	state = LevelState(loader.data.optimalSteps);
+	int dynSteps = (totalUnbalanced > 0) ? totalUnbalanced : loader.data.optimalSteps;
+	state = LevelState(dynSteps);
 
 	return true;
 }
@@ -207,9 +208,9 @@ ActionResult Act3Level1::processAction(const PlayerAction& action)
 		{
 			// Not an unbalanced node
 			result.correct       = false;
-			result.alarmDelta    = 2;
-			result.penaltyPoints = 50;
-			onMistake(2, 50);
+			result.alarmDelta    = 1;
+			result.penaltyPoints = 0;
+			onMistake(1, 0);
 
 			if (state.isFull())
 			{

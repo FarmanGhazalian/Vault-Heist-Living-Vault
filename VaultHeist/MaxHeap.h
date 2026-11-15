@@ -31,4 +31,7 @@ public:
 	bool isExtractSwap(int i, int j) const;
 	void extractSwap();
 	bool isSorted() const;
+
+	int countBuildSwaps() const;
+	int countSortSwaps() const;
 };
