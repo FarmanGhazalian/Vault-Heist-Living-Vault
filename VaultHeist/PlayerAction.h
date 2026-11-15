@@ -21,6 +21,7 @@ const int AUTO_MIRROR = 9;// Level 1.5: Auto solve
 const int CLICK_HINT = 10;
 const int CHOOSE_CASE = 11; // Level 2.3: Delete case (0 = leaf, 1 = one child, 2 = two children)
 const int ROTATE = 12;      // Level 3.3: Pivot rotation (direction 0 = left, 1 = right)
+const int SWAP_ELEMENTS = 13; // Act 4: Swap elements at index nodeA and nodeB
 
 // -------------------------------------------------------------
 // 1. Player Input Struct (GUI -> Backend)
