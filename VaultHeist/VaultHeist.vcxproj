@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -160,18 +160,14 @@
     <ClCompile Include="DataStructure.cpp" />
     <ClCompile Include="ScoreSystem.cpp" />
     <ClCompile Include="GameEngine.cpp" />
-    <ClCompile Include="IntroScreen.cpp" />
-    <ClCompile Include="MainMenuScreen.cpp" />
-    <ClCompile Include="SelectScreen.cpp" />
-    <ClCompile Include="LevelScreenBase.cpp" />
-    <ClCompile Include="Act1Level1Screen.cpp" />
-    <ClCompile Include="Act1Level2Screen.cpp" />
-    <ClCompile Include="Act1Level3Screen.cpp" />
-    <ClCompile Include="Act1Level4Screen.cpp" />
-    <ClCompile Include="Act1Level5Screen.cpp" />
-    <ClCompile Include="TreeRenderer.cpp" />
+    <ClCompile Include="Theme.cpp" />
     <ClCompile Include="UIKit.cpp" />
-    <ClCompile Include="SoundManager.cpp" />
+    <ClCompile Include="AudioManager.cpp" />
+    <ClCompile Include="PlaceholderScreen.cpp" />
+    <ClCompile Include="LoaderScreen.cpp" />
+    <ClCompile Include="MainMenuScreen.cpp" />
+    <ClCompile Include="CampaignScreen.cpp" />
+    <ClCompile Include="InfoScreen.cpp" />
     <ClCompile Include="BST.cpp" />
     <ClCompile Include="Act2Level1.cpp" />
     <ClCompile Include="Act2Level2.cpp" />
@@ -190,6 +186,15 @@
     <ClCompile Include="Act4Level3.cpp" />
     <ClCompile Include="Act4Level4.cpp" />
     <ClCompile Include="Act4Level5.cpp" />
+    <ClCompile Include="EventLog.cpp" />
+    <ClCompile Include="TreeRenderer.cpp" />
+    <ClCompile Include="LevelScreenBase.cpp" />
+    <ClCompile Include="LevelBridge.cpp" />
+    <ClCompile Include="Act1Level1Screen.cpp" />
+    <ClCompile Include="Act1Level2Screen.cpp" />
+    <ClCompile Include="Act1Level3Screen.cpp" />
+    <ClCompile Include="Act1Level4Screen.cpp" />
+    <ClCompile Include="Act1Level5Screen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -223,18 +228,23 @@
     <ClInclude Include="TreeNode.h" />
     <ClInclude Include="Screen.h" />
     <ClInclude Include="GameEngine.h" />
-    <ClInclude Include="IntroScreen.h" />
+    <ClInclude Include="Theme.h" />
+    <ClInclude Include="UIKit.h" />
+    <ClInclude Include="AudioManager.h" />
+    <ClInclude Include="PlaceholderScreen.h" />
+    <ClInclude Include="LoaderScreen.h" />
     <ClInclude Include="MainMenuScreen.h" />
-    <ClInclude Include="SelectScreen.h" />
+    <ClInclude Include="CampaignScreen.h" />
+    <ClInclude Include="InfoScreen.h" />
+    <ClInclude Include="EventLog.h" />
+    <ClInclude Include="TreeRenderer.h" />
     <ClInclude Include="LevelScreenBase.h" />
+    <ClInclude Include="LevelBridge.h" />
     <ClInclude Include="Act1Level1Screen.h" />
     <ClInclude Include="Act1Level2Screen.h" />
     <ClInclude Include="Act1Level3Screen.h" />
     <ClInclude Include="Act1Level4Screen.h" />
     <ClInclude Include="Act1Level5Screen.h" />
-    <ClInclude Include="TreeRenderer.h" />
-    <ClInclude Include="UIKit.h" />
-    <ClInclude Include="SoundManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Act1Level1.json" />

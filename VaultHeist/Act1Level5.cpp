@@ -21,7 +21,10 @@ bool Level5DataLoader::loadJSON(const string& filePath)
 	json j;
 	file >> j;
 
-	data.levelId = j["levelId"];
+    if (j.contains("levelId"))
+    {
+        data.levelId = j["levelId"].is_string() ? j["levelId"].get<std::string>() : j["levelId"].dump();
+    }
 	data.levelName = j["levelName"];
 	data.totalNodes = j["totalNodes"];
 	data.optimalSteps = j["optimalSteps"];
@@ -156,15 +159,31 @@ ActionResult Act1Level5::processAction(const PlayerAction& action)
     {
         TreeNode* target = currentTree.findNode(action.nodeA);
         if (target == nullptr) {
+            onMistake(2, 50);
+            res.penaltyPoints = 50;
+            res.alarmDelta = 2;
+            res.correct = false;
             res.message = "Invalid Room selected!";
         }
         else if (isLeaf(target)) {
-            res.message = "Room #" + std::to_string(action.nodeA) + " is a leaf node — no children to swap!";
+            onMistake(2, 50);
+            res.penaltyPoints = 50;
+            res.alarmDelta = 2;
+            res.correct = false;
+            res.message = "Room #" + std::to_string(action.nodeA) + " is a leaf node - no children to swap!";
         }
         else if (isNodeSwapped(target)) {
+            onMistake(2, 50);
+            res.penaltyPoints = 50;
+            res.alarmDelta = 2;
+            res.correct = false;
             res.message = "Room #" + to_string(action.nodeA) + " is already mirrored!";
         }
         else if (!areChildrenReady(target)) {
+            onMistake(2, 50);
+            res.penaltyPoints = 50;
+            res.alarmDelta = 2;
+            res.correct = false;
             res.message = "Bottom-Up Rule Violated! Mirror the child subtrees below Room #" + to_string(action.nodeA) + " first!";
         }
         else
@@ -173,6 +192,9 @@ ActionResult Act1Level5::processAction(const PlayerAction& action)
             target->left = target->right;
             target->right = temp;
             swappedNodes[swappedCount++] = target;
+            onValidStep();
+            res.correct = true;
+            res.accepted = true;
 
             if (currentTree.isSame(mirrorTree)) {
                 res.message = "Vault Successfully Mirrored! All chambers inverted. Sector Cleared!";

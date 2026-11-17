@@ -1,12 +1,14 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 
-class GameEngine;
-
-class Screen {
+class Screen
+{
 public:
-    virtual ~Screen() = default;
-    virtual void handleEvent(GameEngine& engine, const sf::Event& event) = 0;
-    virtual void update(GameEngine& engine, float dt) = 0;
-    virtual void draw(GameEngine& engine, sf::RenderWindow& window) = 0;
+	virtual ~Screen() = default;
+
+	virtual void handleEvent(const sf::Event& event) = 0;
+	virtual void update(float dt) = 0;
+	virtual void draw(sf::RenderTarget& target) = 0;
+	virtual void onResize(unsigned int width, unsigned int height) {}
 };

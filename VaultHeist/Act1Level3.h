@@ -74,5 +74,8 @@ public:
 	string getHint();
 
 	ActionResult processAction(const PlayerAction& action);
+
+	const BinaryTree& getTree() const { return solTree; }
+	bool isHeightsPhaseDone() const { return heightsPhaseDone; }
 };
 

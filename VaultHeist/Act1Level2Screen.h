@@ -1,51 +1,65 @@
 #pragma once
 #include "LevelScreenBase.h"
-#include "Act1Level2.h"
-#include <memory>
+#include "LevelBridge.h"
 #include <vector>
 #include <string>
 
-struct TokenSlot {
-    int parentVal = -1;
-    int direction = 0; // 0 = left, 1 = right
-    int expectedVal = -1;
-    sf::Vector2f pos;
-    bool filled = false;
-    int currentVal = -1;
-};
-
-struct TokenItem {
-    int value = 0;
-    sf::Vector2f homePos;
-    sf::Vector2f currentPos;
-    bool isPlaced = false;
-    bool isDragging = false;
-    float wrongTimer = 0.0f;
-};
-
-class Act1Level2Screen : public LevelScreenBase {
-private:
-    std::unique_ptr<Act1Level2> levelLogic;
-    std::string jsonPath;
-    std::vector<int> preorderList;
-    std::vector<int> inorderList;
-    std::vector<TokenItem> tokens;
-    std::vector<TokenSlot> slots;
-    int draggingIdx = -1;
-    sf::Vector2f dragOffset;
-
-    void loadLevelData();
-    void restartLevelDirect();
-    void setupTreeSlots();
-
+// Act1Level2Screen: Decode the Blueprint with Side Panel Details & Result Modal
+class Act1Level2Screen : public LevelScreenBase
+{
 public:
-    Act1Level2Screen();
+    Act1Level2Screen(GameEngine& engine);
+    ~Act1Level2Screen() override = default;
 
-    void onLevelEvent(GameEngine& engine, const sf::Event& event) override;
-    void updateLevel(GameEngine& engine, float dt) override;
-    void drawLevel(GameEngine& engine, sf::RenderWindow& window) override;
-    void restartLevel(GameEngine& engine) override;
-    void requestHint(GameEngine& engine) override;
-    ILevelLogic* getLevelLogic() override { return levelLogic.get(); }
-    void goToNextLevel(GameEngine& engine) override;
+    void update(float dt) override;
+    void handleEvent(const sf::Event& event) override;
+
+protected:
+    void onHintClicked() override;
+    void onResetClicked() override;
+    void onCustomDraw(sf::RenderTarget& target) override;
+    void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+
+private:
+    LevelBridge m_bridge;
+
+    // Blueprint Sequences
+    std::vector<int> m_preorder;
+    std::vector<int> m_inorder;
+
+    // Draggable Tray Tokens
+    struct TrayToken
+    {
+        int val;
+        sf::Vector2f homePos;
+        sf::Vector2f currPos;
+        bool isPlaced;
+        bool isDragging;
+        float returnTimer;
+        sf::Vector2f returnStart;
+    };
+    std::vector<TrayToken> m_tokens;
+    int m_draggedIndex;
+
+    // Canvas Tree Slots
+    struct TreeSlot
+    {
+        int parentVal; // -1 for root
+        int direction; // 0 = left, 1 = right, -1 for root
+        sf::Vector2f pos;
+        int placedVal; // -1 if empty
+        bool active;   // visible/droppable
+    };
+    std::vector<TreeSlot> m_slots;
+    int m_hoveredSlotIndex;
+
+    // Shake & Error feedback
+    float m_shakeTimer;
+    int m_shakingTokenVal;
+
+    void resetLevel();
+    void syncWithState();
+    void layoutTrayAndSlots(unsigned int width, unsigned int height);
+    void updateSlotPositions();
+    int getSlotAtPosition(sf::Vector2f pos);
 };

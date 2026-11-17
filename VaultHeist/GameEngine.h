@@ -2,29 +2,42 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <string>
-#include "SoundManager.h"
+#include <functional>
+#include "Theme.h"
+#include "AudioManager.h"
 #include "UIKit.h"
 #include "Screen.h"
 
-class GameEngine {
+class GameEngine
+{
 public:
-    sf::RenderWindow window;
-    sf::Font font;
-    SoundManager audio;
-    ToastManager toasts;
-    ModalPopup sharedPopup;
+	sf::RenderWindow window;
+	Theme theme;
+	AudioManager audio;
+	ToastManager toasts;
+	ModalPopup modal;
 
-    std::unique_ptr<Screen> currentScreen;
-    std::unique_ptr<Screen> nextScreen;
-    float transitionTimer = 0.0f;
-    float transitionDuration = 0.3f;
-    bool inTransition = false;
-    float runTime = 0.0f;
+	static constexpr unsigned int MinWindowWidth  = 960;
+	static constexpr unsigned int MinWindowHeight = 600;
 
-    GameEngine();
-    void run();
-    void changeScreen(std::unique_ptr<Screen> newScreen);
-    void showComingSoon(const std::string& feature);
+	std::unique_ptr<Screen> currentScreen;
+	std::unique_ptr<Screen> nextScreen;
 
-    static std::string resolveJsonPath(const std::string& filename);
+	// Transition state (0.3s fade)
+	bool isTransitioning;
+	float transitionProgress; // 0.0 to 1.0
+	static constexpr float TransitionDuration = 0.3f;
+
+	GameEngine();
+	~GameEngine() = default;
+
+	bool init();
+	void run();
+
+	void changeScreen(std::unique_ptr<Screen> newScreen);
+	sf::Vector2f getWindowSize() const;
+
+	void showToast(const std::string& message, int type = TOAST_INFO);
+	void showInfoModal(const std::string& title, const std::string& message, std::function<void()> onOk = nullptr);
+	void showConfirmModal(const std::string& title, const std::string& message, std::function<void()> onYes = nullptr, std::function<void()> onNo = nullptr);
 };

@@ -1,284 +1,273 @@
 #include "TreeRenderer.h"
-#include "UIKit.h"
 #include <cmath>
 #include <algorithm>
 
-void TreeRenderer::clear() {
-    nodes.clear();
+TreeRenderer::TreeRenderer()
+    : m_nodeRadius(28.0f)
+    , m_verticalSpacing(80.0f)
+    , m_minHSpacing(64.0f)
+    , m_hoveredNode(nullptr)
+    , m_selectedNode(nullptr)
+    , m_highlightedNode(nullptr)
+    , m_highlightColor(Theme::BorderCyan)
+    , m_animTimer(0.0f)
+{
 }
 
-void TreeRenderer::buildFromFlat(const std::vector<RenderNode>& rawList, int rootId, float centerX, float topY, float xSpan) {
-    std::vector<RenderNode> oldNodes = nodes;
-    nodes = rawList;
+void TreeRenderer::setNodeRadius(float radius)
+{
+    m_nodeRadius = radius;
+}
 
-    auto findIdx = [&](int id) {
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            if (nodes[i].id == id) return static_cast<int>(i);
-        }
-        return -1;
-    };
+void TreeRenderer::setVerticalSpacing(float spacing)
+{
+    m_verticalSpacing = spacing;
+}
 
-    auto place = [&](auto& self, int idx, float x, float y, float span) -> void {
-        if (idx == -1) return;
-        nodes[idx].targetPos = {x, y};
+void TreeRenderer::setMinHorizontalSpacing(float spacing)
+{
+    m_minHSpacing = spacing;
+}
 
-        // Preserve previous position for tweening if existed
-        bool foundOld = false;
-        for (const auto& on : oldNodes) {
-            if (on.value == nodes[idx].value) {
-                nodes[idx].currentPos = on.currentPos;
-                nodes[idx].isVisited = on.isVisited;
-                foundOld = true;
-                break;
-            }
-        }
-        if (!foundOld) {
-            nodes[idx].currentPos = {x, y};
-        }
+void TreeRenderer::update(float dt)
+{
+    m_animTimer += dt;
+}
 
-        int l = findIdx(nodes[idx].leftId);
-        int r = findIdx(nodes[idx].rightId);
-        if (l != -1) self(self, l, x - span, y + 125.0f, span * 0.52f);
-        if (r != -1) self(self, r, x + span, y + 125.0f, span * 0.52f);
-    };
+float TreeRenderer::computeSubtreeWidth(TreeNode* node)
+{
+    if (!node) return 0.0f;
 
-    int rootIdx = findIdx(rootId);
-    if (rootIdx != -1) {
-        place(place, rootIdx, centerX, topY, xSpan);
+    float leftW = computeSubtreeWidth(node->left);
+    float rightW = computeSubtreeWidth(node->right);
+
+    float childrenW = leftW + rightW + (node->left && node->right ? m_minHSpacing : 0.0f);
+    return std::max(2.0f * m_nodeRadius, childrenW);
+}
+
+void TreeRenderer::assignPositions(TreeNode* node, float x, float y, float availableWidth)
+{
+    if (!node) return;
+
+    node->position = sf::Vector2f(x, y);
+
+    float leftW = computeSubtreeWidth(node->left);
+    float rightW = computeSubtreeWidth(node->right);
+
+    if (node->left && node->right)
+    {
+        float totalW = leftW + rightW + m_minHSpacing;
+        float startX = x - (totalW / 2.0f);
+
+        float leftCenterX = startX + (leftW / 2.0f);
+        float rightCenterX = startX + leftW + m_minHSpacing + (rightW / 2.0f);
+
+        assignPositions(node->left, leftCenterX, y + m_verticalSpacing, leftW);
+        assignPositions(node->right, rightCenterX, y + m_verticalSpacing, rightW);
+    }
+    else if (node->left)
+    {
+        assignPositions(node->left, x - (m_minHSpacing * 0.75f), y + m_verticalSpacing, leftW);
+    }
+    else if (node->right)
+    {
+        assignPositions(node->right, x + (m_minHSpacing * 0.75f), y + m_verticalSpacing, rightW);
     }
 }
 
-void TreeRenderer::buildFromTree(TreeNode* root, float centerX, float topY, float xSpan) {
-    if (!root) {
-        nodes.clear();
-        return;
-    }
-    std::vector<RenderNode> newNodes;
-    int fakeId = 1000;
+void TreeRenderer::computeLayout(TreeNode* root, sf::FloatRect canvasBounds)
+{
+    if (!root) return;
 
-    auto collect = [&](auto& self, TreeNode* curr, float x, float y, float span) -> int {
-        if (!curr) return -1;
-        int myId = fakeId++;
-        RenderNode rn;
-        rn.id = myId;
-        rn.value = curr->val;
-        rn.targetPos = {x, y};
+    float rootX = canvasBounds.position.x + (canvasBounds.size.x * 0.5f);
+    float rootY = canvasBounds.position.y + m_nodeRadius + 20.0f;
 
-        // Keep old position if node already existed (for smooth tweening)
-        bool foundOld = false;
-        for (const auto& on : nodes) {
-            if (on.value == curr->val) {
-                rn.currentPos = on.currentPos;
-                rn.isVisited = on.isVisited;
-                foundOld = true;
-                break;
-            }
-        }
-        if (!foundOld) {
-            rn.currentPos = {x, y};
-        }
-
-        int myIdx = static_cast<int>(newNodes.size());
-        newNodes.push_back(rn);
-
-        int lId = self(self, curr->left, x - span, y + 125.0f, span * 0.52f);
-        int rId = self(self, curr->right, x + span, y + 125.0f, span * 0.52f);
-
-        newNodes[myIdx].leftId = lId;
-        newNodes[myIdx].rightId = rId;
-        return myId;
-    };
-
-    collect(collect, root, centerX, topY, xSpan);
-    nodes = newNodes;
+    assignPositions(root, rootX, rootY, canvasBounds.size.x);
 }
 
-void TreeRenderer::update(float dt, const sf::Vector2f& mousePos) {
-    for (auto& n : nodes) {
-        // Smooth position tweening
-        sf::Vector2f diff = n.targetPos - n.currentPos;
-        n.currentPos += diff * std::min(1.0f, dt * 10.0f);
+TreeNode* TreeRenderer::getNodeAtPosition(TreeNode* root, sf::Vector2f mousePos)
+{
+    if (!root) return nullptr;
 
-        // Shake timer
-        if (n.wrongTimer > 0.0f) {
-            n.wrongTimer -= dt;
-            if (n.wrongTimer <= 0.0f) {
-                n.isWrong = false;
-            }
-        }
+    float dx = mousePos.x - root->position.x;
+    float dy = mousePos.y - root->position.y;
+    float distSq = (dx * dx) + (dy * dy);
 
-        // Pop scale decay
-        if (n.popScale > 1.0f) {
-            n.popScale -= dt * 2.5f;
-            if (n.popScale < 1.0f) n.popScale = 1.0f;
-        }
-
-        // Hover check
-        float dx = mousePos.x - n.currentPos.x;
-        float dy = mousePos.y - n.currentPos.y;
-        float distSq = dx * dx + dy * dy;
-        float targetHover = (distSq <= 36.0f * 36.0f) ? 1.14f : 1.0f;
-        n.hoverScale += (targetHover - n.hoverScale) * std::min(1.0f, dt * 12.0f);
+    if (distSq <= (m_nodeRadius * m_nodeRadius))
+    {
+        return root;
     }
+
+    TreeNode* foundLeft = getNodeAtPosition(root->left, mousePos);
+    if (foundLeft) return foundLeft;
+
+    return getNodeAtPosition(root->right, mousePos);
 }
 
-void TreeRenderer::draw(sf::RenderWindow& window, const sf::Font& font) {
-    auto findPos = [&](int id) {
-        for (const auto& n : nodes) {
-            if (n.id == id) return n.currentPos;
-        }
-        return sf::Vector2f{0.0f, 0.0f};
-    };
+void TreeRenderer::setHoveredNode(TreeNode* node)
+{
+    m_hoveredNode = node;
+}
 
-    // 1. Draw Pipes / Connectors
-    for (const auto& n : nodes) {
-        auto drawPipe = [&](int childId) {
-            if (childId == -1) return;
-            sf::Vector2f cp = findPos(childId);
-            sf::Vector2f diff = cp - n.currentPos;
-            float len = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-            if (len < 1.0f) return;
+void TreeRenderer::setSelectedNode(TreeNode* node)
+{
+    m_selectedNode = node;
+}
 
-            sf::RectangleShape p({len, 6.0f});
-            p.setOrigin({0.0f, 3.0f});
-            p.setPosition(n.currentPos);
-            p.setRotation(sf::degrees(std::atan2(diff.y, diff.x) * 180.0f / 3.14159265f));
-            p.setFillColor(sf::Color(45, 60, 90));
-            p.setOutlineThickness(1.0f);
-            p.setOutlineColor(Theme::PanelBorder);
-            window.draw(p);
+void TreeRenderer::setHighlightedNode(TreeNode* node, sf::Color color)
+{
+    m_highlightedNode = node;
+    m_highlightColor = color;
+}
+
+void TreeRenderer::draw(sf::RenderTarget& target, const Theme& theme, TreeNode* root)
+{
+    if (!root) return;
+
+    drawEdges(target, theme, root);
+    drawNodes(target, theme, root);
+}
+
+void TreeRenderer::drawEdges(sf::RenderTarget& target, const Theme& theme, TreeNode* node)
+{
+    if (!node) return;
+
+    auto drawSingleEdge = [&](sf::Vector2f start, sf::Vector2f end, bool isTarget)
+    {
+        sf::Vector2f dir = end - start;
+        float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+        if (len < 0.001f) return;
+
+        sf::Vector2f unitDir = dir / len;
+        sf::Vector2f p1 = start + (unitDir * m_nodeRadius);
+        sf::Vector2f p2 = end - (unitDir * m_nodeRadius);
+
+        sf::Vector2f perp(-unitDir.y, unitDir.x);
+
+        sf::Color edgeCol = isTarget ? Theme::AccentYellow : sf::Color(0, 240, 255, 140);
+        sf::Color glowCol = isTarget ? sf::Color(255, 214, 10, 40) : sf::Color(0, 240, 255, 35);
+
+        sf::Vertex glowQuad[4] = {
+            sf::Vertex(p1 - perp * 3.5f, glowCol),
+            sf::Vertex(p2 - perp * 3.5f, glowCol),
+            sf::Vertex(p2 + perp * 3.5f, glowCol),
+            sf::Vertex(p1 + perp * 3.5f, glowCol)
         };
-        drawPipe(n.leftId);
-        drawPipe(n.rightId);
+        target.draw(glowQuad, 4, sf::PrimitiveType::TriangleStrip);
+
+        sf::Vertex coreLine[4] = {
+            sf::Vertex(p1 - perp * 1.0f, edgeCol),
+            sf::Vertex(p2 - perp * 1.0f, edgeCol),
+            sf::Vertex(p2 + perp * 1.0f, edgeCol),
+            sf::Vertex(p1 + perp * 1.0f, edgeCol)
+        };
+        target.draw(coreLine, 4, sf::PrimitiveType::TriangleStrip);
+    };
+
+    if (node->left)
+    {
+        bool targetEdge = (node->state == TreeNode::TARGET && node->left->state == TreeNode::TARGET);
+        drawSingleEdge(node->position, node->left->position, targetEdge);
+        drawEdges(target, theme, node->left);
     }
-
-    // 2. Draw Nodes
-    for (const auto& n : nodes) {
-        float effectiveScale = n.hoverScale * n.popScale;
-        float radius = 34.0f * effectiveScale;
-        sf::Vector2f pos = n.currentPos;
-
-        // Shake displacement on wrong move
-        if (n.isWrong) {
-            pos.x += std::sin(n.wrongTimer * 50.0f) * 6.0f;
-        }
-
-        // Outer glow on hover
-        if (n.hoverScale > 1.02f) {
-            sf::CircleShape glow(radius + 4.0f);
-            glow.setOrigin({radius + 4.0f, radius + 4.0f});
-            glow.setPosition(pos);
-            glow.setFillColor(sf::Color(56, 189, 248, 50));
-            window.draw(glow);
-        }
-
-        // Main node body
-        sf::CircleShape circle(radius);
-        circle.setOrigin({radius, radius});
-        circle.setPosition(pos);
-
-        sf::Color fillCol = sf::Color(22, 32, 54);
-        sf::Color borderCol = Theme::PanelBorder;
-
-        if (n.isWrong) {
-            fillCol = sf::Color(90, 20, 20);
-            borderCol = Theme::Red;
-        } else if (n.isVisited) {
-            fillCol = sf::Color(16, 75, 45);
-            borderCol = Theme::Green;
-        } else if (n.isTarget || n.isLCA) {
-            fillCol = sf::Color(85, 65, 15);
-            borderCol = Theme::Gold;
-        } else if (n.isSelected) {
-            fillCol = sf::Color(20, 60, 95);
-            borderCol = Theme::AccentCyan;
-        } else if (n.hoverScale > 1.02f) {
-            fillCol = sf::Color(30, 45, 75);
-            borderCol = Theme::AccentCyan;
-        }
-
-        circle.setFillColor(fillCol);
-        circle.setOutlineThickness(1.5f * effectiveScale);
-        circle.setOutlineColor(borderCol);
-        window.draw(circle);
-
-        // Value text
-        sf::Text valText(font, std::to_string(n.value), static_cast<unsigned int>(20 * effectiveScale));
-        valText.setStyle(sf::Text::Bold);
-        valText.setFillColor(Theme::TextWhite);
-        auto vb = valText.getLocalBounds();
-        valText.setOrigin({vb.position.x + vb.size.x * 0.5f, vb.position.y + vb.size.y * 0.5f});
-        valText.setPosition(pos);
-        window.draw(valText);
-
-        // Short state label below node
-        std::string label = n.stateLabel;
-        if (label.empty()) {
-            if (n.isVisited) label = "VISITED";
-            else if (n.isLCA) label = "LCA";
-            else if (n.isTarget) label = "TARGET";
-        }
-
-        if (!label.empty()) {
-            sf::Text lbl(font, label, 10);
-            lbl.setStyle(sf::Text::Bold);
-            lbl.setFillColor(n.isVisited ? Theme::Green : (n.isTarget || n.isLCA ? Theme::Gold : Theme::TextMuted));
-            auto lb = lbl.getLocalBounds();
-            lbl.setOrigin({lb.position.x + lb.size.x * 0.5f, 0.0f});
-            lbl.setPosition({pos.x, pos.y + radius + 4.0f});
-            window.draw(lbl);
-        }
+    if (node->right)
+    {
+        bool targetEdge = (node->state == TreeNode::TARGET && node->right->state == TreeNode::TARGET);
+        drawSingleEdge(node->position, node->right->position, targetEdge);
+        drawEdges(target, theme, node->right);
     }
 }
 
-int TreeRenderer::getNodeValueAt(const sf::Vector2f& mousePos) const {
-    for (const auto& n : nodes) {
-        float dx = mousePos.x - n.currentPos.x;
-        float dy = mousePos.y - n.currentPos.y;
-        if (dx * dx + dy * dy <= 36.0f * 36.0f) {
-            return n.value;
-        }
-    }
-    return -1;
+void TreeRenderer::drawNodes(sf::RenderTarget& target, const Theme& theme, TreeNode* node)
+{
+    if (!node) return;
+
+    if (node->left) drawNodes(target, theme, node->left);
+    if (node->right) drawNodes(target, theme, node->right);
+
+    drawSingleNode(target, theme, node);
 }
 
-int TreeRenderer::getNodeIdAt(const sf::Vector2f& mousePos) const {
-    for (const auto& n : nodes) {
-        float dx = mousePos.x - n.currentPos.x;
-        float dy = mousePos.y - n.currentPos.y;
-        if (dx * dx + dy * dy <= 36.0f * 36.0f) {
-            return n.id;
-        }
-    }
-    return -1;
-}
+void TreeRenderer::drawSingleNode(sf::RenderTarget& target, const Theme& theme, TreeNode* node)
+{
+    if (!node) return;
 
-RenderNode* TreeRenderer::findByValue(int val) {
-    for (auto& n : nodes) {
-        if (n.value == val) return &n;
-    }
-    return nullptr;
-}
+    bool isHovered = (node == m_hoveredNode);
+    bool isSelected = (node == m_selectedNode);
+    bool isHighlighted = (node == m_highlightedNode);
 
-RenderNode* TreeRenderer::findById(int id) {
-    for (auto& n : nodes) {
-        if (n.id == id) return &n;
+    sf::Color ringColor = Theme::BorderCyan;
+    if (node->state == TreeNode::LOCKED)
+    {
+        ringColor = sf::Color(80, 95, 120);
     }
-    return nullptr;
-}
-
-void TreeRenderer::triggerWrong(int val) {
-    auto* n = findByValue(val);
-    if (n) {
-        n->isWrong = true;
-        n->wrongTimer = 0.6f;
+    else if (node->state == TreeNode::TARGET)
+    {
+        ringColor = Theme::AccentYellow;
     }
-}
+    else if (node->state == TreeNode::INVALID)
+    {
+        ringColor = Theme::CrimsonAlarm;
+    }
+    else if (node->isVisited)
+    {
+        ringColor = Theme::SuccessEmerald;
+    }
 
-void TreeRenderer::markVisited(int val) {
-    auto* n = findByValue(val);
-    if (n) {
-        n->isVisited = true;
-        n->popScale = 1.25f;
+    if (isHighlighted) ringColor = m_highlightColor;
+    if (isSelected) ringColor = Theme::AccentYellow;
+
+    float r = m_nodeRadius;
+    if (isHovered) r += 2.0f;
+
+    // 1. Soft Outer Glow Ring
+    sf::CircleShape glowRing(r + 6.0f);
+    glowRing.setOrigin(sf::Vector2f(r + 6.0f, r + 6.0f));
+    glowRing.setPosition(node->position);
+    glowRing.setFillColor(sf::Color::Transparent);
+    glowRing.setOutlineThickness(3.0f);
+    sf::Color softGlow = ringColor;
+    softGlow.a = isHovered ? 90 : 45;
+    glowRing.setOutlineColor(softGlow);
+    target.draw(glowRing);
+
+    // 2. Node Background (Dark Glass)
+    sf::CircleShape baseCircle(r);
+    baseCircle.setOrigin(sf::Vector2f(r, r));
+    baseCircle.setPosition(node->position);
+    baseCircle.setFillColor(Theme::NodeDarkFill);
+    baseCircle.setOutlineThickness(isHovered ? 2.5f : 1.8f);
+    baseCircle.setOutlineColor(ringColor);
+    target.draw(baseCircle);
+
+    // 3. Node Value Text (Centered)
+    std::string valStr = std::to_string(node->val);
+    sf::Text valText(theme.fontMono, valStr, static_cast<unsigned int>(r * 0.72f));
+    valText.setFillColor(isHovered ? sf::Color::White : Theme::TextPrimary);
+    sf::FloatRect bounds = valText.getLocalBounds();
+    valText.setOrigin(sf::Vector2f(bounds.position.x + bounds.size.x * 0.5f,
+                                 bounds.position.y + bounds.size.y * 0.5f));
+    valText.setPosition(node->position);
+    target.draw(valText);
+
+    // 4. Height / Size badge
+    if (node->height > 1)
+    {
+        sf::Vector2f badgePos = node->position + sf::Vector2f(r * 0.65f, -r * 0.65f);
+        sf::CircleShape badge(7.0f);
+        badge.setOrigin(sf::Vector2f(7.0f, 7.0f));
+        badge.setPosition(badgePos);
+        badge.setFillColor(sf::Color(10, 14, 23, 220));
+        badge.setOutlineThickness(1.0f);
+        badge.setOutlineColor(Theme::BorderCyan);
+        target.draw(badge);
+
+        sf::Text hText(theme.fontMono, std::to_string(node->height), 9);
+        hText.setFillColor(Theme::TextMuted);
+        sf::FloatRect hBounds = hText.getLocalBounds();
+        hText.setOrigin(sf::Vector2f(hBounds.position.x + hBounds.size.x * 0.5f,
+                                    hBounds.position.y + hBounds.size.y * 0.5f));
+        hText.setPosition(badgePos);
+        target.draw(hText);
     }
 }

@@ -20,7 +20,15 @@ bool Level3DataLoader::loadJSON(const string& filePath)
 	json j;
 	file >> j;
 
-	data.levelID = j["levelId"];
+	if (j.contains("levelId"))
+	{
+		if (j["levelId"].is_number())
+			data.levelID = j["levelId"].get<double>();
+		else if (j["levelId"].is_string())
+		{
+			try { data.levelID = std::stod(j["levelId"].get<std::string>()); } catch (...) { data.levelID = 1.3; }
+		}
+	}
 	data.levelName = j["levelName"];
 	data.totalNodes = j["totalNodes"];
 	data.optimalSteps = j["optimalSteps"];
@@ -66,6 +74,15 @@ void Act1Level3::generate()
 }
 
 
+static int calculateNodeHeight(TreeNode* node)
+{
+	if (node == NULL) return -1;
+	if (node->left == NULL && node->right == NULL) return 0; // Leaves always have height 0
+	int lh = calculateNodeHeight(node->left);
+	int rh = calculateNodeHeight(node->right);
+	return 1 + std::max(lh, rh);
+}
+
 TreeNode* Act1Level3::GenerateH(TreeNode* root, int index)
 {
 	if (root == NULL)
@@ -75,7 +92,7 @@ TreeNode* Act1Level3::GenerateH(TreeNode* root, int index)
 	int idx = findIndex(root->val);
 	if (idx >= 0 && idx < totalNodes)
 	{
-		actualHeight[idx] = solTree.TreeHeight(root);
+		actualHeight[idx] = calculateNodeHeight(root);
 	}
 	GenerateH(root->left, 0);
 	GenerateH(root->right, 0);
@@ -162,47 +179,74 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 		currIndex = findIndex(action.nodeA);
 		if (currIndex == -1)
 		{
-			onMistake(2, 50);
-			res.penaltyPoints = 50;
-			res.alarmDelta = 2;
-			res.message = "Node not found";
+			onMistake(1, 25);
+			res.penaltyPoints = 25;
+			res.alarmDelta = 1;
+			res.correct = false;
+			res.message = "Room not found!";
 			return res;
 		}
 
 		if (playerHeight[currIndex] != -1)
 		{
-			onMistake(2, 50);
-			res.penaltyPoints = 50;
-			res.alarmDelta = 2;
-			res.correct = true;
+			onMistake(1, 25);
+			res.penaltyPoints = 25;
+			res.alarmDelta = 1;
+			res.correct = false;
 			res.message = "Already solved!";
 			return res;
 		}
 
-		leftIndex = 2 * currIndex + 1;
-		rightIndex = 2 * currIndex + 2;
+		TreeNode* currNode = solTree.findNode(action.nodeA);
+		if (currNode == NULL)
+		{
+			onMistake(1, 25);
+			res.penaltyPoints = 25;
+			res.alarmDelta = 1;
+			res.correct = false;
+			res.message = "Room node not located in blueprint!";
+			return res;
+		}
 
-		bool leftReady = (leftIndex >= totalNodes) || (playerHeight[leftIndex] != -1);
-		bool rightReady = (rightIndex >= totalNodes) || (playerHeight[rightIndex] != -1);
+		// Only check direct children of this specific parent node!
+		bool leftReady = (currNode->left == NULL);
+		if (currNode->left != NULL)
+		{
+			int leftIdx = findIndex(currNode->left->val);
+			leftReady = (leftIdx != -1 && playerHeight[leftIdx] != -1);
+		}
+
+		bool rightReady = (currNode->right == NULL);
+		if (currNode->right != NULL)
+		{
+			int rightIdx = findIndex(currNode->right->val);
+			rightReady = (rightIdx != -1 && playerHeight[rightIdx] != -1);
+		}
 
 		bool ready = (leftReady && rightReady);
 
 		if (!ready) {
-			res.message = "Wrong Order! Solve children nodes first!";
+			onMistake(1, 25);
+			res.penaltyPoints = 25;
+			res.alarmDelta = 1;
+			res.correct = false;
+			res.message = "Wrong Order! Solve children of this room first!";
 		}
 		else if (action.nodeB != actualHeight[currIndex])
 		{
-			onMistake(2, 50);
-			res.penaltyPoints = 50;
-			res.alarmDelta = 2;
+			onMistake(1, 25);
+			res.penaltyPoints = 25;
+			res.alarmDelta = 1;
+			res.correct = false;
 			res.message = "Incorrect Height! Alarm increased!";
 		}
 		else
 		{
-			// Sahi height enter hui! Player ke array mein save kar dein
+			// Correct height entered! Save in player array
 			playerHeight[currIndex] = action.nodeB;
 			solvedCount++;
 			onValidStep();
+			res.correct = true;
 
 			if (solvedCount == totalNodes)
 			{
@@ -225,7 +269,7 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 
 		}
 		else {
-
+			onMistake(2, 50);
 			res.accepted = false;
 			res.correct = false;
 			res.alarmDelta = 2;

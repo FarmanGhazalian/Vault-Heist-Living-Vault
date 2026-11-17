@@ -20,7 +20,15 @@ bool Level2DataLoader::loadJSON(const string& filePath)
     file >> j;
 
     // Metadata Parse
-    data.id = j["levelId"];
+    if (j.contains("levelId"))
+    {
+        if (j["levelId"].is_number())
+            data.id = j["levelId"].get<int>();
+        else if (j["levelId"].is_string())
+        {
+            try { data.id = static_cast<int>(std::stof(j["levelId"].get<std::string>())); } catch (...) { data.id = 2; }
+        }
+    }
     data.levelName = j["levelName"];
     data.optimalSteps = j["optimalSteps"];
     data.traversalType = j["traversalType"];

@@ -18,7 +18,10 @@ bool Level4DataLoader::loadJSON(const string& filePath)
 	json j;
 	file >> j;
 
-	data.levelId = j["levelId"];
+	if (j.contains("levelId"))
+	{
+		data.levelId = j["levelId"].is_string() ? j["levelId"].get<std::string>() : j["levelId"].dump();
+	}
 	data.levelName = j["levelName"];
 	data.totalNodes = j["totalNodes"];
 	data.optimalSteps = j["optimalSteps"];
@@ -136,6 +139,10 @@ ActionResult Act1Level4::processAction(const PlayerAction& action)
 			res.message = "Meeting Room(LCA #" + to_string(actualLCA) + ") verified!Now trace the path from Room #" + to_string(roomA) + " to Room #" + to_string(roomB) + ".";
 		}
 		else {
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
+			res.correct = false;
 			res.message = "Wrong Meeting Room! Find where the two escape routes intersect!";
 		}
 	}
@@ -144,6 +151,9 @@ ActionResult Act1Level4::processAction(const PlayerAction& action)
 		if (action.nodeA == expectedPath[currentPathIndex])
 		{
 			currentPathIndex++;
+			onValidStep();
+			res.correct = true;
+			res.accepted = true;
 
 			if (currentPathIndex == pathCount) {
 				res.message = "Escape Path Verified! Path Length: " + to_string(expectedPathLength) + ". Sector Cleared!";
@@ -152,11 +162,15 @@ ActionResult Act1Level4::processAction(const PlayerAction& action)
 			}
 			else
 			{
-				res.message = "Path Step " + to_string(currentPathIndex) + "/" + to_string(pathCount) + " verified!";
+				res.message = "Path Step " + to_string(currentPathIndex) + "/" + to_string(pathCount) + ".";
 			}
 		}
 		else
 		{
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
+			res.correct = false;
 			res.message = "Wrong Room on Path! Follow the shortest path between Room #" + to_string(roomA) + " and Room #" + to_string(roomB) + "!";
 		}
 	}

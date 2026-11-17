@@ -1,26 +1,56 @@
 #pragma once
 #include "LevelScreenBase.h"
-#include "Act1Level5.h"
-#include <memory>
+#include "LevelBridge.h"
+#include <map>
 #include <string>
 
-class Act1Level5Screen : public LevelScreenBase {
-private:
-    std::unique_ptr<Act1Level5> levelLogic;
-    std::string jsonPath;
-    Button btnAutoMirror;
-
-    void loadLevelData();
-    void restartLevelDirect();
-
+// Act1Level5Screen: Mirror the Vault with Side Panel Details & Result Modal
+class Act1Level5Screen : public LevelScreenBase
+{
 public:
-    Act1Level5Screen();
+    Act1Level5Screen(GameEngine& engine);
+    ~Act1Level5Screen() override = default;
 
-    void onLevelEvent(GameEngine& engine, const sf::Event& event) override;
-    void updateLevel(GameEngine& engine, float dt) override;
-    void drawLevel(GameEngine& engine, sf::RenderWindow& window) override;
-    void restartLevel(GameEngine& engine) override;
-    void requestHint(GameEngine& engine) override;
-    ILevelLogic* getLevelLogic() override { return levelLogic.get(); }
-    void goToNextLevel(GameEngine& engine) override;
+    void update(float dt) override;
+    void handleEvent(const sf::Event& event) override;
+
+protected:
+    void onHintClicked() override;
+    void onResetClicked() override;
+    void onNodeClicked(TreeNode* node) override;
+    void onCustomDraw(sf::RenderTarget& target) override;
+    void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+
+private:
+    LevelBridge m_bridge;
+
+    // Auto-Mirror Button (Placed in side panel)
+    Button m_autoMirrorBtn;
+
+    // Selected node inspection in side panel
+    TreeNode* m_selectedInspectNode;
+
+    // Subtree Swap Animation Tween
+    struct NodeAnim
+    {
+        sf::Vector2f startPos;
+        sf::Vector2f targetPos;
+    };
+    std::map<int, NodeAnim> m_nodeAnims;
+    float m_swapAnimTimer;
+    static constexpr float SwapAnimDuration = 0.5f;
+
+    // Shake & Feedback
+    float m_shakeTimer;
+    TreeNode* m_shakingNode;
+    TreeNode* m_neutralNode;
+    float m_neutralTimer;
+
+    // Tooltip
+    TreeNode* m_hoverNode;
+
+    void resetLevel();
+    void syncWithState();
+    void triggerAutoMirror();
+    void startSwapAnimation();
 };

@@ -1,297 +1,436 @@
 #include "Act1Level3Screen.h"
 #include "Act1Level4Screen.h"
 #include "GameEngine.h"
-#include "PlayerAction.h"
-#include "nlohmann/json.hpp"
-#include <fstream>
-#include <iostream>
+#include <filesystem>
+#include <cctype>
 
-using json = nlohmann::json;
-
-Act1Level3Screen::Act1Level3Screen() {
-    jsonPath = GameEngine::resolveJsonPath("Act1Level3.json");
-    btnSubmit = Button({{820.0f, 620.0f}, {100.0f, 38.0f}}, "SUBMIT", ButtonStyle::PRIMARY);
-    btnCancel = Button({{930.0f, 620.0f}, {100.0f, 38.0f}}, "CANCEL", ButtonStyle::SECONDARY);
-    btnSubmitDiameter = Button({{820.0f, 620.0f}, {150.0f, 38.0f}}, "SUBMIT DIA", ButtonStyle::GOLD);
-    restartLevelDirect();
+Act1Level3Screen::Act1Level3Screen(GameEngine& engine)
+    : LevelScreenBase(engine, "ACT 1: THE BLUEPRINT WING", "LEVEL 1.3: ALARM SPREADS UPWARD")
+    , m_focusedNode(nullptr)
+    , m_diameterBoxFocused(false)
+    , m_shakeTimer(0.0f)
+    , m_shakingNode(nullptr)
+    , m_shakeDiameterBox(false)
+    , m_hoverNode(nullptr)
+{
+    resetLevel();
 }
 
-void Act1Level3Screen::restartLevelDirect() {
-    levelLogic = std::make_unique<Act1Level3>();
-    levelLogic->initLevel(jsonPath);
-    loadLevelData();
-    selectedNodeVal = -1;
-    inputBuffer = "";
-    allHeightsDone = false;
-    correctHeightsCount = 0;
-    resultShown = false;
+void Act1Level3Screen::resetLevel()
+{
+    m_solvedHeights.clear();
+    m_focusedNode = nullptr;
+    m_nodeInputBuffer.clear();
+    m_diameterBoxFocused = false;
+    m_diameterInputBuffer.clear();
+    m_shakeTimer = 0.0f;
+    m_shakingNode = nullptr;
+    m_shakeDiameterBox = false;
+
+    std::string path = "Act1Level3.json";
+    if (!std::filesystem::exists(path))
+    {
+        path = "VaultHeist/Act1Level3.json";
+    }
+
+    if (m_bridge.loadLevel(1, 3, path))
+    {
+        m_rootNode = m_bridge.getRootNode();
+        setInstruction(m_bridge.getObjective());
+        syncWithState();
+        if (m_rootNode)
+        {
+            m_treeRenderer.computeLayout(m_rootNode, m_canvasBounds);
+        }
+    }
 }
 
-void Act1Level3Screen::loadLevelData() {
-    std::ifstream f(jsonPath);
-    if (!f.is_open()) return;
-    json j; f >> j;
+void Act1Level3Screen::syncWithState()
+{
+    const LevelState& state = m_bridge.getState();
+    setSteps(state.steps, state.optimalSteps);
+    setScore(ScoreSystem::score(state));
+    setPenalty(state.penaltyPoints);
+    setAlarm(state.alarm, state.alarmCap);
 
-    std::string name = j.value("levelName", "Alarm Spreads Upward");
-    totalNodes = j.value("totalNodes", 5);
-
-    preorderList.clear();
-    inorderList.clear();
-    for (const auto& v : j["preorderSequence"]) preorderList.push_back(v.get<int>());
-    for (const auto& v : j["inorderSequence"]) inorderList.push_back(v.get<int>());
-
-    setupHUD(name, "Click each room to enter its height. Then calculate overall tree diameter.", "Phase: Room Heights (0/" + std::to_string(totalNodes) + ")", 3);
-
-    // Build visual tree for 1.3:
-    // Pre: 1, 2, 4, 5, 3
-    // In:  4, 2, 5, 1, 3
-    // Root = 1
-    // Left = 2 (Left of 2 = 4, Right of 2 = 5)
-    // Right = 3
-    std::vector<RenderNode> raw;
-    RenderNode r1; r1.id = 1; r1.value = 1; r1.leftId = 2; r1.rightId = 3; raw.push_back(r1);
-    RenderNode r2; r2.id = 2; r2.value = 2; r2.leftId = 4; r2.rightId = 5; raw.push_back(r2);
-    RenderNode r3; r3.id = 3; r3.value = 3; r3.leftId = -1; r3.rightId = -1; raw.push_back(r3);
-    RenderNode r4; r4.id = 4; r4.value = 4; r4.leftId = -1; r4.rightId = -1; raw.push_back(r4);
-    RenderNode r5; r5.id = 5; r5.value = 5; r5.leftId = -1; r5.rightId = -1; raw.push_back(r5);
-
-    treeRenderer.buildFromFlat(raw, 1, 750.0f, 220.0f, 320.0f);
+    if (m_bridge.isHeightsPhaseDone())
+    {
+        setInstruction("All heights verified! Phase 2: Enter the Tree Diameter (longest path).");
+    }
 }
 
-void Act1Level3Screen::restartLevel(GameEngine& engine) {
-    restartLevelDirect();
-    engine.toasts.add("SENSORS RESET", "Height calculations reset.", ToastType::INFO);
+void Act1Level3Screen::onHintClicked()
+{
+    std::string hint = m_bridge.getHint();
+    m_engine.showToast(hint, TOAST_HINT);
+    m_engine.audio.playHint();
+    syncWithState();
 }
 
-void Act1Level3Screen::requestHint(GameEngine& engine) {
-    if (!levelLogic) return;
-    if (levelLogic->getState().hintUsed) {
-        engine.toasts.add("HINT EXHAUSTED", "Hint already deployed.", ToastType::HINT);
+void Act1Level3Screen::onResetClicked()
+{
+    resetLevel();
+    m_engine.showToast("Level reset. Calculate heights bottom-up.", TOAST_INFO);
+    m_engine.audio.playClick();
+}
+
+void Act1Level3Screen::onNodeClicked(TreeNode* node)
+{
+    if (!node || m_bridge.isFinished()) return;
+
+    if (m_solvedHeights.find(node->val) != m_solvedHeights.end())
+    {
+        m_engine.showToast("Room height already verified.", TOAST_INFO);
         return;
     }
-    levelLogic->onHintRequested();
-    engine.audio.playHint();
-    std::string h = levelLogic->getHint();
-    if (h.empty()) h = "Leaf node height is 1. Parent height = 1 + max(left height, right height).";
-    engine.toasts.add("TACTICAL INTEL", h, ToastType::HINT);
+
+    m_focusedNode = node;
+    m_nodeInputBuffer.clear();
+    m_diameterBoxFocused = false;
+    m_engine.audio.playClick();
 }
 
-void Act1Level3Screen::onLevelEvent(GameEngine& engine, const sf::Event& event) {
-    if (resultPopup.active || pausePopup.active) return;
-    sf::Vector2f mouse{static_cast<float>(sf::Mouse::getPosition(engine.window).x),
-                       static_cast<float>(sf::Mouse::getPosition(engine.window).y)};
+void Act1Level3Screen::submitHeight()
+{
+    if (!m_focusedNode || m_nodeInputBuffer.empty()) return;
 
-    // Text typing for input buffer
-    if (const auto* ti = event.getIf<sf::Event::TextEntered>()) {
-        if (ti->unicode >= '0' && ti->unicode <= '9') {
-            if (inputBuffer.size() < 3) {
-                inputBuffer += static_cast<char>(ti->unicode);
-                engine.audio.playClick();
-            }
-        } else if (ti->unicode == 8) { // Backspace
-            if (!inputBuffer.empty()) {
-                inputBuffer.pop_back();
-                engine.audio.playClick();
-            }
-        } else if (ti->unicode == 13) { // Enter
-            if (!inputBuffer.empty()) {
-                int enteredVal = std::stoi(inputBuffer);
-                inputBuffer = "";
-
-                if (!allHeightsDone && selectedNodeVal != -1) {
-                    PlayerAction act{};
-                    act.type = ENTER_HEIGHT;
-                    act.nodeA = selectedNodeVal;
-                    act.nodeB = enteredVal;
-                    act.direction = 0;
-
-                    ActionResult res = levelLogic->processAction(act);
-                    if (res.accepted) {
-                        if (res.correct) {
-                            auto* n = treeRenderer.findByValue(selectedNodeVal);
-                            if (n) {
-                                n->isVisited = true;
-                                n->stateLabel = "H=" + std::to_string(enteredVal);
-                            }
-                            correctHeightsCount++;
-                            engine.audio.playCorrect();
-                            engine.toasts.add("HEIGHT ACCEPTED", res.message.empty() ? "Room height verified." : res.message, ToastType::CORRECT);
-
-                            if (correctHeightsCount >= totalNodes) {
-                                allHeightsDone = true;
-                                setupHUD(levelTitle, "All heights verified! Enter the overall vault tree DIAMETER.", "Phase: Enter Diameter", 3);
-                                engine.toasts.add("DIAMETER PHASE", "Calculate tree diameter: longest path between any two rooms.", ToastType::INFO);
-                            } else {
-                                setupHUD(levelTitle, objectiveText, "Phase: Room Heights (" + std::to_string(correctHeightsCount) + "/" + std::to_string(totalNodes) + ")", 3);
-                            }
-                        } else {
-                            treeRenderer.triggerWrong(selectedNodeVal);
-                            engine.audio.playWrong();
-                            std::string msg = res.message.empty() ? "Incorrect height value!" : res.message;
-                            engine.toasts.add("CALCULATION ERROR", msg, ToastType::ERROR_MSG);
-                        }
-                    }
-                    selectedNodeVal = -1;
-                } else if (allHeightsDone) {
-                    PlayerAction act{};
-                    act.type = ENTER_DIAMETER;
-                    act.nodeB = enteredVal;
-                    act.direction = 0;
-
-                    ActionResult res = levelLogic->processAction(act);
-                    if (res.accepted) {
-                        if (res.correct) {
-                            engine.audio.playCorrect();
-                            engine.toasts.add("DIAMETER VERIFIED", res.message.empty() ? "Vault diameter cracked!" : res.message, ToastType::CORRECT);
-                        } else {
-                            engine.audio.playWrong();
-                            std::string msg = res.message.empty() ? "Incorrect tree diameter!" : res.message;
-                            engine.toasts.add("DIAMETER MISMATCH", msg, ToastType::ERROR_MSG);
-                        }
-                    }
-                }
-            }
-        }
+    int typedH = 0;
+    try {
+        typedH = std::stoi(m_nodeInputBuffer);
+    } catch (...) {
+        m_nodeInputBuffer.clear();
+        return;
     }
 
-    if (const auto* mp = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mp->button == sf::Mouse::Button::Left) {
-            // Click Submit / Cancel
-            if (!allHeightsDone && selectedNodeVal != -1) {
-                if (btnSubmit.handleClick(mouse) && !inputBuffer.empty()) {
-                    int enteredVal = std::stoi(inputBuffer);
-                    inputBuffer = "";
+    PlayerAction action;
+    action.type = ENTER_HEIGHT;
+    action.nodeA = m_focusedNode->val;
+    action.nodeB = typedH;
 
-                    PlayerAction act{};
-                    act.type = ENTER_HEIGHT;
-                    act.nodeA = selectedNodeVal;
-                    act.nodeB = enteredVal;
-                    act.direction = 0;
+    ActionResult res = m_bridge.processAction(action);
+    syncWithState();
 
-                    ActionResult res = levelLogic->processAction(act);
-                    if (res.accepted) {
-                        if (res.correct) {
-                            auto* n = treeRenderer.findByValue(selectedNodeVal);
-                            if (n) {
-                                n->isVisited = true;
-                                n->stateLabel = "H=" + std::to_string(enteredVal);
-                            }
-                            correctHeightsCount++;
-                            engine.audio.playCorrect();
-                            engine.toasts.add("HEIGHT ACCEPTED", res.message.empty() ? "Room height verified." : res.message, ToastType::CORRECT);
+    if (res.correct)
+    {
+        m_solvedHeights[m_focusedNode->val] = typedH;
+        m_focusedNode->isVisited = true;
+        m_engine.audio.playCorrect();
 
-                            if (correctHeightsCount >= totalNodes) {
-                                allHeightsDone = true;
-                                setupHUD(levelTitle, "All heights verified! Enter the overall vault tree DIAMETER.", "Phase: Enter Diameter", 3);
-                            } else {
-                                setupHUD(levelTitle, objectiveText, "Phase: Room Heights (" + std::to_string(correctHeightsCount) + "/" + std::to_string(totalNodes) + ")", 3);
-                            }
-                        } else {
-                            treeRenderer.triggerWrong(selectedNodeVal);
-                            engine.audio.playWrong();
-                            engine.toasts.add("CALCULATION ERROR", res.message.empty() ? "Incorrect height value!" : res.message, ToastType::ERROR_MSG);
-                        }
-                    }
-                    selectedNodeVal = -1;
-                    return;
-                }
-                if (btnCancel.handleClick(mouse)) {
-                    selectedNodeVal = -1;
-                    inputBuffer = "";
-                    engine.audio.playClick();
-                    return;
-                }
-            } else if (allHeightsDone) {
-                if (btnSubmitDiameter.handleClick(mouse) && !inputBuffer.empty()) {
-                    int enteredVal = std::stoi(inputBuffer);
-                    inputBuffer = "";
+        m_focusedNode = nullptr;
+        m_nodeInputBuffer.clear();
 
-                    PlayerAction act{};
-                    act.type = ENTER_DIAMETER;
-                    act.nodeB = enteredVal;
-                    act.direction = 0;
+        if (m_bridge.isHeightsPhaseDone())
+        {
+            m_diameterBoxFocused = true;
+        }
+    }
+    else
+    {
+        m_shakingNode = m_focusedNode;
+        m_shakeTimer = 0.35f;
 
-                    ActionResult res = levelLogic->processAction(act);
-                    if (res.accepted) {
-                        if (res.correct) {
-                            engine.audio.playCorrect();
-                            engine.toasts.add("DIAMETER VERIFIED", res.message.empty() ? "Vault diameter cracked!" : res.message, ToastType::CORRECT);
-                        } else {
-                            engine.audio.playWrong();
-                            engine.toasts.add("DIAMETER MISMATCH", res.message.empty() ? "Incorrect diameter!" : res.message, ToastType::ERROR_MSG);
-                        }
-                    }
-                    return;
-                }
-            }
+        m_engine.audio.playWrong();
+        m_engine.showToast(res.message, TOAST_ERROR);
+        m_nodeInputBuffer.clear();
 
-            // Click node in tree
-            if (!allHeightsDone) {
-                int clickedVal = treeRenderer.getNodeValueAt(mouse);
-                if (clickedVal != -1) {
-                    selectedNodeVal = clickedVal;
-                    inputBuffer = "";
-                    engine.audio.playClick();
-                    for (auto& n : treeRenderer.nodes) {
-                        n.isSelected = (n.value == clickedVal);
-                    }
-                }
-            }
+        if (m_bridge.isFinished() && !m_bridge.isWon())
+        {
+            m_engine.audio.playLose();
+            const LevelState& s = m_bridge.getState();
+            showResultModal(false, 0, s.steps, s.optimalSteps, s.penaltyPoints, 0,
+                nullptr,
+                [this]() { resetLevel(); },
+                [this]() { onBackClicked(); }
+            );
         }
     }
 }
 
-void Act1Level3Screen::updateLevel(GameEngine& engine, float dt) {
-    sf::Vector2f mouse{static_cast<float>(sf::Mouse::getPosition(engine.window).x),
-                       static_cast<float>(sf::Mouse::getPosition(engine.window).y)};
-    if (!allHeightsDone && selectedNodeVal != -1) {
-        btnSubmit.update(mouse);
-        btnCancel.update(mouse);
-    } else if (allHeightsDone) {
-        btnSubmitDiameter.update(mouse);
+void Act1Level3Screen::submitDiameter()
+{
+    if (m_diameterInputBuffer.empty()) return;
+
+    int typedDia = 0;
+    try {
+        typedDia = std::stoi(m_diameterInputBuffer);
+    } catch (...) {
+        m_diameterInputBuffer.clear();
+        return;
+    }
+
+    PlayerAction action;
+    action.type = ENTER_DIAMETER;
+    action.nodeB = typedDia;
+
+    ActionResult res = m_bridge.processAction(action);
+    syncWithState();
+
+    if (res.correct)
+    {
+        m_engine.audio.playWin();
+        m_engine.showToast(res.message, TOAST_CORRECT);
+        m_diameterBoxFocused = false;
+
+        const LevelState& s = m_bridge.getState();
+        showResultModal(true, ScoreSystem::stars(s), s.steps, s.optimalSteps, s.penaltyPoints, ScoreSystem::score(s),
+            [this]() {
+                // Next Level -> Level 1.4
+                m_engine.changeScreen(std::make_unique<Act1Level4Screen>(m_engine));
+            },
+            [this]() { resetLevel(); },
+            [this]() { onBackClicked(); }
+        );
+    }
+    else
+    {
+        m_shakeDiameterBox = true;
+        m_shakeTimer = 0.35f;
+
+        m_engine.audio.playWrong();
+        m_engine.showToast(res.message, TOAST_ERROR);
+        m_diameterInputBuffer.clear();
+
+        if (m_bridge.isFinished() && !m_bridge.isWon())
+        {
+            m_engine.audio.playLose();
+            const LevelState& s = m_bridge.getState();
+            showResultModal(false, 0, s.steps, s.optimalSteps, s.penaltyPoints, 0,
+                nullptr,
+                [this]() { resetLevel(); },
+                [this]() { onBackClicked(); }
+            );
+        }
     }
 }
 
-void Act1Level3Screen::drawLevel(GameEngine& engine, sf::RenderWindow& window) {
-    treeRenderer.draw(window, engine.font);
+void Act1Level3Screen::handleEvent(const sf::Event& event)
+{
+    LevelScreenBase::handleEvent(event);
 
-    // Draw Input Box at bottom
-    if (!allHeightsDone && selectedNodeVal != -1) {
-        sf::RectangleShape box({540.0f, 75.0f});
-        box.setPosition({480.0f, 600.0f});
-        box.setFillColor(sf::Color(14, 20, 36, 240));
-        box.setOutlineThickness(1.0f);
-        box.setOutlineColor(Theme::PanelBorder);
-        window.draw(box);
+    if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
+    {
+        sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
+        if (m_rootNode && m_canvasBounds.contains(mpos))
+        {
+            m_hoverNode = m_treeRenderer.getNodeAtPosition(m_rootNode, mpos);
+        }
+    }
 
-        std::string prompt = "ENTER HEIGHT FOR ROOM #" + std::to_string(selectedNodeVal) + ":  [" + (inputBuffer.empty() ? "_" : inputBuffer) + "]";
-        sf::Text pTxt(engine.font, prompt, 15);
-        pTxt.setStyle(sf::Text::Bold);
-        pTxt.setFillColor(Theme::Gold);
-        pTxt.setPosition({505.0f, 626.0f});
-        window.draw(pTxt);
+    if (auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>())
+    {
+        if (mouseBtn->button == sf::Mouse::Button::Left)
+        {
+            sf::Vector2f mpos(static_cast<float>(mouseBtn->position.x), static_cast<float>(mouseBtn->position.y));
+            if (m_bridge.isHeightsPhaseDone() && m_diameterBoxBounds.contains(mpos))
+            {
+                m_diameterBoxFocused = true;
+                m_focusedNode = nullptr;
+                m_engine.audio.playClick();
+            }
+        }
+    }
 
-        btnSubmit.draw(window, engine.font);
-        btnCancel.draw(window, engine.font);
-    } else if (allHeightsDone) {
-        sf::RectangleShape box({580.0f, 75.0f});
-        box.setPosition({460.0f, 600.0f});
-        box.setFillColor(sf::Color(14, 20, 36, 240));
-        box.setOutlineThickness(1.0f);
-        box.setOutlineColor(Theme::Gold);
-        window.draw(box);
+    if (auto* key = event.getIf<sf::Event::KeyPressed>())
+    {
+        if (m_focusedNode)
+        {
+            if (key->code == sf::Keyboard::Key::Enter) submitHeight();
+            else if (key->code == sf::Keyboard::Key::Backspace) { if (!m_nodeInputBuffer.empty()) m_nodeInputBuffer.pop_back(); }
+            else if (key->code == sf::Keyboard::Key::Escape) { m_focusedNode = nullptr; m_nodeInputBuffer.clear(); }
+        }
+        else if (m_diameterBoxFocused)
+        {
+            if (key->code == sf::Keyboard::Key::Enter) submitDiameter();
+            else if (key->code == sf::Keyboard::Key::Backspace) { if (!m_diameterInputBuffer.empty()) m_diameterInputBuffer.pop_back(); }
+        }
+    }
 
-        std::string prompt = "ENTER TREE DIAMETER:  [" + (inputBuffer.empty() ? "_" : inputBuffer) + "]";
-        sf::Text pTxt(engine.font, prompt, 15);
-        pTxt.setStyle(sf::Text::Bold);
-        pTxt.setFillColor(Theme::Gold);
-        pTxt.setPosition({490.0f, 626.0f});
-        window.draw(pTxt);
-
-        btnSubmitDiameter.draw(window, engine.font);
+    if (auto* textEv = event.getIf<sf::Event::TextEntered>())
+    {
+        char32_t unicode = textEv->unicode;
+        if (unicode >= '0' && unicode <= '9')
+        {
+            char digit = static_cast<char>(unicode);
+            if (m_focusedNode && m_nodeInputBuffer.size() < 3) m_nodeInputBuffer.push_back(digit);
+            else if (m_diameterBoxFocused && m_diameterInputBuffer.size() < 3) m_diameterInputBuffer.push_back(digit);
+        }
     }
 }
 
-void Act1Level3Screen::goToNextLevel(GameEngine& engine) {
-    engine.changeScreen(std::make_unique<Act1Level4Screen>());
+void Act1Level3Screen::update(float dt)
+{
+    LevelScreenBase::update(dt);
+
+    if (m_shakeTimer > 0.0f)
+    {
+        m_shakeTimer -= dt;
+        if (m_shakeTimer <= 0.0f)
+        {
+            m_shakingNode = nullptr;
+            m_shakeDiameterBox = false;
+        }
+    }
+}
+
+void Act1Level3Screen::onCustomDraw(sf::RenderTarget& target)
+{
+    const Theme& theme = m_engine.theme;
+
+    std::function<void(TreeNode*)> drawNodeHeights = [&](TreeNode* curr) {
+        if (!curr) return;
+
+        sf::Vector2f boxPos = curr->position + sf::Vector2f(-18.0f, -Theme::NodeRadius - 28.0f);
+        if (curr == m_shakingNode && m_shakeTimer > 0.0f)
+        {
+            boxPos += Tween::shake(m_shakeTimer, 6.0f);
+        }
+
+        auto it = m_solvedHeights.find(curr->val);
+        if (it != m_solvedHeights.end())
+        {
+            sf::RectangleShape solvedBox(sf::Vector2f(36.0f, 20.0f));
+            solvedBox.setPosition(boxPos);
+            solvedBox.setFillColor(sf::Color(10, 14, 23, 230));
+            solvedBox.setOutlineThickness(1.2f);
+            solvedBox.setOutlineColor(Theme::SuccessEmerald);
+            target.draw(solvedBox);
+
+            sf::Text hText(theme.fontMono, "H:" + std::to_string(it->second), 11);
+            hText.setFillColor(Theme::SuccessEmerald);
+            hText.setStyle(sf::Text::Bold);
+            sf::FloatRect b = hText.getLocalBounds();
+            hText.setOrigin(sf::Vector2f(b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f));
+            hText.setPosition(boxPos + sf::Vector2f(18.0f, 10.0f));
+            target.draw(hText);
+        }
+        else if (curr == m_focusedNode)
+        {
+            sf::RectangleShape editBox(sf::Vector2f(42.0f, 22.0f));
+            editBox.setPosition(boxPos + sf::Vector2f(-3.0f, -1.0f));
+            editBox.setFillColor(sf::Color(19, 27, 46, 240));
+            editBox.setOutlineThickness(1.8f);
+            editBox.setOutlineColor(Theme::AccentYellow);
+            target.draw(editBox);
+
+            std::string displayText = m_nodeInputBuffer + "|";
+            sf::Text inputText(theme.fontMono, displayText, 12);
+            inputText.setFillColor(Theme::AccentYellow);
+            inputText.setStyle(sf::Text::Bold);
+            sf::FloatRect b = inputText.getLocalBounds();
+            inputText.setOrigin(sf::Vector2f(b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f));
+            inputText.setPosition(boxPos + sf::Vector2f(18.0f, 10.0f));
+            target.draw(inputText);
+        }
+        else
+        {
+            sf::RectangleShape dimBox(sf::Vector2f(30.0f, 16.0f));
+            dimBox.setPosition(boxPos + sf::Vector2f(3.0f, 2.0f));
+            dimBox.setFillColor(sf::Color(10, 14, 23, 140));
+            dimBox.setOutlineThickness(1.0f);
+            dimBox.setOutlineColor(Theme::BorderMuted);
+            target.draw(dimBox);
+
+            sf::Text qText(theme.fontMono, "h=?", 9);
+            qText.setFillColor(Theme::TextMuted);
+            sf::FloatRect b = qText.getLocalBounds();
+            qText.setOrigin(sf::Vector2f(b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f));
+            qText.setPosition(boxPos + sf::Vector2f(18.0f, 10.0f));
+            target.draw(qText);
+        }
+
+        drawNodeHeights(curr->left);
+        drawNodeHeights(curr->right);
+    };
+
+    if (m_rootNode)
+    {
+        drawNodeHeights(m_rootNode);
+    }
+
+    drawTooltip(target, theme);
+}
+
+void Act1Level3Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds)
+{
+    const Theme& theme = m_engine.theme;
+    float px = panelBounds.position.x;
+    float py = panelBounds.position.y;
+    float pw = panelBounds.size.x;
+
+    sf::Text hdr(theme.fontMono, "// HEIGHT & DIAMETER TELEMETRY", 11);
+    hdr.setFillColor(Theme::BorderCyan);
+    hdr.setStyle(sf::Text::Bold);
+    hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));
+    target.draw(hdr);
+
+    int total = m_bridge.getTotalNodes();
+    std::string sSolved = "HEIGHTS VERIFIED: " + std::to_string(m_solvedHeights.size()) + " / " + std::to_string(total);
+    sf::Text tSol(theme.fontMono, sSolved, 12);
+    tSol.setFillColor(Theme::SuccessEmerald);
+    tSol.setPosition(sf::Vector2f(px + 4.0f, py + 26.0f));
+    target.draw(tSol);
+
+    std::string phaseStr = m_bridge.isHeightsPhaseDone() ? "PHASE: 2 (ENTER DIAMETER)" : "PHASE: 1 (BOTTOM-UP HEIGHTS)";
+    sf::Text tPh(theme.fontMono, phaseStr, 11);
+    tPh.setFillColor(Theme::AccentYellow);
+    tPh.setPosition(sf::Vector2f(px + 4.0f, py + 48.0f));
+    target.draw(tPh);
+
+    // In Side Panel: Render Diameter Input Box when unlocked
+    if (m_bridge.isHeightsPhaseDone())
+    {
+        float boxW = pw - 12.0f;
+        float boxH = 42.0f;
+        sf::Vector2f diaPos(px + 6.0f, py + 80.0f);
+        if (m_shakeDiameterBox && m_shakeTimer > 0.0f)
+        {
+            diaPos += Tween::shake(m_shakeTimer, 7.0f);
+        }
+        m_diameterBoxBounds = sf::FloatRect(diaPos, sf::Vector2f(boxW, boxH));
+
+        sf::RectangleShape diaBox(sf::Vector2f(boxW, boxH));
+        diaBox.setPosition(diaPos);
+        diaBox.setFillColor(sf::Color(10, 14, 23, 240));
+        diaBox.setOutlineThickness(m_diameterBoxFocused ? 2.0f : 1.2f);
+        diaBox.setOutlineColor(m_diameterBoxFocused ? Theme::AccentYellow : Theme::BorderCyan);
+        target.draw(diaBox);
+
+        std::string str = "DIAMETER: " + m_diameterInputBuffer + (m_diameterBoxFocused ? "|" : "");
+        sf::Text diaText(theme.fontMono, str, 12);
+        diaText.setFillColor(m_diameterBoxFocused ? Theme::AccentYellow : Theme::TextPrimary);
+        diaText.setPosition(diaPos + sf::Vector2f(10.0f, 12.0f));
+        target.draw(diaText);
+    }
+}
+
+void Act1Level3Screen::drawTooltip(sf::RenderTarget& target, const Theme& theme)
+{
+    if (!m_hoverNode) return;
+
+    sf::Vector2f pos = m_hoverNode->position + sf::Vector2f(Theme::NodeRadius + 12.0f, -Theme::NodeRadius);
+    float boxW = 145.0f;
+    float boxH = 68.0f;
+
+    sf::RectangleShape box(sf::Vector2f(boxW, boxH));
+    box.setPosition(pos);
+    box.setFillColor(sf::Color(17, 24, 39, 240));
+    box.setOutlineThickness(1.0f);
+    box.setOutlineColor(Theme::BorderCyan);
+    target.draw(box);
+
+    std::string heightDisplay = "[LOCKED]";
+    auto it = m_solvedHeights.find(m_hoverNode->val);
+    if (it != m_solvedHeights.end())
+    {
+        heightDisplay = std::to_string(it->second);
+    }
+
+    std::string info = "Room: " + std::to_string(m_hoverNode->val) + "\n" +
+                       "Height: " + heightDisplay + "\n" +
+                       "Subtree Size: " + std::to_string(m_hoverNode->size);
+
+    sf::Text tipText(theme.fontMono, info, 11);
+    tipText.setFillColor(Theme::TextPrimary);
+    tipText.setPosition(pos + sf::Vector2f(10.0f, 8.0f));
+    target.draw(tipText);
 }

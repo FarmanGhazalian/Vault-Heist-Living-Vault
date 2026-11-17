@@ -1,527 +1,729 @@
 #include "UIKit.h"
-#include "SoundManager.h"
 #include <cmath>
-#include <algorithm>
-#include <iomanip>
-#include <sstream>
 
-// -------------------------------------------------------------
-// Tween
-// -------------------------------------------------------------
-float Tween::easeOutQuad(float t) {
-    t = std::clamp(t, 0.0f, 1.0f);
-    return 1.0f - (1.0f - t) * (1.0f - t);
+Button::Button()
+	: bounds(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 40.0f)),
+	  label("BUTTON"), style(BTN_PRIMARY), hovered(false), pressed(false), clicked(false), enabled(true)
+{
 }
 
-float Tween::easeOutCubic(float t) {
-    t = std::clamp(t, 0.0f, 1.0f);
-    float f = t - 1.0f;
-    return f * f * f + 1.0f;
+Button::Button(const std::string& text, const sf::FloatRect& rect, int btnStyle)
+	: bounds(rect), label(text), style(btnStyle), hovered(false), pressed(false), clicked(false), enabled(true)
+{
 }
 
-float Tween::easeInOutQuad(float t) {
-    t = std::clamp(t, 0.0f, 1.0f);
-    return t < 0.5f ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) * 0.5f;
+void Button::handleEvent(const sf::Event& event)
+{
+	if (!enabled)
+	{
+		hovered = false;
+		pressed = false;
+		clicked = false;
+		return;
+	}
+
+	if (const auto* mm = event.getIf<sf::Event::MouseMoved>())
+	{
+		sf::Vector2f mpos(static_cast<float>(mm->position.x), static_cast<float>(mm->position.y));
+		hovered = bounds.contains(mpos);
+	}
+	else if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (mb->button == sf::Mouse::Button::Left)
+		{
+			sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
+			if (bounds.contains(mpos))
+			{
+				pressed = true;
+			}
+		}
+	}
+	else if (const auto* mr = event.getIf<sf::Event::MouseButtonReleased>())
+	{
+		if (mr->button == sf::Mouse::Button::Left)
+		{
+			sf::Vector2f mpos(static_cast<float>(mr->position.x), static_cast<float>(mr->position.y));
+			if (pressed && bounds.contains(mpos))
+			{
+				clicked = true;
+			}
+			pressed = false;
+		}
+	}
 }
 
-// -------------------------------------------------------------
-// Button
-// -------------------------------------------------------------
-Button::Button(const sf::FloatRect& b, const std::string& t, int s)
-    : bounds(b), text(t), style(s) {}
+void Button::draw(sf::RenderTarget& target, const Theme& theme) const
+{
+	sf::Color borderColor = Theme::BorderCyan;
+	sf::Color textColor = Theme::TextPrimary;
+	sf::Color fillColor = sf::Color(17, 24, 39, 210);
 
-void Button::update(const sf::Vector2f& mousePos) {
-    if (isLocked) {
-        isHovered = false;
-        return;
-    }
-    isHovered = bounds.contains(mousePos);
+	if (style == BTN_SECONDARY)
+	{
+		borderColor = Theme::BorderMuted;
+		textColor = Theme::TextMuted;
+	}
+	else if (style == BTN_DANGER)
+	{
+		borderColor = Theme::CrimsonAlarm;
+		textColor = Theme::CrimsonAlarm;
+	}
+	else if (style == BTN_BACK)
+	{
+		borderColor = Theme::BorderMuted;
+		textColor = Theme::BorderCyan;
+	}
+
+	if (!enabled)
+	{
+		borderColor = sf::Color(55, 65, 81, 100);
+		textColor = sf::Color(156, 163, 175, 100);
+		fillColor = sf::Color(10, 14, 23, 150);
+	}
+	else if (pressed)
+	{
+		fillColor = sf::Color(10, 14, 23, 240);
+	}
+	else if (hovered)
+	{
+		fillColor = sf::Color(30, 41, 59, 230);
+		if (style == BTN_PRIMARY)
+		{
+			theme.drawGlowOutline(target, bounds, Theme::BorderCyan, 0.8f);
+		}
+		else if (style == BTN_DANGER)
+		{
+			theme.drawGlowOutline(target, bounds, Theme::CrimsonAlarm, 0.8f);
+		}
+		else if (style == BTN_BACK)
+		{
+			theme.drawGlowOutline(target, bounds, Theme::BorderCyan, 0.5f);
+		}
+	}
+
+	// Button background rect
+	sf::RectangleShape rect(bounds.size);
+	rect.setPosition(bounds.position);
+	rect.setFillColor(fillColor);
+	rect.setOutlineColor(borderColor);
+	rect.setOutlineThickness(hovered ? 1.5f : 1.0f);
+	target.draw(rect);
+
+	// Label text
+	unsigned int fontSize = (style == BTN_BACK) ? 14 : 15;
+	sf::Text txt(theme.fontUI, label, fontSize);
+	txt.setFillColor(hovered ? sf::Color::White : textColor);
+
+	// Center text inside button bounds
+	sf::FloatRect tb = txt.getLocalBounds();
+	float tx = bounds.position.x + (bounds.size.x - tb.size.x) * 0.5f - tb.position.x;
+	float ty = bounds.position.y + (bounds.size.y - tb.size.y) * 0.5f - tb.position.y;
+	txt.setPosition(sf::Vector2f(std::round(tx), std::round(ty)));
+	target.draw(txt);
 }
 
-bool Button::handleClick(const sf::Vector2f& mousePos) {
-    if (isLocked) return false;
-    return bounds.contains(mousePos);
+Panel::Panel()
+	: bounds(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(200.0f, 150.0f)),
+	  title(""), borderColor(Theme::BorderCyan), borderWidth(1.0f)
+{
 }
 
-void Button::draw(sf::RenderWindow& window, const sf::Font& font) const {
-    sf::RectangleShape rect({bounds.size.x, bounds.size.y});
-    rect.setPosition({bounds.position.x, bounds.position.y});
-
-    // Dark glass fill
-    if (isLocked) {
-        rect.setFillColor(sf::Color(14, 20, 36, 180));
-    } else if (isHovered) {
-        rect.setFillColor(sf::Color(26, 38, 66, 230));
-    } else {
-        rect.setFillColor(sf::Color(18, 26, 46, 220));
-    }
-
-    // 1px Border
-    rect.setOutlineThickness(1.0f);
-    if (isLocked) {
-        rect.setOutlineColor(sf::Color(51, 65, 85, 120));
-    } else {
-        sf::Color borderCol = Theme::PanelBorder;
-        if (style == ButtonStyle::PRIMARY) borderCol = isHovered ? sf::Color(125, 211, 252) : Theme::AccentCyan;
-        else if (style == ButtonStyle::SECONDARY) borderCol = isHovered ? sf::Color(148, 163, 184) : Theme::Grey;
-        else if (style == ButtonStyle::DANGER) borderCol = isHovered ? sf::Color(248, 113, 113) : Theme::Red;
-        else if (style == ButtonStyle::GOLD) borderCol = isHovered ? sf::Color(250, 204, 21) : Theme::Gold;
-        rect.setOutlineColor(borderCol);
-    }
-    window.draw(rect);
-
-    // Optional tag on top
-    if (!tagText.empty()) {
-        sf::Text tag(font, tagText, 11);
-        tag.setStyle(sf::Text::Bold);
-        tag.setFillColor(isLocked ? sf::Color(100, 116, 139) : Theme::AccentCyan);
-        tag.setPosition({bounds.position.x + 16.0f, bounds.position.y + 10.0f});
-        window.draw(tag);
-    }
-
-    // Button label
-    unsigned int charSize = tagText.empty() ? 15 : 14;
-    sf::Text txt(font, text, charSize);
-    txt.setStyle(sf::Text::Bold);
-    if (isLocked) {
-        txt.setFillColor(sf::Color(100, 116, 139));
-    } else if (isHovered) {
-        txt.setFillColor(sf::Color::White);
-    } else {
-        txt.setFillColor(Theme::TextWhite);
-    }
-
-    auto tb = txt.getLocalBounds();
-    float txtY = tagText.empty() ? (bounds.position.y + bounds.size.y * 0.5f - tb.size.y * 0.5f - tb.position.y)
-                                 : (bounds.position.y + bounds.size.y * 0.62f - tb.size.y * 0.5f - tb.position.y);
-    float txtX = bounds.position.x + bounds.size.x * 0.5f - tb.size.x * 0.5f - tb.position.x;
-    txt.setPosition({txtX, txtY});
-    window.draw(txt);
-
-    // Small lock tag if locked
-    if (isLocked) {
-        sf::Text lockTxt(font, "[LOCKED]", 11);
-        lockTxt.setFillColor(sf::Color(148, 163, 184));
-        auto lb = lockTxt.getLocalBounds();
-        lockTxt.setPosition({bounds.position.x + bounds.size.x - lb.size.x - 16.0f, bounds.position.y + 10.0f});
-        window.draw(lockTxt);
-    }
+Panel::Panel(const sf::FloatRect& rect, const std::string& panelTitle, const sf::Color& bColor, float bWidth)
+	: bounds(rect), title(panelTitle), borderColor(bColor), borderWidth(bWidth)
+{
 }
 
-// -------------------------------------------------------------
-// ToastManager
-// -------------------------------------------------------------
-void ToastManager::add(const std::string& title, const std::string& message, int type) {
-    if (toasts.size() >= 3) {
-        toasts.erase(toasts.begin());
-    }
-    ToastItem item;
-    item.title = title;
-    item.message = message;
-    item.type = type;
-    item.timer = 3.5f;
-    item.totalTime = 3.5f;
-    item.currentY = -70.0f;
-    item.targetY = 20.0f + static_cast<float>(toasts.size()) * 74.0f;
-    toasts.push_back(item);
+void Panel::draw(sf::RenderTarget& target, const Theme& theme) const
+{
+	theme.drawPanel(target, bounds, borderColor, borderWidth);
+
+	if (!title.empty())
+	{
+		sf::Text tText(theme.fontUI, title, 16);
+		tText.setFillColor(Theme::BorderCyan);
+		tText.setPosition(sf::Vector2f(bounds.position.x + 16.0f, bounds.position.y + 12.0f));
+		target.draw(tText);
+
+		// Divider line under title
+		sf::VertexArray divider(sf::PrimitiveType::Lines, 2);
+		divider[0].position = sf::Vector2f(bounds.position.x + 16.0f, bounds.position.y + 36.0f);
+		divider[0].color = sf::Color(0, 240, 255, 60);
+		divider[1].position = sf::Vector2f(bounds.position.x + bounds.size.x - 16.0f, bounds.position.y + 36.0f);
+		divider[1].color = sf::Color(0, 240, 255, 60);
+		target.draw(divider);
+	}
 }
 
-void ToastManager::update(float dt) {
-    for (auto it = toasts.begin(); it != toasts.end();) {
-        it->timer -= dt;
-        if (it->timer <= 0.0f) {
-            it = toasts.erase(it);
-        } else {
-            // Smooth slide down
-            float progress = 1.0f - (it->timer / it->totalTime);
-            if (progress < 0.15f) {
-                float inT = progress / 0.15f;
-                it->currentY = -70.0f + (it->targetY + 70.0f) * Tween::easeOutQuad(inT);
-            } else if (it->timer < 0.3f) {
-                float outT = 1.0f - (it->timer / 0.3f);
-                it->currentY = it->targetY - (it->targetY + 80.0f) * outT;
-            } else {
-                it->currentY = it->targetY;
-            }
-            ++it;
-        }
-    }
+namespace Tween
+{
+	float lerp(float a, float b, float t)
+	{
+		return a + (b - a) * t;
+	}
+
+	float easeOutQuad(float t)
+	{
+		if (t < 0.0f) return 0.0f;
+		if (t > 1.0f) return 1.0f;
+		return t * (2.0f - t);
+	}
+
+	float easeInOutQuad(float t)
+	{
+		if (t < 0.0f) return 0.0f;
+		if (t > 1.0f) return 1.0f;
+		return (t < 0.5f) ? (2.0f * t * t) : (-1.0f + (4.0f - 2.0f * t) * t);
+	}
+
+	float pulse(float time, float speed)
+	{
+		return 0.5f * (1.0f + std::sin(time * speed));
+	}
+
+	sf::Vector2f shake(float time, float intensity)
+	{
+		float ox = std::sin(time * 35.0f) * intensity;
+		float oy = std::cos(time * 28.0f) * intensity;
+		return sf::Vector2f(ox, oy);
+	}
 }
 
-void ToastManager::draw(sf::RenderWindow& window, const sf::Font& font) {
-    float width = 460.0f;
-    float height = 62.0f;
-    float startX = (window.getSize().x - width) * 0.5f;
-
-    for (const auto& t : toasts) {
-        // Container card
-        sf::RectangleShape card({width, height});
-        card.setPosition({startX, t.currentY});
-        card.setFillColor(sf::Color(18, 26, 46, 245));
-        card.setOutlineThickness(1.0f);
-        card.setOutlineColor(Theme::PanelBorder);
-        window.draw(card);
-
-        // Thin colored left bar
-        sf::Color barColor = Theme::AccentCyan;
-        if (t.type == ToastType::HINT) barColor = Theme::Gold;
-        else if (t.type == ToastType::CORRECT) barColor = Theme::Green;
-        else if (t.type == ToastType::ERROR_MSG) barColor = Theme::Red;
-
-        sf::RectangleShape bar({4.0f, height});
-        bar.setPosition({startX, t.currentY});
-        bar.setFillColor(barColor);
-        window.draw(bar);
-
-        // Title
-        sf::Text title(font, t.title, 13);
-        title.setStyle(sf::Text::Bold);
-        title.setFillColor(barColor);
-        title.setPosition({startX + 16.0f, t.currentY + 10.0f});
-        window.draw(title);
-
-        // Message
-        sf::Text msg(font, t.message, 12);
-        msg.setFillColor(Theme::TextWhite);
-        msg.setPosition({startX + 16.0f, t.currentY + 30.0f});
-        window.draw(msg);
-
-        // Remaining time line at bottom
-        float linePct = std::clamp(t.timer / t.totalTime, 0.0f, 1.0f);
-        sf::RectangleShape timeLine({(width - 4.0f) * linePct, 2.0f});
-        timeLine.setPosition({startX + 4.0f, t.currentY + height - 2.0f});
-        timeLine.setFillColor(sf::Color(barColor.r, barColor.g, barColor.b, 160));
-        window.draw(timeLine);
-    }
+// ToastManager Implementation
+ToastManager::ToastManager()
+{
 }
 
-bool ToastManager::handleClick(const sf::Vector2f& mousePos) {
-    float width = 460.0f;
-    float height = 62.0f;
-    float startX = 520.0f; // Approx center on 1500w
-    for (auto it = toasts.begin(); it != toasts.end(); ++it) {
-        sf::FloatRect b({startX, it->currentY}, {width, height});
-        if (b.contains(mousePos)) {
-            toasts.erase(it);
-            return true;
-        }
-    }
-    return false;
+void ToastManager::addToast(const std::string& message, int type)
+{
+	Toast t;
+	t.message = message;
+	t.type = type;
+	t.totalTime = ToastDuration;
+	t.timeRemaining = ToastDuration;
+	t.animProgress = 0.0f;
+
+	if (toasts.size() >= 3)
+	{
+		toasts.erase(toasts.begin());
+	}
+	toasts.push_back(t);
 }
 
-void ToastManager::clear() {
-    toasts.clear();
+void ToastManager::update(float dt)
+{
+	for (auto it = toasts.begin(); it != toasts.end(); )
+	{
+		it->timeRemaining -= dt;
+
+		// Slide down (first 0.25s) or slide up (last 0.25s)
+		if (it->timeRemaining > it->totalTime - 0.25f)
+		{
+			it->animProgress = (it->totalTime - it->timeRemaining) / 0.25f;
+		}
+		else if (it->timeRemaining < 0.25f)
+		{
+			it->animProgress = it->timeRemaining / 0.25f;
+		}
+		else
+		{
+			it->animProgress = 1.0f;
+		}
+
+		if (it->timeRemaining <= 0.0f)
+		{
+			it = toasts.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
 }
 
-// -------------------------------------------------------------
-// Medallions
-// -------------------------------------------------------------
-void drawMetallicMedallion(sf::RenderWindow& window, const sf::Font& font, sf::Vector2f center, float radius, bool isEarned, float scale, int index) {
-    float r = radius * scale;
+void ToastManager::handleEvent(const sf::Event& event, float windowWidth)
+{
+	if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (mb->button == sf::Mouse::Button::Left)
+		{
+			sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
+			float startX = (windowWidth - ToastWidth) * 0.5f;
 
-    // Outer metal rim
-    sf::CircleShape outer(r);
-    outer.setOrigin({r, r});
-    outer.setPosition(center);
-    if (isEarned) {
-        outer.setFillColor(sf::Color(180, 130, 20));
-        outer.setOutlineThickness(2.0f * scale);
-        outer.setOutlineColor(sf::Color(250, 204, 21));
-    } else {
-        outer.setFillColor(sf::Color(30, 41, 59));
-        outer.setOutlineThickness(1.5f * scale);
-        outer.setOutlineColor(sf::Color(71, 85, 105));
-    }
-    window.draw(outer);
-
-    // Inner bevel
-    sf::CircleShape inner(r * 0.82f);
-    inner.setOrigin({r * 0.82f, r * 0.82f});
-    inner.setPosition(center);
-    if (isEarned) {
-        inner.setFillColor(sf::Color(212, 167, 44));
-    } else {
-        inner.setFillColor(sf::Color(40, 53, 76));
-    }
-    window.draw(inner);
-
-    // Roman numeral or star emboss
-    std::string roman = (index == 0) ? "I" : (index == 1 ? "II" : "III");
-    sf::Text t(font, roman, static_cast<unsigned int>(16 * scale));
-    t.setStyle(sf::Text::Bold);
-    t.setFillColor(isEarned ? sf::Color(254, 240, 138) : sf::Color(100, 116, 139));
-    auto tb = t.getLocalBounds();
-    t.setOrigin({tb.position.x + tb.size.x * 0.5f, tb.position.y + tb.size.y * 0.5f});
-    t.setPosition(center);
-    window.draw(t);
+			for (size_t i = 0; i < toasts.size(); i++)
+			{
+				float startY = 16.0f + static_cast<float>(i) * (ToastHeight + 8.0f);
+				sf::FloatRect rect(sf::Vector2f(startX, startY), sf::Vector2f(ToastWidth, ToastHeight));
+				if (rect.contains(mpos))
+				{
+					toasts.erase(toasts.begin() + i);
+					break;
+				}
+			}
+		}
+	}
 }
 
-// -------------------------------------------------------------
-// ModalPopup
-// -------------------------------------------------------------
-void ModalPopup::showComingSoon(const std::string& featureName) {
-    type = PopupType::COMING_SOON;
-    title = "CLASSIFIED ARCHIVE";
-    message = featureName + " is not built yet.\nIt is coming soon in the next wing deployment!";
-    active = true;
-    animTimer = 0.0f;
-    btn1 = Button({{670.0f, 495.0f}, {160.0f, 44.0f}}, "DISMISS", ButtonStyle::PRIMARY);
+void ToastManager::draw(sf::RenderTarget& target, const Theme& theme, float windowWidth) const
+{
+	float startX = (windowWidth - ToastWidth) * 0.5f;
+
+	for (size_t i = 0; i < toasts.size(); i++)
+	{
+		const auto& t = toasts[i];
+		float targetY = 16.0f + static_cast<float>(i) * (ToastHeight + 8.0f);
+		float curY = targetY - (1.0f - Tween::easeOutQuad(t.animProgress)) * 50.0f;
+
+		sf::FloatRect bounds(sf::Vector2f(startX, curY), sf::Vector2f(ToastWidth, ToastHeight));
+
+		sf::Color accentColor = Theme::BorderCyan;
+		std::string tag = "[INFO] ";
+		if (t.type == TOAST_HINT)
+		{
+			accentColor = Theme::AccentYellow;
+			tag = "[HINT] ";
+		}
+		else if (t.type == TOAST_CORRECT)
+		{
+			accentColor = Theme::SuccessEmerald;
+			tag = "[SUCCESS] ";
+		}
+		else if (t.type == TOAST_ERROR)
+		{
+			accentColor = Theme::CrimsonAlarm;
+			tag = "[ALERT] ";
+		}
+
+		// Dark glass card
+		sf::RectangleShape card(bounds.size);
+		card.setPosition(bounds.position);
+		card.setFillColor(sf::Color(17, 24, 39, 240));
+		card.setOutlineColor(sf::Color(accentColor.r, accentColor.g, accentColor.b, 160));
+		card.setOutlineThickness(1.0f);
+		target.draw(card);
+
+		// Left accent bar (4px)
+		sf::RectangleShape bar(sf::Vector2f(4.0f, bounds.size.y));
+		bar.setPosition(bounds.position);
+		bar.setFillColor(accentColor);
+		target.draw(bar);
+
+		// Tag + message text
+		std::string fullText = tag + t.message;
+		sf::Text txt(theme.fontUI, fullText, 14);
+		txt.setFillColor(Theme::TextPrimary);
+		txt.setPosition(sf::Vector2f(bounds.position.x + 14.0f, bounds.position.y + 13.0f));
+		target.draw(txt);
+
+		// Remaining time thin bar at bottom
+		float timerW = bounds.size.x * (t.timeRemaining / t.totalTime);
+		if (timerW > 0.0f)
+		{
+			sf::RectangleShape timeLine(sf::Vector2f(timerW, 2.0f));
+			timeLine.setPosition(sf::Vector2f(bounds.position.x, bounds.position.y + bounds.size.y - 2.0f));
+			timeLine.setFillColor(accentColor);
+			target.draw(timeLine);
+		}
+	}
 }
 
-void ModalPopup::showPause() {
-    type = PopupType::PAUSE;
-    title = "OPERATION PAUSED";
-    message = "Abort current vault operation and return to command center?";
-    active = true;
-    animTimer = 0.0f;
-    btn1 = Button({{600.0f, 490.0f}, {140.0f, 44.0f}}, "RESUME", ButtonStyle::PRIMARY);
-    btn2 = Button({{760.0f, 490.0f}, {140.0f, 44.0f}}, "QUIT", ButtonStyle::DANGER);
+// ModalPopup Implementation
+ModalPopup::ModalPopup()
+	: active(false), type(MODAL_INFO)
+{
+	btnConfirm = Button("OK", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(120.0f, 38.0f)), BTN_PRIMARY);
+	btnCancel  = Button("CANCEL", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(120.0f, 38.0f)), BTN_SECONDARY);
 }
 
-void ModalPopup::showResult(const LevelResultData& data) {
-    type = PopupType::RESULT;
-    result = data;
-    title = data.isWon ? "VAULT CRACKED" : "SECURITY LOCKDOWN";
-    message = data.isWon ? "Objective accomplished. Security nodes bypassed."
-                         : "The alarm reached its limit. Security seals engaged.";
-    active = true;
-    animTimer = 0.0f;
-    starThudsPlayed = 0;
-
-    btn1 = Button({{510.0f, 605.0f}, {140.0f, 44.0f}}, "RETRY", ButtonStyle::SECONDARY);
-    btn2 = Button({{670.0f, 605.0f}, {160.0f, 44.0f}}, data.isLastLevel ? "TO BLUEPRINT" : "NEXT LEVEL", ButtonStyle::GOLD);
-    btn3 = Button({{850.0f, 605.0f}, {140.0f, 44.0f}}, "MENU", ButtonStyle::SECONDARY);
+void ModalPopup::showInfo(const std::string& modalTitle, const std::string& modalMsg, std::function<void()> onOk)
+{
+	active = true;
+	type = MODAL_INFO;
+	title = modalTitle;
+	message = modalMsg;
+	onConfirm = onOk;
+	onCancel = nullptr;
+	btnConfirm.label = "DISMISS";
 }
 
-void ModalPopup::close() {
-    active = false;
-    type = PopupType::NONE;
+void ModalPopup::showConfirm(const std::string& modalTitle, const std::string& modalMsg, std::function<void()> onYes, std::function<void()> onNo)
+{
+	active = true;
+	type = MODAL_CONFIRM;
+	title = modalTitle;
+	message = modalMsg;
+	onConfirm = onYes;
+	onCancel = onNo;
+	btnConfirm.label = "CONFIRM";
+	btnCancel.label = "CANCEL";
 }
 
-void ModalPopup::update(float dt, const sf::Vector2f& mousePos, SoundManager& audio) {
-    if (!active) return;
-    animTimer += dt;
-
-    if (type == PopupType::RESULT) {
-        // Sequential medallion thuds
-        for (int i = 0; i < 3; ++i) {
-            float triggerTime = 0.35f + static_cast<float>(i) * 0.25f;
-            if (animTimer >= triggerTime && starThudsPlayed == i) {
-                starThudsPlayed++;
-                if (i < result.stars) audio.playThud();
-            }
-        }
-    }
-
-    btn1.update(mousePos);
-    btn2.update(mousePos);
-    btn3.update(mousePos);
+void ModalPopup::close()
+{
+	active = false;
+	if (onCancel)
+	{
+		onCancel();
+	}
 }
 
-int ModalPopup::handleEvent(const sf::Event& event, const sf::Vector2f& mousePos) {
-    if (!active) return PopupAction::NONE;
+void ModalPopup::handleEvent(const sf::Event& event)
+{
+	if (!active) return;
 
-    if (const auto* kp = event.getIf<sf::Event::KeyPressed>()) {
-        if (kp->code == sf::Keyboard::Key::Escape) {
-            if (type == PopupType::PAUSE) { close(); return PopupAction::CANCEL; }
-            if (type == PopupType::COMING_SOON) { close(); return PopupAction::OK; }
-        }
-    }
+	if (event.is<sf::Event::KeyPressed>())
+	{
+		if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
+		{
+			if (kp->code == sf::Keyboard::Key::Escape)
+			{
+				close();
+				return;
+			}
+		}
+	}
 
-    if (const auto* mp = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mp->button == sf::Mouse::Button::Left) {
-            if (type == PopupType::COMING_SOON) {
-                if (btn1.handleClick(mousePos)) { close(); return PopupAction::OK; }
-            } else if (type == PopupType::PAUSE) {
-                if (btn1.handleClick(mousePos)) { close(); return PopupAction::CANCEL; }
-                if (btn2.handleClick(mousePos)) { close(); return PopupAction::MENU; }
-            } else if (type == PopupType::RESULT) {
-                if (btn1.handleClick(mousePos)) { close(); return PopupAction::RETRY; }
-                if (btn2.handleClick(mousePos)) { close(); return PopupAction::NEXT; }
-                if (btn3.handleClick(mousePos)) { close(); return PopupAction::MENU; }
-            }
-        }
-    }
-    return PopupAction::NONE;
+	btnConfirm.handleEvent(event);
+	if (type == MODAL_CONFIRM)
+	{
+		btnCancel.handleEvent(event);
+	}
+
+	if (btnConfirm.isClicked())
+	{
+		btnConfirm.resetClick();
+		active = false;
+		if (onConfirm)
+		{
+			onConfirm();
+		}
+	}
+	else if (type == MODAL_CONFIRM && btnCancel.isClicked())
+	{
+		btnCancel.resetClick();
+		close();
+	}
 }
 
-void ModalPopup::draw(sf::RenderWindow& window, const sf::Font& font) {
-    if (!active) return;
+void ModalPopup::update(float dt)
+{
+	(void)dt;
+}
 
-    float W = static_cast<float>(window.getSize().x);
-    float H = static_cast<float>(window.getSize().y);
+void ModalPopup::draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize) const
+{
+	if (!active) return;
 
-    // Dim background overlay
-    sf::RectangleShape dim({W, H});
-    dim.setFillColor(sf::Color(8, 12, 22, 215));
-    window.draw(dim);
+	// Dimmed dark background overlay
+	sf::RectangleShape overlay(windowSize);
+	overlay.setFillColor(sf::Color(10, 14, 23, 200));
+	target.draw(overlay);
 
-    float scale = Tween::easeOutCubic(std::min(1.0f, animTimer / 0.3f));
-    float alpha = std::min(1.0f, animTimer / 0.25f);
+	// Modal dimensions
+	float mw = std::min(480.0f, windowSize.x * 0.85f);
+	float mh = 220.0f;
+	float mx = (windowSize.x - mw) * 0.5f;
+	float my = (windowSize.y - mh) * 0.5f;
 
-    if (type == PopupType::COMING_SOON || type == PopupType::PAUSE) {
-        float pW = 520.0f;
-        float pH = 260.0f;
-        float pX = (W - pW) * 0.5f;
-        float pY = (H - pH) * 0.5f + (1.0f - scale) * 20.0f;
+	sf::FloatRect bounds(sf::Vector2f(mx, my), sf::Vector2f(mw, mh));
 
-        // Dossier panel
-        sf::RectangleShape panel({pW, pH});
-        panel.setPosition({pX, pY});
-        panel.setFillColor(sf::Color(18, 26, 46, static_cast<std::uint8_t>(250 * alpha)));
-        panel.setOutlineThickness(1.0f);
-        panel.setOutlineColor(Theme::PanelBorder);
-        window.draw(panel);
+	// Modal body panel
+	theme.drawPanel(target, bounds, Theme::BorderCyan, 1.5f);
+	theme.drawGlowOutline(target, bounds, Theme::BorderCyan, 0.7f);
 
-        // Accent top bar
-        sf::RectangleShape bar({pW, 3.0f});
-        bar.setPosition({pX, pY});
-        bar.setFillColor(Theme::AccentCyan);
-        window.draw(bar);
+	// Title
+	sf::Text tText(theme.fontUI, title, 18);
+	tText.setFillColor(Theme::BorderCyan);
+	tText.setPosition(sf::Vector2f(mx + 20.0f, my + 16.0f));
+	target.draw(tText);
 
-        // Title
-        sf::Text tTitle(font, title, 20);
-        tTitle.setStyle(sf::Text::Bold);
-        tTitle.setFillColor(Theme::AccentCyan);
-        auto tb = tTitle.getLocalBounds();
-        tTitle.setPosition({pX + (pW - tb.size.x) * 0.5f, pY + 36.0f});
-        window.draw(tTitle);
+	// Divider
+	sf::VertexArray div(sf::PrimitiveType::Lines, 2);
+	div[0].position = sf::Vector2f(mx + 20.0f, my + 44.0f);
+	div[0].color = sf::Color(0, 240, 255, 70);
+	div[1].position = sf::Vector2f(mx + mw - 20.0f, my + 44.0f);
+	div[1].color = sf::Color(0, 240, 255, 70);
+	target.draw(div);
 
-        // Message
-        sf::Text tMsg(font, message, 15);
-        tMsg.setFillColor(Theme::TextWhite);
-        auto mb = tMsg.getLocalBounds();
-        tMsg.setPosition({pX + (pW - mb.size.x) * 0.5f, pY + 85.0f});
-        window.draw(tMsg);
+	// Message
+	sf::Text msgText(theme.fontUI, message, 15);
+	msgText.setFillColor(Theme::TextPrimary);
+	msgText.setPosition(sf::Vector2f(mx + 20.0f, my + 60.0f));
+	target.draw(msgText);
 
-        btn1.bounds.position = {pX + (pW - btn1.bounds.size.x) * 0.5f, pY + pH - 65.0f};
-        if (type == PopupType::PAUSE) {
-            btn1.bounds.position = {pX + 80.0f, pY + pH - 65.0f};
-            btn2.bounds.position = {pX + pW - 80.0f - btn2.bounds.size.x, pY + pH - 65.0f};
-            btn1.draw(window, font);
-            btn2.draw(window, font);
-        } else {
-            btn1.draw(window, font);
-        }
-    } else if (type == PopupType::RESULT) {
-        float pW = 660.0f;
-        float pH = 510.0f;
-        float pX = (W - pW) * 0.5f;
-        float pY = (H - pH) * 0.5f + (1.0f - scale) * 25.0f;
+	// Buttons placement
+	float btnY = my + mh - 54.0f;
+	if (type == MODAL_INFO)
+	{
+		Button okBtn = btnConfirm;
+		float bw = 140.0f;
+		okBtn.bounds = sf::FloatRect(sf::Vector2f(mx + (mw - bw) * 0.5f, btnY), sf::Vector2f(bw, 38.0f));
+		okBtn.draw(target, theme);
+	}
+	else
+	{
+		Button cBtn = btnConfirm;
+		Button cancelBtn = btnCancel;
+		float bw = 120.0f;
+		float totalW = bw * 2.0f + 16.0f;
+		float startBtnX = mx + (mw - totalW) * 0.5f;
 
-        // Metal Dossier Plate
-        sf::RectangleShape panel({pW, pH});
-        panel.setPosition({pX, pY});
-        panel.setFillColor(sf::Color(18, 26, 46, static_cast<std::uint8_t>(252 * alpha)));
-        panel.setOutlineThickness(1.0f);
-        panel.setOutlineColor(result.isWon ? Theme::Gold : Theme::Red);
-        window.draw(panel);
+		cBtn.bounds = sf::FloatRect(sf::Vector2f(startBtnX, btnY), sf::Vector2f(bw, 38.0f));
+		cancelBtn.bounds = sf::FloatRect(sf::Vector2f(startBtnX + bw + 16.0f, btnY), sf::Vector2f(bw, 38.0f));
 
-        // Header Accent line
-        sf::RectangleShape bar({pW, 3.0f});
-        bar.setPosition({pX, pY});
-        bar.setFillColor(result.isWon ? Theme::Gold : Theme::Red);
-        window.draw(bar);
-
-        // Dossier header label
-        sf::Text subH(font, "OPERATIONAL DEBRIEFING // LEVEL COMPLETION", 11);
-        subH.setStyle(sf::Text::Bold);
-        subH.setFillColor(Theme::TextMuted);
-        subH.setPosition({pX + 35.0f, pY + 22.0f});
-        window.draw(subH);
-
-        // Header Title
-        sf::Text tTitle(font, title, 26);
-        tTitle.setStyle(sf::Text::Bold);
-        tTitle.setFillColor(result.isWon ? Theme::Gold : Theme::Red);
-        tTitle.setPosition({pX + 35.0f, pY + 42.0f});
-        window.draw(tTitle);
-
-        // Message
-        sf::Text tMsg(font, message, 13);
-        tMsg.setFillColor(Theme::TextWhite);
-        tMsg.setPosition({pX + 35.0f, pY + 80.0f});
-        window.draw(tMsg);
-
-        // Three Stamped Metallic Medallions
-        float medY = pY + 145.0f;
-        float medX[3] = {pX + pW * 0.5f - 90.0f, pX + pW * 0.5f, pX + pW * 0.5f + 90.0f};
-        for (int i = 0; i < 3; ++i) {
-            float triggerTime = 0.35f + static_cast<float>(i) * 0.25f;
-            float medScale = 0.0f;
-            if (animTimer > triggerTime) {
-                float prog = (animTimer - triggerTime) / 0.18f;
-                if (prog >= 1.0f) medScale = 1.0f;
-                else medScale = 1.5f - 0.5f * Tween::easeOutQuad(prog);
-            }
-            bool earned = (i < result.stars);
-            drawMetallicMedallion(window, font, {medX[i], medY}, 28.0f, earned, medScale, i);
-        }
-
-        // Stats Box (2 Columns)
-        sf::RectangleShape statBox({pW - 70.0f, 175.0f});
-        statBox.setPosition({pX + 35.0f, pY + 205.0f});
-        statBox.setFillColor(sf::Color(12, 17, 30, 220));
-        statBox.setOutlineThickness(1.0f);
-        statBox.setOutlineColor(Theme::PanelBorder);
-        window.draw(statBox);
-
-        // Column 1: Steps & Alarm
-        float c1X = pX + 55.0f;
-        float sY = pY + 225.0f;
-
-        auto drawStatRow = [&](float x, float y, const std::string& lbl, const std::string& val, const sf::Color& valCol) {
-            sf::Text tLbl(font, lbl, 13);
-            tLbl.setFillColor(Theme::TextMuted);
-            tLbl.setPosition({x, y});
-            window.draw(tLbl);
-
-            sf::Text tVal(font, val, 14);
-            tVal.setStyle(sf::Text::Bold);
-            tVal.setFillColor(valCol);
-            tVal.setPosition({x + 130.0f, y});
-            window.draw(tVal);
-        };
-
-        drawStatRow(c1X, sY, "LEVEL:", result.levelName, Theme::TextWhite);
-        drawStatRow(c1X, sY + 36.0f, "STEPS:", std::to_string(result.steps) + " / " + std::to_string(result.optimalSteps), Theme::AccentCyan);
-        drawStatRow(c1X, sY + 72.0f, "ALARM LEVEL:", std::to_string(result.alarm) + " / " + std::to_string(result.alarmCap), result.alarm > 0 ? Theme::Red : Theme::Green);
-        drawStatRow(c1X, sY + 108.0f, "PENALTIES:", std::to_string(result.penaltyCount) + " (-" + std::to_string(result.penaltyPoints) + " pts)", result.penaltyCount > 0 ? Theme::Red : Theme::Green);
-
-        // Column 2: Hint, Stars, Final Score
-        float c2X = pX + 355.0f;
-        drawStatRow(c2X, sY, "HINT USED:", result.hintUsed ? "YES (Star Cap)" : "NO (Clean Run)", result.hintUsed ? Theme::Gold : Theme::Green);
-        drawStatRow(c2X, sY + 36.0f, "MEDALLIONS:", std::to_string(result.stars) + " / 3 EARNED", Theme::Gold);
-        drawStatRow(c2X, sY + 72.0f, "CALCULATED SCORE:", std::to_string(result.score) + " PTS", Theme::AccentCyan);
-
-        // Buttons at bottom
-        btn1.bounds.position = {pX + 50.0f, pY + pH - 65.0f};
-        btn2.bounds.position = {pX + (pW - btn2.bounds.size.x) * 0.5f, pY + pH - 65.0f};
-        btn3.bounds.position = {pX + pW - 50.0f - btn3.bounds.size.x, pY + pH - 65.0f};
-
-        btn1.draw(window, font);
-        btn2.draw(window, font);
-        btn3.draw(window, font);
-    }
+		cBtn.draw(target, theme);
+		cancelBtn.draw(target, theme);
+	}
 }
 
 // -------------------------------------------------------------
-// Subtle moving grid
+// LevelResultModal implementation
 // -------------------------------------------------------------
-void drawBackgroundGrid(sf::RenderWindow& window, float width, float height, float time) {
-    float shiftX = std::fmod(time * 6.0f, 60.0f);
-    float shiftY = std::fmod(time * 3.0f, 60.0f);
+LevelResultModal::LevelResultModal()
+	: active(false)
+	, won(false)
+	, stars(0)
+	, steps(0)
+	, optimalSteps(0)
+	, penalties(0)
+	, finalScore(0)
+	, btnNext("NEXT LEVEL", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(130.0f, 38.0f)), BTN_PRIMARY)
+	, btnRetry("RETRY", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 38.0f)), BTN_SECONDARY)
+	, btnBack("CAMPAIGN", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(110.0f, 38.0f)), BTN_BACK)
+{
+}
 
-    for (float x = shiftX; x < width; x += 60.0f) {
-        sf::RectangleShape line({1.0f, height});
-        line.setPosition({x, 0});
-        line.setFillColor(sf::Color(38, 50, 77, 45));
-        window.draw(line);
-    }
-    for (float y = shiftY; y < height; y += 60.0f) {
-        sf::RectangleShape line({width, 1.0f});
-        line.setPosition({0, y});
-        line.setFillColor(sf::Color(38, 50, 77, 45));
-        window.draw(line);
-    }
+void LevelResultModal::show(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
+                            std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback)
+{
+	active = true;
+	won = victory;
+	stars = std::clamp(starCount, 0, 3);
+	steps = stepCount;
+	optimalSteps = optSteps;
+	penalties = penaltyPoints;
+	finalScore = totalScore;
+
+	onNext = nextCallback;
+	onRetry = retryCallback;
+	onBack = backCallback;
+
+	title = won ? "MISSION ACCOMPLISHED" : "VAULT LOCKDOWN";
+	message = won ? "Security quadrant bypassed successfully!" : "Alarm threshold exceeded. Protocol aborted.";
+
+	// Default center positions (assumes standard 1280x720 window, updated dynamically on draw)
+	float mw = 480.0f;
+	float mh = 330.0f;
+	float mx = std::round((1280.0f - mw) * 0.5f);
+	float my = std::round((720.0f - mh) * 0.5f);
+	float btnY = my + mh - 56.0f;
+
+	if (won && onNext)
+	{
+		float totalBtnW = 130.0f + 105.0f + 115.0f + 20.0f;
+		float startBX = mx + (mw - totalBtnW) * 0.5f;
+		btnNext.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(130.0f, 38.0f));
+		btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX + 140.0f, btnY), sf::Vector2f(105.0f, 38.0f));
+		btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 255.0f, btnY), sf::Vector2f(115.0f, 38.0f));
+	}
+	else
+	{
+		float totalBtnW = 120.0f + 130.0f + 16.0f;
+		float startBX = mx + (mw - totalBtnW) * 0.5f;
+		btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(120.0f, 38.0f));
+		btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 136.0f, btnY), sf::Vector2f(130.0f, 38.0f));
+	}
+}
+
+void LevelResultModal::close()
+{
+	active = false;
+}
+
+void LevelResultModal::handleEvent(const sf::Event& event)
+{
+	if (!active) return;
+
+	if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
+		if (won && onNext && btnNext.bounds.contains(mpos))
+		{
+			close();
+			onNext();
+			return;
+		}
+		if (btnRetry.bounds.contains(mpos))
+		{
+			close();
+			if (onRetry) onRetry();
+			return;
+		}
+		if (btnBack.bounds.contains(mpos))
+		{
+			close();
+			if (onBack) onBack();
+			return;
+		}
+	}
+
+	if (won && onNext)
+	{
+		btnNext.handleEvent(event);
+		if (btnNext.isClicked())
+		{
+			btnNext.resetClick();
+			close();
+			onNext();
+			return;
+		}
+	}
+
+	btnRetry.handleEvent(event);
+	if (btnRetry.isClicked())
+	{
+		btnRetry.resetClick();
+		close();
+		if (onRetry) onRetry();
+		return;
+	}
+
+	btnBack.handleEvent(event);
+	if (btnBack.isClicked())
+	{
+		btnBack.resetClick();
+		close();
+		if (onBack) onBack();
+		return;
+	}
+
+	if (event.is<sf::Event::KeyPressed>())
+	{
+		if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
+		{
+			if (kp->code == sf::Keyboard::Key::Escape)
+			{
+				close();
+				if (onBack) onBack();
+			}
+			else if (kp->code == sf::Keyboard::Key::Enter)
+			{
+				close();
+				if (won && onNext) onNext();
+				else if (onRetry) onRetry();
+			}
+		}
+	}
+}
+
+void LevelResultModal::update(float dt)
+{
+	(void)dt;
+}
+
+void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize) const
+{
+	if (!active) return;
+
+	// Dim backdrop
+	sf::RectangleShape backdrop(windowSize);
+	backdrop.setFillColor(sf::Color(10, 14, 23, 210));
+	target.draw(backdrop);
+
+	// Modal window dimensions
+	float mw = 480.0f;
+	float mh = 330.0f;
+	float mx = std::round((windowSize.x - mw) * 0.5f);
+	float my = std::round((windowSize.y - mh) * 0.5f);
+	sf::FloatRect bounds(sf::Vector2f(mx, my), sf::Vector2f(mw, mh));
+
+	// Draw glass panel
+	sf::Color borderColor = won ? Theme::SuccessEmerald : Theme::CrimsonAlarm;
+	theme.drawGlowOutline(target, bounds, borderColor, 1.2f);
+	theme.drawPanel(target, bounds, borderColor, 1.5f);
+
+	// Header
+	sf::Text titleText(theme.fontUI, title, 22);
+	titleText.setFillColor(borderColor);
+	titleText.setStyle(sf::Text::Bold);
+	sf::FloatRect tb = titleText.getLocalBounds();
+	titleText.setPosition(sf::Vector2f(std::round(mx + (mw - tb.size.x) * 0.5f - tb.position.x), my + 20.0f));
+	target.draw(titleText);
+
+	// Sub-message
+	sf::Text msgText(theme.fontUI, message, 13);
+	msgText.setFillColor(Theme::TextMuted);
+	sf::FloatRect mb = msgText.getLocalBounds();
+	msgText.setPosition(sf::Vector2f(std::round(mx + (mw - mb.size.x) * 0.5f - mb.position.x), my + 52.0f));
+	target.draw(msgText);
+
+	// Draw Stars [ ★ ★ ★ ]
+	std::string starStr = "";
+	for (int i = 0; i < 3; i++)
+	{
+		starStr += (i < stars) ? "[*] " : "[ ] ";
+	}
+	sf::Text starText(theme.fontMono, won ? ("RATING: " + starStr) : "RATING: FAILED", 15);
+	starText.setFillColor(won ? Theme::AccentYellow : Theme::CrimsonAlarm);
+	starText.setStyle(sf::Text::Bold);
+	sf::FloatRect stb = starText.getLocalBounds();
+	starText.setPosition(sf::Vector2f(std::round(mx + (mw - stb.size.x) * 0.5f - stb.position.x), my + 82.0f));
+	target.draw(starText);
+
+	// Stats Box
+	float sbW = mw - 50.0f;
+	float sbH = 95.0f;
+	float sbX = mx + 25.0f;
+	float sbY = my + 118.0f;
+
+	sf::RectangleShape statsBox(sf::Vector2f(sbW, sbH));
+	statsBox.setPosition(sf::Vector2f(sbX, sbY));
+	statsBox.setFillColor(sf::Color(13, 19, 33, 220));
+	statsBox.setOutlineThickness(1.0f);
+	statsBox.setOutlineColor(Theme::BorderMuted);
+	target.draw(statsBox);
+
+	// Stats Content (Two columns)
+	std::string col1 = "STEPS TAKEN:  " + std::to_string(steps) + "\n" +
+	                   "OPTIMAL STEPS:" + std::to_string(optimalSteps);
+	sf::Text tCol1(theme.fontMono, col1, 12);
+	tCol1.setFillColor(Theme::TextPrimary);
+	tCol1.setPosition(sf::Vector2f(sbX + 20.0f, sbY + 22.0f));
+	target.draw(tCol1);
+
+	std::string col2 = "PENALTIES:   -" + std::to_string(penalties) + " pts\n" +
+	                   "FINAL SCORE:  " + std::to_string(finalScore) + " pts";
+	sf::Text tCol2(theme.fontMono, col2, 12);
+	tCol2.setFillColor(won ? Theme::SuccessEmerald : Theme::CrimsonAlarm);
+	tCol2.setStyle(sf::Text::Bold);
+	tCol2.setPosition(sf::Vector2f(sbX + sbW * 0.52f, sbY + 22.0f));
+	target.draw(tCol2);
+
+	// Draw Actual Member Buttons (Const-cast to draw directly so positions match 100%)
+	auto* nonConstThis = const_cast<LevelResultModal*>(this);
+	float btnY = my + mh - 56.0f;
+
+	if (won && onNext)
+	{
+		float totalBtnW = 130.0f + 105.0f + 115.0f + 20.0f;
+		float startBX = mx + (mw - totalBtnW) * 0.5f;
+
+		nonConstThis->btnNext.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(130.0f, 38.0f));
+		nonConstThis->btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX + 140.0f, btnY), sf::Vector2f(105.0f, 38.0f));
+		nonConstThis->btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 255.0f, btnY), sf::Vector2f(115.0f, 38.0f));
+
+		nonConstThis->btnNext.draw(target, theme);
+		nonConstThis->btnRetry.draw(target, theme);
+		nonConstThis->btnBack.draw(target, theme);
+	}
+	else
+	{
+		float totalBtnW = 120.0f + 130.0f + 16.0f;
+		float startBX = mx + (mw - totalBtnW) * 0.5f;
+
+		nonConstThis->btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(120.0f, 38.0f));
+		nonConstThis->btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 136.0f, btnY), sf::Vector2f(130.0f, 38.0f));
+
+		nonConstThis->btnRetry.draw(target, theme);
+		nonConstThis->btnBack.draw(target, theme);
+	}
 }

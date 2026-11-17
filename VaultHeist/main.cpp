@@ -1,8 +1,12 @@
 #include "GameEngine.h"
 
-int main() 
+int main()
 {
-    GameEngine engine;
-    engine.run();
-    return 0;
+	GameEngine engine;
+	if (!engine.init())
+	{
+		return -1;
+	}
+	engine.run();
+	return 0;
 }

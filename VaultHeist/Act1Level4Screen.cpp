@@ -1,142 +1,339 @@
 #include "Act1Level4Screen.h"
 #include "Act1Level5Screen.h"
 #include "GameEngine.h"
-#include "PlayerAction.h"
-#include "nlohmann/json.hpp"
-#include <fstream>
-#include <iostream>
+#include <filesystem>
+#include <cmath>
 
-using json = nlohmann::json;
-
-Act1Level4Screen::Act1Level4Screen() {
-    jsonPath = GameEngine::resolveJsonPath("Act1Level4.json");
-    restartLevelDirect();
+Act1Level4Screen::Act1Level4Screen(GameEngine& engine)
+    : LevelScreenBase(engine, "ACT 1: THE BLUEPRINT WING", "LEVEL 1.4: WHERE ESCAPE ROUTES MEET")
+    , m_roomA(-1)
+    , m_roomB(-1)
+    , m_lcaNodeVal(-1)
+    , m_shakeTimer(0.0f)
+    , m_shakingNode(nullptr)
+    , m_hoverNode(nullptr)
+{
+    resetLevel();
 }
 
-void Act1Level4Screen::restartLevelDirect() {
-    levelLogic = std::make_unique<Act1Level4>();
-    levelLogic->initLevel(jsonPath);
-    loadLevelData();
-    resultShown = false;
-}
+void Act1Level4Screen::resetLevel()
+{
+    m_tracedPath.clear();
+    m_lcaNodeVal = -1;
+    m_shakeTimer = 0.0f;
+    m_shakingNode = nullptr;
 
-void Act1Level4Screen::loadLevelData() {
-    roomA = levelLogic->getRoomA();
-    roomB = levelLogic->getRoomB();
-
-    std::string name = "Where Escape Routes Meet";
-    std::ifstream f(jsonPath);
-    if (f.is_open()) {
-        json j; f >> j;
-        name = j.value("levelName", name);
+    std::string path = "Act1Level4.json";
+    if (!std::filesystem::exists(path))
+    {
+        path = "VaultHeist/Act1Level4.json";
     }
 
-    std::string obj = "Find the LCA meeting room for Target A (" + std::to_string(roomA) +
-                      ") and Target B (" + std::to_string(roomB) + ").";
-    setupHUD(name, obj, "Phase 1: Identify Lowest Common Ancestor (LCA)", 4);
+    if (m_bridge.loadLevel(1, 4, path))
+    {
+        m_rootNode = m_bridge.getRootNode();
+        m_roomA = m_bridge.getRoomA();
+        m_roomB = m_bridge.getRoomB();
 
-    // Build visual tree from backend tree root
-    BinaryTree& btree = const_cast<BinaryTree&>(levelLogic->getTree());
-    treeRenderer.buildFromTree(btree.getRoot(), 750.0f, 220.0f, 320.0f);
-
-    auto* nA = treeRenderer.findByValue(roomA);
-    if (nA) {
-        nA->isTarget = true;
-        nA->stateLabel = "TARGET A";
-    }
-    auto* nB = treeRenderer.findByValue(roomB);
-    if (nB) {
-        nB->isTarget = true;
-        nB->stateLabel = "TARGET B";
+        setInstruction(m_bridge.getObjective());
+        syncWithState();
+        if (m_rootNode)
+        {
+            m_treeRenderer.computeLayout(m_rootNode, m_canvasBounds);
+        }
     }
 }
 
-void Act1Level4Screen::restartLevel(GameEngine& engine) {
-    restartLevelDirect();
-    engine.toasts.add("RADAR RESET", "Rendezvous and escape routes reset.", ToastType::INFO);
-}
+void Act1Level4Screen::syncWithState()
+{
+    const LevelState& state = m_bridge.getState();
+    setSteps(state.steps, state.optimalSteps);
+    setScore(ScoreSystem::score(state));
+    setPenalty(state.penaltyPoints);
+    setAlarm(state.alarm, state.alarmCap);
 
-void Act1Level4Screen::requestHint(GameEngine& engine) {
-    if (!levelLogic) return;
-    if (levelLogic->getState().hintUsed) {
-        engine.toasts.add("HINT EXHAUSTED", "Hint already deployed.", ToastType::HINT);
-        return;
+    if (m_bridge.isLCAFound())
+    {
+        int cur = m_bridge.getCurrentPathIndex();
+        int total = m_bridge.getPathCount();
+        setInstruction("LCA identified. Trace escape route (" + std::to_string(cur) + "/" + std::to_string(total) + ").");
     }
-    levelLogic->onHintRequested();
-    engine.audio.playHint();
-    std::string h = "First click the Lowest Common Ancestor where paths from Room #" + std::to_string(roomA) +
-                    " and Room #" + std::to_string(roomB) + " meet. Then click path nodes in order.";
-    engine.toasts.add("TACTICAL INTEL", h, ToastType::HINT);
+    else
+    {
+        setInstruction("Locate the Lowest Common Ancestor (Meeting Room) for A and B.");
+    }
 }
 
-void Act1Level4Screen::onLevelEvent(GameEngine& engine, const sf::Event& event) {
-    if (resultPopup.active || pausePopup.active) return;
+void Act1Level4Screen::onHintClicked()
+{
+    std::string hint = m_bridge.getHint();
+    m_engine.showToast(hint, TOAST_HINT);
+    m_engine.audio.playHint();
+    syncWithState();
+}
 
-    if (const auto* mp = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mp->button == sf::Mouse::Button::Left) {
-            sf::Vector2f mouse{static_cast<float>(mp->position.x), static_cast<float>(mp->position.y)};
-            int clickedVal = treeRenderer.getNodeValueAt(mouse);
-            if (clickedVal != -1) {
-                PlayerAction act{};
-                act.direction = 0;
+void Act1Level4Screen::onResetClicked()
+{
+    resetLevel();
+    m_engine.showToast("Mission reset. Re-acquire LCA.", TOAST_INFO);
+    m_engine.audio.playClick();
+}
 
-                if (!levelLogic->isLCAFound()) {
-                    act.type = CLICK_LCA;
-                    act.nodeA = clickedVal;
+void Act1Level4Screen::onNodeClicked(TreeNode* node)
+{
+    if (!node || m_bridge.isFinished()) return;
 
-                    ActionResult res = levelLogic->processAction(act);
-                    if (res.accepted) {
-                        if (res.correct) {
-                            auto* n = treeRenderer.findByValue(clickedVal);
-                            if (n) {
-                                n->isLCA = true;
-                                n->stateLabel = "LCA";
-                            }
-                            engine.audio.playCorrect();
-                            engine.toasts.add("LCA CONFIRMED", res.message.empty() ? "Rendezvous point located." : res.message, ToastType::CORRECT);
+    if (!m_bridge.isLCAFound())
+    {
+        PlayerAction action;
+        action.type = CLICK_LCA;
+        action.nodeA = node->val;
 
-                            std::string obj = "Trace escape path: click rooms in sequence from Target #" +
-                                              std::to_string(roomA) + " to Target #" + std::to_string(roomB) + ".";
-                            setupHUD(levelTitle, obj, "Phase 2: Trace Escape Corridor", 4);
-                        } else {
-                            treeRenderer.triggerWrong(clickedVal);
-                            engine.audio.playWrong();
-                            engine.toasts.add("NOT THE LCA", res.message.empty() ? "Incorrect LCA room!" : res.message, ToastType::ERROR_MSG);
-                        }
-                    }
-                } else {
-                    act.type = TRACE_PATH;
-                    act.nodeA = clickedVal;
+        ActionResult res = m_bridge.processAction(action);
+        syncWithState();
 
-                    ActionResult res = levelLogic->processAction(act);
-                    if (res.accepted) {
-                        if (res.correct) {
-                            auto* n = treeRenderer.findByValue(clickedVal);
-                            if (n) {
-                                n->isVisited = true;
-                                if (!n->isTarget && !n->isLCA) n->stateLabel = "PATH";
-                            }
-                            engine.audio.playCorrect();
-                            engine.toasts.add("ROUTE STEP CLEARED", res.message.empty() ? "Path waypoint unlocked." : res.message, ToastType::CORRECT);
-                        } else {
-                            treeRenderer.triggerWrong(clickedVal);
-                            engine.audio.playWrong();
-                            engine.toasts.add("OFF-COURSE STEP", res.message.empty() ? "Wrong waypoint selected!" : res.message, ToastType::ERROR_MSG);
-                        }
-                    }
-                }
+        if (res.correct)
+        {
+            m_lcaNodeVal = node->val;
+            m_engine.audio.playCorrect();
+            // No success toast — audio feedback only
+        }
+        else
+        {
+            m_shakingNode = node;
+            m_shakeTimer = 0.35f;
+
+            m_engine.audio.playWrong();
+            m_engine.showToast(res.message, TOAST_ERROR);
+
+            if (m_bridge.isFinished() && !m_bridge.isWon())
+            {
+                m_engine.audio.playLose();
+                const LevelState& s = m_bridge.getState();
+                showResultModal(false, 0, s.steps, s.optimalSteps, s.penaltyPoints, 0,
+                    nullptr,
+                    [this]() { resetLevel(); },
+                    [this]() { onBackClicked(); }
+                );
+            }
+        }
+    }
+    else
+    {
+        PlayerAction action;
+        action.type = TRACE_PATH;
+        action.nodeA = node->val;
+
+        ActionResult res = m_bridge.processAction(action);
+        syncWithState();
+
+        if (res.correct)
+        {
+            m_tracedPath.push_back(node->val);
+            node->isVisited = true;
+
+            m_engine.audio.playCorrect();
+
+            if (m_bridge.isWon())
+            {
+                m_engine.audio.playWin();
+                const LevelState& s = m_bridge.getState();
+                showResultModal(true, ScoreSystem::stars(s), s.steps, s.optimalSteps, s.penaltyPoints, ScoreSystem::score(s),
+                    [this]() {
+                        // Next Level -> Level 1.5
+                        m_engine.changeScreen(std::make_unique<Act1Level5Screen>(m_engine));
+                    },
+                    [this]() { resetLevel(); },
+                    [this]() { onBackClicked(); }
+                );
+            }
+        }
+        else
+        {
+            m_shakingNode = node;
+            m_shakeTimer = 0.35f;
+
+            m_engine.audio.playWrong();
+            m_engine.showToast(res.message, TOAST_ERROR);
+
+            if (m_bridge.isFinished() && !m_bridge.isWon())
+            {
+                m_engine.audio.playLose();
+                const LevelState& s = m_bridge.getState();
+                showResultModal(false, 0, s.steps, s.optimalSteps, s.penaltyPoints, 0,
+                    nullptr,
+                    [this]() { resetLevel(); },
+                    [this]() { onBackClicked(); }
+                );
             }
         }
     }
 }
 
-void Act1Level4Screen::updateLevel(GameEngine& engine, float dt) {
+void Act1Level4Screen::handleEvent(const sf::Event& event)
+{
+    LevelScreenBase::handleEvent(event);
+
+    if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
+    {
+        sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
+        if (m_rootNode && m_canvasBounds.contains(mpos))
+        {
+            m_hoverNode = m_treeRenderer.getNodeAtPosition(m_rootNode, mpos);
+        }
+    }
 }
 
-void Act1Level4Screen::drawLevel(GameEngine& engine, sf::RenderWindow& window) {
-    treeRenderer.draw(window, engine.font);
+void Act1Level4Screen::update(float dt)
+{
+    LevelScreenBase::update(dt);
+
+    if (m_shakeTimer > 0.0f)
+    {
+        m_shakeTimer -= dt;
+        if (m_shakeTimer <= 0.0f)
+        {
+            m_shakingNode = nullptr;
+        }
+    }
 }
 
-void Act1Level4Screen::goToNextLevel(GameEngine& engine) {
-    engine.changeScreen(std::make_unique<Act1Level5Screen>());
+void Act1Level4Screen::onCustomDraw(sf::RenderTarget& target)
+{
+    const Theme& theme = m_engine.theme;
+
+    std::function<TreeNode*(TreeNode*, int)> findNode = [&](TreeNode* curr, int val) -> TreeNode* {
+        if (!curr) return nullptr;
+        if (curr->val == val) return curr;
+        TreeNode* l = findNode(curr->left, val);
+        if (l) return l;
+        return findNode(curr->right, val);
+    };
+
+    if (m_tracedPath.size() >= 2)
+    {
+        for (size_t i = 0; i + 1 < m_tracedPath.size(); ++i)
+        {
+            TreeNode* n1 = findNode(m_rootNode, m_tracedPath[i]);
+            TreeNode* n2 = findNode(m_rootNode, m_tracedPath[i + 1]);
+            if (n1 && n2)
+            {
+                sf::Vertex line[4] = {
+                    sf::Vertex(n1->position + sf::Vector2f(-1.5f, -1.5f), Theme::SuccessEmerald),
+                    sf::Vertex(n2->position + sf::Vector2f(-1.5f, -1.5f), Theme::SuccessEmerald),
+                    sf::Vertex(n2->position + sf::Vector2f(1.5f, 1.5f), Theme::SuccessEmerald),
+                    sf::Vertex(n1->position + sf::Vector2f(1.5f, 1.5f), Theme::SuccessEmerald)
+                };
+                target.draw(line, 4, sf::PrimitiveType::TriangleStrip);
+            }
+        }
+    }
+
+    auto drawBadge = [&](int roomVal, const std::string& label, sf::Color col) {
+        TreeNode* node = findNode(m_rootNode, roomVal);
+        if (node)
+        {
+            sf::Vector2f badgePos = node->position + sf::Vector2f(Theme::NodeRadius * 0.72f, -Theme::NodeRadius * 0.72f);
+            sf::CircleShape badge(11.0f);
+            badge.setOrigin(sf::Vector2f(11.0f, 11.0f));
+            badge.setPosition(badgePos);
+            badge.setFillColor(col);
+            badge.setOutlineThickness(1.5f);
+            badge.setOutlineColor(sf::Color::White);
+            target.draw(badge);
+
+            sf::Text bText(theme.fontMono, label, 10);
+            bText.setFillColor(sf::Color(10, 14, 23));
+            bText.setStyle(sf::Text::Bold);
+            sf::FloatRect b = bText.getLocalBounds();
+            bText.setOrigin(sf::Vector2f(b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f));
+            bText.setPosition(badgePos);
+            target.draw(bText);
+        }
+    };
+
+    drawBadge(m_roomA, "A", Theme::AccentYellow);
+    drawBadge(m_roomB, "B", Theme::BorderCyan);
+
+    if (m_lcaNodeVal != -1)
+    {
+        drawBadge(m_lcaNodeVal, "LCA", Theme::AccentYellow);
+    }
+
+    if (m_shakingNode && m_shakeTimer > 0.0f)
+    {
+        sf::CircleShape shakeRing(Theme::NodeRadius + 5.0f);
+        shakeRing.setOrigin(sf::Vector2f(Theme::NodeRadius + 5.0f, Theme::NodeRadius + 5.0f));
+        shakeRing.setPosition(m_shakingNode->position + Tween::shake(m_shakeTimer, 7.0f));
+        shakeRing.setFillColor(sf::Color::Transparent);
+        shakeRing.setOutlineThickness(3.0f);
+        shakeRing.setOutlineColor(Theme::CrimsonAlarm);
+        target.draw(shakeRing);
+    }
+
+    drawTooltip(target, theme);
+}
+
+void Act1Level4Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds)
+{
+    const Theme& theme = m_engine.theme;
+    float px = panelBounds.position.x;
+    float py = panelBounds.position.y;
+
+    sf::Text hdr(theme.fontMono, "// ESCAPE ROUTE TRACKER", 11);
+    hdr.setFillColor(Theme::BorderCyan);
+    hdr.setStyle(sf::Text::Bold);
+    hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));
+    target.draw(hdr);
+
+    std::string sRooms = "TARGET A: Room " + std::to_string(m_roomA) + "\n" +
+                         "TARGET B: Room " + std::to_string(m_roomB);
+    sf::Text tRooms(theme.fontMono, sRooms, 12);
+    tRooms.setFillColor(Theme::AccentYellow);
+    tRooms.setPosition(sf::Vector2f(px + 4.0f, py + 26.0f));
+    target.draw(tRooms);
+
+    std::string lcaStr = "LCA STATUS: " + (m_lcaNodeVal != -1 ? ("FOUND (Room " + std::to_string(m_lcaNodeVal) + ")") : "SEARCHING...");
+    sf::Text tLca(theme.fontMono, lcaStr, 12);
+    tLca.setFillColor(m_lcaNodeVal != -1 ? Theme::SuccessEmerald : Theme::TextMuted);
+    tLca.setPosition(sf::Vector2f(px + 4.0f, py + 68.0f));
+    target.draw(tLca);
+
+    int cur = m_bridge.getCurrentPathIndex();
+    int tot = m_bridge.getPathCount();
+    std::string pathInfo = "PATH STEP: " + std::to_string(cur) + " / " + std::to_string(tot);
+    sf::Text tPath(theme.fontMono, pathInfo, 12);
+    tPath.setFillColor(Theme::TextPrimary);
+    tPath.setPosition(sf::Vector2f(px + 4.0f, py + 92.0f));
+    target.draw(tPath);
+}
+
+void Act1Level4Screen::drawTooltip(sf::RenderTarget& target, const Theme& theme)
+{
+    if (!m_hoverNode) return;
+
+    sf::Vector2f pos = m_hoverNode->position + sf::Vector2f(Theme::NodeRadius + 12.0f, -Theme::NodeRadius);
+    float boxW = 145.0f;
+    float boxH = 68.0f;
+
+    sf::RectangleShape box(sf::Vector2f(boxW, boxH));
+    box.setPosition(pos);
+    box.setFillColor(sf::Color(17, 24, 39, 240));
+    box.setOutlineThickness(1.0f);
+    box.setOutlineColor(Theme::BorderCyan);
+    target.draw(box);
+
+    std::string role = "Standard Room";
+    if (m_hoverNode->val == m_roomA) role = "Operative A";
+    else if (m_hoverNode->val == m_roomB) role = "Operative B";
+    else if (m_hoverNode->val == m_lcaNodeVal) role = "LCA (Meeting Room)";
+
+    std::string info = "Room: " + std::to_string(m_hoverNode->val) + "\n" +
+                       "Role: " + role + "\n" +
+                       "Height: " + std::to_string(m_hoverNode->height);
+
+    sf::Text tipText(theme.fontMono, info, 11);
+    tipText.setFillColor(Theme::TextPrimary);
+    tipText.setPosition(pos + sf::Vector2f(10.0f, 8.0f));
+    target.draw(tipText);
 }

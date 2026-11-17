@@ -1,27 +1,44 @@
 #pragma once
 #include "LevelScreenBase.h"
-#include "Act1Level4.h"
-#include <memory>
+#include "LevelBridge.h"
+#include <vector>
 #include <string>
 
-class Act1Level4Screen : public LevelScreenBase {
-private:
-    std::unique_ptr<Act1Level4> levelLogic;
-    std::string jsonPath;
-    int roomA = -1;
-    int roomB = -1;
-
-    void loadLevelData();
-    void restartLevelDirect();
-
+// Act1Level4Screen: Where Escape Routes Meet with Side Panel Details & Result Modal
+class Act1Level4Screen : public LevelScreenBase
+{
 public:
-    Act1Level4Screen();
+    Act1Level4Screen(GameEngine& engine);
+    ~Act1Level4Screen() override = default;
 
-    void onLevelEvent(GameEngine& engine, const sf::Event& event) override;
-    void updateLevel(GameEngine& engine, float dt) override;
-    void drawLevel(GameEngine& engine, sf::RenderWindow& window) override;
-    void restartLevel(GameEngine& engine) override;
-    void requestHint(GameEngine& engine) override;
-    ILevelLogic* getLevelLogic() override { return levelLogic.get(); }
-    void goToNextLevel(GameEngine& engine) override;
+    void update(float dt) override;
+    void handleEvent(const sf::Event& event) override;
+
+protected:
+    void onHintClicked() override;
+    void onResetClicked() override;
+    void onNodeClicked(TreeNode* node) override;
+    void onCustomDraw(sf::RenderTarget& target) override;
+    void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+
+private:
+    LevelBridge m_bridge;
+
+    int m_roomA;
+    int m_roomB;
+    int m_lcaNodeVal;
+
+    // Traced path rooms in order
+    std::vector<int> m_tracedPath;
+
+    // Shake & Error feedback
+    float m_shakeTimer;
+    TreeNode* m_shakingNode;
+
+    // Tooltip hover
+    TreeNode* m_hoverNode;
+
+    void resetLevel();
+    void syncWithState();
+    void drawTooltip(sf::RenderTarget& target, const Theme& theme);
 };

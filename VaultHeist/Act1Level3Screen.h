@@ -1,37 +1,52 @@
 #pragma once
 #include "LevelScreenBase.h"
-#include "Act1Level3.h"
-#include <memory>
+#include "LevelBridge.h"
+#include <map>
 #include <string>
-#include <vector>
 
-class Act1Level3Screen : public LevelScreenBase {
-private:
-    std::unique_ptr<Act1Level3> levelLogic;
-    std::string jsonPath;
-    std::vector<int> preorderList;
-    std::vector<int> inorderList;
-    int selectedNodeVal = -1;
-    std::string inputBuffer = "";
-    bool allHeightsDone = false;
-    int correctHeightsCount = 0;
-    int totalNodes = 5;
-
-    Button btnSubmit;
-    Button btnCancel;
-    Button btnSubmitDiameter;
-
-    void loadLevelData();
-    void restartLevelDirect();
-
+// Act1Level3Screen: Alarm Spreads Upward with Side Panel Details & Result Modal
+class Act1Level3Screen : public LevelScreenBase
+{
 public:
-    Act1Level3Screen();
+    Act1Level3Screen(GameEngine& engine);
+    ~Act1Level3Screen() override = default;
 
-    void onLevelEvent(GameEngine& engine, const sf::Event& event) override;
-    void updateLevel(GameEngine& engine, float dt) override;
-    void drawLevel(GameEngine& engine, sf::RenderWindow& window) override;
-    void restartLevel(GameEngine& engine) override;
-    void requestHint(GameEngine& engine) override;
-    ILevelLogic* getLevelLogic() override { return levelLogic.get(); }
-    void goToNextLevel(GameEngine& engine) override;
+    void update(float dt) override;
+    void handleEvent(const sf::Event& event) override;
+
+protected:
+    void onHintClicked() override;
+    void onResetClicked() override;
+    void onNodeClicked(TreeNode* node) override;
+    void onCustomDraw(sf::RenderTarget& target) override;
+    void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+
+private:
+    LevelBridge m_bridge;
+
+    // Node solved heights: [val -> enteredHeight]
+    std::map<int, int> m_solvedHeights;
+
+    // Currently focused node input
+    TreeNode* m_focusedNode;
+    std::string m_nodeInputBuffer;
+
+    // Diameter input box (Phase 2)
+    bool m_diameterBoxFocused;
+    std::string m_diameterInputBuffer;
+    sf::FloatRect m_diameterBoxBounds;
+
+    // Shake & Error feedback
+    float m_shakeTimer;
+    TreeNode* m_shakingNode;
+    bool m_shakeDiameterBox;
+
+    // Tooltip hover
+    TreeNode* m_hoverNode;
+
+    void resetLevel();
+    void syncWithState();
+    void submitHeight();
+    void submitDiameter();
+    void drawTooltip(sf::RenderTarget& target, const Theme& theme);
 };

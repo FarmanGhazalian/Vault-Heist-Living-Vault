@@ -3,39 +3,52 @@
 #include <vector>
 #include <string>
 #include "TreeNode.h"
+#include "Theme.h"
 
-struct RenderNode {
-    int id = -1;
-    int value = 0;
-    int leftId = -1;
-    int rightId = -1;
-    sf::Vector2f currentPos{0.0f, 0.0f};
-    sf::Vector2f targetPos{0.0f, 0.0f};
-    bool isVisited = false;
-    bool isWrong = false;
-    float wrongTimer = 0.0f;
-    bool isTarget = false;
-    bool isLCA = false;
-    bool isSelected = false;
-    std::string stateLabel = "";
-    float hoverScale = 1.0f;
-    float popScale = 1.0f;
-};
-
-class TreeRenderer {
+// TreeRenderer: Renders generic binary tree (TreeNode* root) in Cyber-Vault Neon style.
+// Handles automatic node placement, edge drawing, state glow, and mouse interaction.
+class TreeRenderer
+{
 public:
-    std::vector<RenderNode> nodes;
+    TreeRenderer();
 
-    void clear();
-    void buildFromFlat(const std::vector<RenderNode>& rawList, int rootId, float centerX, float topY, float xSpan);
-    void buildFromTree(TreeNode* root, float centerX, float topY, float xSpan);
-    void update(float dt, const sf::Vector2f& mousePos);
-    void draw(sf::RenderWindow& window, const sf::Font& font);
+    // Configuration
+    void setNodeRadius(float radius);
+    void setVerticalSpacing(float spacing);
+    void setMinHorizontalSpacing(float spacing);
 
-    int getNodeValueAt(const sf::Vector2f& mousePos) const;
-    int getNodeIdAt(const sf::Vector2f& mousePos) const;
-    RenderNode* findByValue(int val);
-    RenderNode* findById(int id);
-    void triggerWrong(int val);
-    void markVisited(int val);
+    // Compute node coordinates recursively based on canvas bounding box
+    void computeLayout(TreeNode* root, sf::FloatRect canvasBounds);
+
+    // Drawing
+    void draw(sf::RenderTarget& target, const Theme& theme, TreeNode* root);
+
+    // Interaction
+    TreeNode* getNodeAtPosition(TreeNode* root, sf::Vector2f mousePos);
+    void setHoveredNode(TreeNode* node);
+    void setSelectedNode(TreeNode* node);
+    void setHighlightedNode(TreeNode* node, sf::Color color);
+
+    // Visual helpers
+    void update(float dt);
+
+private:
+    float m_nodeRadius;
+    float m_verticalSpacing;
+    float m_minHSpacing;
+
+    TreeNode* m_hoveredNode;
+    TreeNode* m_selectedNode;
+    TreeNode* m_highlightedNode;
+    sf::Color m_highlightColor;
+    float m_animTimer;
+
+    // Layout helpers
+    float computeSubtreeWidth(TreeNode* node);
+    void assignPositions(TreeNode* node, float x, float y, float availableWidth);
+
+    // Draw helpers
+    void drawEdges(sf::RenderTarget& target, const Theme& theme, TreeNode* node);
+    void drawNodes(sf::RenderTarget& target, const Theme& theme, TreeNode* node);
+    void drawSingleNode(sf::RenderTarget& target, const Theme& theme, TreeNode* node);
 };

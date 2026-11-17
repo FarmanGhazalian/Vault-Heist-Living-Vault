@@ -64,6 +64,9 @@ public:
 
     bool initLevel(const std::string& jsonPath);
 
+    const BinaryTree& getTree() const { return gameTree; }
+    const string& getTraversalType() const { return data.traversalType; }
+
     void onValidStep() override;
     void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
     void onHintRequested() override;

@@ -1,116 +1,285 @@
 #include "Act1Level1Screen.h"
 #include "Act1Level2Screen.h"
 #include "GameEngine.h"
-#include "PlayerAction.h"
-#include "nlohmann/json.hpp"
-#include <fstream>
-#include <iostream>
+#include <filesystem>
 
-using json = nlohmann::json;
-
-Act1Level1Screen::Act1Level1Screen() {
-    jsonPath = GameEngine::resolveJsonPath("Act1Level1.json");
-    restartLevelDirect();
+Act1Level1Screen::Act1Level1Screen(GameEngine& engine)
+    : LevelScreenBase(engine, "ACT 1: THE BLUEPRINT WING", "LEVEL 1.1: VAULT PATROL")
+    , m_stepCounter(0)
+    , m_shakeTimer(0.0f)
+    , m_shakingNode(nullptr)
+    , m_shakeOffset(0.0f, 0.0f)
+    , m_hoverNode(nullptr)
+{
+    resetLevel();
 }
 
-void Act1Level1Screen::restartLevelDirect() {
-    levelLogic = std::make_unique<Act1Level1>();
-    levelLogic->initLevel(jsonPath);
-    loadLevelData();
-    resultShown = false;
-}
+void Act1Level1Screen::resetLevel()
+{
+    m_visitedOrder.clear();
+    m_stepCounter = 0;
+    m_shakeTimer = 0.0f;
+    m_shakingNode = nullptr;
 
-void Act1Level1Screen::loadLevelData() {
-    std::ifstream f(jsonPath);
-    if (!f.is_open()) return;
-    json j; f >> j;
-
-    std::string name = "Vault Patrol Entry";
-    if (j.contains("levelName")) name = j["levelName"].get<std::string>();
-    if (j.contains("traversalType")) traversalType = j["traversalType"].get<std::string>();
-
-    std::string travDesc = "PREORDER (Root -> Left -> Right)";
-    if (traversalType == "INORDER") {
-        travDesc = "INORDER (Left -> Root -> Right)";
-        hintMessage = "Inorder traverses the Left branch first, accesses the Root node, then sweeps the Right branch.";
-    } else if (traversalType == "POSTORDER") {
-        travDesc = "POSTORDER (Left -> Right -> Root)";
-        hintMessage = "Postorder sweeps Left, then Right subtree, and accesses the Root at the very end.";
-    } else {
-        travDesc = "PREORDER (Root -> Left -> Right)";
-        hintMessage = "Preorder visits the Root room first, then traverses Left subtree, then Right.";
+    std::string path = "Act1Level1.json";
+    if (!std::filesystem::exists(path))
+    {
+        path = "VaultHeist/Act1Level1.json";
     }
 
-    setupHUD(name, "Access vault rooms in " + travDesc + " sequence.", "Sequence: " + travDesc, 1);
-
-    std::vector<RenderNode> raw;
-    for (const auto& item : j["nodes"]) {
-        RenderNode rn;
-        rn.id = item["id"];
-        rn.value = item["value"];
-        rn.leftId = item["left"];
-        rn.rightId = item["right"];
-        raw.push_back(rn);
-    }
-    int rootId = j.value("rootId", 101);
-    treeRenderer.buildFromFlat(raw, rootId, 750.0f, 230.0f, 320.0f);
-}
-
-void Act1Level1Screen::restartLevel(GameEngine& engine) {
-    restartLevelDirect();
-    engine.toasts.add("SYSTEM REBOOT", "Patrol route and alarms reset.", ToastType::INFO);
-}
-
-void Act1Level1Screen::requestHint(GameEngine& engine) {
-    if (!levelLogic) return;
-    if (levelLogic->getState().hintUsed) {
-        engine.toasts.add("HINT EXHAUSTED", "Hint already deployed for this level.", ToastType::HINT);
-        return;
-    }
-    levelLogic->onHintRequested();
-    engine.audio.playHint();
-    engine.toasts.add("TACTICAL INTEL", hintMessage, ToastType::HINT);
-}
-
-void Act1Level1Screen::onLevelEvent(GameEngine& engine, const sf::Event& event) {
-    if (resultPopup.active || pausePopup.active) return;
-
-    if (const auto* mp = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mp->button == sf::Mouse::Button::Left) {
-            sf::Vector2f mouse{static_cast<float>(mp->position.x), static_cast<float>(mp->position.y)};
-            int clickedVal = treeRenderer.getNodeValueAt(mouse);
-            if (clickedVal != -1) {
-                PlayerAction act{};
-                act.type = CLICK_NODE;
-                act.nodeA = clickedVal;
-                act.direction = 0;
-
-                ActionResult res = levelLogic->processAction(act);
-                if (res.accepted) {
-                    if (res.correct) {
-                        treeRenderer.markVisited(clickedVal);
-                        engine.audio.playCorrect();
-                        engine.toasts.add("NODE CLEARED", res.message.empty() ? "Access granted." : res.message, ToastType::CORRECT);
-                    } else {
-                        treeRenderer.triggerWrong(clickedVal);
-                        engine.audio.playWrong();
-                        std::string msg = res.message.empty() ? "Security breach: wrong sequence!" : res.message;
-                        engine.toasts.add("ALARM TRIP", msg, ToastType::ERROR_MSG);
-                    }
-                }
-            }
+    if (m_bridge.loadLevel(1, 1, path))
+    {
+        m_rootNode = m_bridge.getRootNode();
+        setInstruction(m_bridge.getObjective());
+        syncWithState();
+        if (m_rootNode)
+        {
+            m_treeRenderer.computeLayout(m_rootNode, m_canvasBounds);
         }
     }
 }
 
-void Act1Level1Screen::updateLevel(GameEngine& engine, float dt) {
-    // TreeRenderer is updated in base
+void Act1Level1Screen::syncWithState()
+{
+    const LevelState& state = m_bridge.getState();
+    setSteps(state.steps, state.optimalSteps);
+    setScore(ScoreSystem::score(state));
+    setPenalty(state.penaltyPoints);
+    setAlarm(state.alarm, state.alarmCap);
 }
 
-void Act1Level1Screen::drawLevel(GameEngine& engine, sf::RenderWindow& window) {
-    treeRenderer.draw(window, engine.font);
+void Act1Level1Screen::onHintClicked()
+{
+    std::string hint = m_bridge.getHint();
+    m_engine.showToast(hint, TOAST_HINT);
+    m_engine.audio.playHint();
+    syncWithState();
 }
 
-void Act1Level1Screen::goToNextLevel(GameEngine& engine) {
-    engine.changeScreen(std::make_unique<Act1Level2Screen>());
+void Act1Level1Screen::onResetClicked()
+{
+    resetLevel();
+    m_engine.showToast("Level reset to initial patrol state.", TOAST_INFO);
+    m_engine.audio.playClick();
+}
+
+void Act1Level1Screen::onNodeClicked(TreeNode* node)
+{
+    if (!node || m_bridge.isFinished()) return;
+
+    if (m_visitedOrder.find(node->val) != m_visitedOrder.end())
+    {
+        m_engine.showToast("Room already patrolled in sequence.", TOAST_INFO);
+        return;
+    }
+
+    PlayerAction action;
+    action.type = CLICK_NODE;
+    action.nodeA = node->val;
+
+    ActionResult res = m_bridge.processAction(action);
+    syncWithState();
+
+    if (res.correct)
+    {
+        m_stepCounter++;
+        m_visitedOrder[node->val] = m_stepCounter;
+        node->isVisited = true;
+
+        m_engine.audio.playCorrect();
+
+        if (m_bridge.isWon())
+        {
+            m_engine.audio.playWin();
+            const LevelState& s = m_bridge.getState();
+            int stars = ScoreSystem::stars(s);
+            int score = ScoreSystem::score(s);
+
+            showResultModal(true, stars, s.steps, s.optimalSteps, s.penaltyPoints, score,
+                [this]() {
+                    // Next Level Button: Switch to Level 1.2
+                    m_engine.changeScreen(std::make_unique<Act1Level2Screen>(m_engine));
+                },
+                [this]() {
+                    // Retry Button
+                    resetLevel();
+                },
+                [this]() {
+                    // Back to Campaign Button
+                    onBackClicked();
+                }
+            );
+        }
+    }
+    else
+    {
+        m_shakingNode = node;
+        m_shakeTimer = 0.35f;
+
+        m_engine.audio.playWrong();
+        m_engine.showToast(res.message, TOAST_ERROR);
+
+        if (m_bridge.isFinished() && !m_bridge.isWon())
+        {
+            m_engine.audio.playLose();
+            const LevelState& s = m_bridge.getState();
+            showResultModal(false, 0, s.steps, s.optimalSteps, s.penaltyPoints, 0,
+                nullptr,
+                [this]() { resetLevel(); },
+                [this]() { onBackClicked(); }
+            );
+        }
+    }
+}
+
+void Act1Level1Screen::handleEvent(const sf::Event& event)
+{
+    LevelScreenBase::handleEvent(event);
+
+    if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
+    {
+        sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
+        if (m_rootNode && m_canvasBounds.contains(mpos))
+        {
+            m_hoverNode = m_treeRenderer.getNodeAtPosition(m_rootNode, mpos);
+        }
+    }
+}
+
+void Act1Level1Screen::update(float dt)
+{
+    LevelScreenBase::update(dt);
+
+    if (m_shakeTimer > 0.0f)
+    {
+        m_shakeTimer -= dt;
+        m_shakeOffset = Tween::shake(m_shakeTimer, 7.0f);
+        if (m_shakeTimer <= 0.0f)
+        {
+            m_shakeOffset = sf::Vector2f(0.0f, 0.0f);
+            m_shakingNode = nullptr;
+        }
+    }
+}
+
+void Act1Level1Screen::onCustomDraw(sf::RenderTarget& target)
+{
+    const Theme& theme = m_engine.theme;
+
+    // Draw order badges for patrolled nodes
+    for (const auto& pair : m_visitedOrder)
+    {
+        int val = pair.first;
+        int order = pair.second;
+
+        std::function<TreeNode*(TreeNode*)> findNode = [&](TreeNode* curr) -> TreeNode* {
+            if (!curr) return nullptr;
+            if (curr->val == val) return curr;
+            TreeNode* leftRes = findNode(curr->left);
+            if (leftRes) return leftRes;
+            return findNode(curr->right);
+        };
+
+        TreeNode* targetNode = findNode(m_rootNode);
+        if (targetNode)
+        {
+            sf::Vector2f badgePos = targetNode->position + sf::Vector2f(-Theme::NodeRadius * 0.75f, -Theme::NodeRadius * 0.75f);
+            sf::CircleShape badge(10.0f);
+            badge.setOrigin(sf::Vector2f(10.0f, 10.0f));
+            badge.setPosition(badgePos);
+            badge.setFillColor(Theme::SuccessEmerald);
+            badge.setOutlineThickness(1.5f);
+            badge.setOutlineColor(sf::Color::White);
+            target.draw(badge);
+
+            sf::Text numText(theme.fontMono, std::to_string(order), 11);
+            numText.setFillColor(sf::Color(10, 14, 23));
+            numText.setStyle(sf::Text::Bold);
+            sf::FloatRect b = numText.getLocalBounds();
+            numText.setOrigin(sf::Vector2f(b.position.x + b.size.x * 0.5f, b.position.y + b.size.y * 0.5f));
+            numText.setPosition(badgePos);
+            target.draw(numText);
+        }
+    }
+
+    // Shaking node red alert
+    if (m_shakingNode && m_shakeTimer > 0.0f)
+    {
+        sf::CircleShape shakeRing(Theme::NodeRadius + 5.0f);
+        shakeRing.setOrigin(sf::Vector2f(Theme::NodeRadius + 5.0f, Theme::NodeRadius + 5.0f));
+        shakeRing.setPosition(m_shakingNode->position + m_shakeOffset);
+        shakeRing.setFillColor(sf::Color::Transparent);
+        shakeRing.setOutlineThickness(3.0f);
+        shakeRing.setOutlineColor(Theme::CrimsonAlarm);
+        target.draw(shakeRing);
+    }
+
+    drawTooltip(target, theme);
+}
+
+void Act1Level1Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds)
+{
+    const Theme& theme = m_engine.theme;
+    float px = panelBounds.position.x;
+    float py = panelBounds.position.y;
+
+    sf::Text hdr(theme.fontMono, "// PATROL SEQUENCE LOG", 11);
+    hdr.setFillColor(Theme::BorderCyan);
+    hdr.setStyle(sf::Text::Bold);
+    hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));
+    target.draw(hdr);
+
+    std::string orderName = m_bridge.getTraversalType();
+    std::string typeInfo = "REQUIRED ORDER: " + orderName;
+    sf::Text tType(theme.fontMono, typeInfo, 12);
+    tType.setFillColor(Theme::AccentYellow);
+    tType.setPosition(sf::Vector2f(px + 4.0f, py + 26.0f));
+    target.draw(tType);
+
+    std::string visitedInfo = "ROOMS CLEARED: " + std::to_string(m_stepCounter) + " / " + std::to_string(m_optimalSteps);
+    sf::Text tVis(theme.fontMono, visitedInfo, 12);
+    tVis.setFillColor(Theme::TextPrimary);
+    tVis.setPosition(sf::Vector2f(px + 4.0f, py + 48.0f));
+    target.draw(tVis);
+
+    // List of patrolled rooms in order
+    std::string seqStr = "PATROL PATH:\n";
+    int count = 0;
+    for (const auto& p : m_visitedOrder)
+    {
+        seqStr += "[" + std::to_string(p.second) + "] Room " + std::to_string(p.first) + "  ";
+        count++;
+        if (count % 2 == 0) seqStr += "\n";
+    }
+    if (m_visitedOrder.empty()) seqStr += "(No rooms breached yet)";
+
+    sf::Text tSeq(theme.fontMono, seqStr, 11);
+    tSeq.setFillColor(Theme::TextMuted);
+    tSeq.setPosition(sf::Vector2f(px + 4.0f, py + 78.0f));
+    target.draw(tSeq);
+}
+
+void Act1Level1Screen::drawTooltip(sf::RenderTarget& target, const Theme& theme)
+{
+    if (!m_hoverNode) return;
+
+    sf::Vector2f pos = m_hoverNode->position + sf::Vector2f(Theme::NodeRadius + 12.0f, -Theme::NodeRadius);
+    float boxW = 145.0f;
+    float boxH = 68.0f;
+
+    sf::RectangleShape box(sf::Vector2f(boxW, boxH));
+    box.setPosition(pos);
+    box.setFillColor(sf::Color(17, 24, 39, 240));
+    box.setOutlineThickness(1.0f);
+    box.setOutlineColor(Theme::BorderCyan);
+    target.draw(box);
+
+    std::string info = "Room: " + std::to_string(m_hoverNode->val) + "\n" +
+                       "Height: " + std::to_string(m_hoverNode->height) + "\n" +
+                       "Subtree Size: " + std::to_string(m_hoverNode->size);
+
+    sf::Text tipText(theme.fontMono, info, 11);
+    tipText.setFillColor(Theme::TextPrimary);
+    tipText.setPosition(pos + sf::Vector2f(10.0f, 8.0f));
+    target.draw(tipText);
 }

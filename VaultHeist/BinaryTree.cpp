@@ -280,9 +280,16 @@ TreeNode* BinaryTree::buildFromPreInHelper(int pre[], int in[], int& preIndex, i
 	preIndex++;
 	TreeNode* temp = new TreeNode(value);
 	int pos = start;
-	while (in[pos] != value)
+	while (pos <= end && in[pos] != value)
 	{
 		pos++;
+	}
+	// Safety: if value not found in [start..end], treat as leaf
+	if (pos > end)
+	{
+		temp->left = NULL;
+		temp->right = NULL;
+		return temp;
 	}
 	temp->left = buildFromPreInHelper(pre, in, preIndex, start, pos - 1);
 	temp->right = buildFromPreInHelper(pre, in, preIndex, pos + 1, end);
