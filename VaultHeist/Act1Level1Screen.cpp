@@ -48,19 +48,45 @@ void Act1Level1Screen::syncWithState()
     setAlarm(state.alarm, state.alarmCap);
 }
 
-void Act1Level1Screen::onHintClicked()
+std::string Act1Level1Screen::getLevelSpecificHint()
 {
-    std::string hint = m_bridge.getHint();
-    m_engine.showToast(hint, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return m_bridge.getHint();
+}
+
+void Act1Level1Screen::reapplyActionSilently(const PlayerAction& action)
+{
+    TreeNode* target = nullptr;
+    std::function<TreeNode*(TreeNode*, int)> findN = [&](TreeNode* curr, int val) -> TreeNode* {
+        if (!curr) return nullptr;
+        if (curr->val == val) return curr;
+        TreeNode* l = findN(curr->left, val);
+        if (l) return l;
+        return findN(curr->right, val);
+    };
+    target = findN(m_rootNode, action.nodeA);
+    if (target)
+    {
+        ActionResult res = m_bridge.processAction(action);
+        if (res.correct)
+        {
+            m_stepCounter++;
+            m_visitedOrder[target->val] = m_stepCounter;
+            target->isVisited = true;
+        }
+        syncWithState();
+    }
+}
+
+void Act1Level1Screen::reapplyActionAnimated(const PlayerAction& action)
+{
+    reapplyActionSilently(action);
+    m_engine.audio.playCorrect();
 }
 
 void Act1Level1Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Level reset to initial patrol state.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act1Level1Screen::onNodeClicked(TreeNode* node)
@@ -82,6 +108,7 @@ void Act1Level1Screen::onNodeClicked(TreeNode* node)
 
     if (res.correct)
     {
+        recordSharedAction(action);
         m_stepCounter++;
         m_visitedOrder[node->val] = m_stepCounter;
         node->isVisited = true;
@@ -102,7 +129,7 @@ void Act1Level1Screen::onNodeClicked(TreeNode* node)
                 },
                 [this]() {
                     // Retry Button
-                    resetLevel();
+                    onResetClicked();
                 },
                 [this]() {
                     // Back to Campaign Button
@@ -125,7 +152,7 @@ void Act1Level1Screen::onNodeClicked(TreeNode* node)
             const LevelState& s = m_bridge.getState();
             showResultModal(false, 0, s.steps, s.optimalSteps, s.penaltyPoints, 0,
                 nullptr,
-                [this]() { resetLevel(); },
+                [this]() { onResetClicked(); },
                 [this]() { onBackClicked(); }
             );
         }

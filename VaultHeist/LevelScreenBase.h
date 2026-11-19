@@ -2,6 +2,7 @@
 #include "Screen.h"
 #include "UIKit.h"
 #include "TreeRenderer.h"
+#include "PlayerAction.h"
 #include <string>
 #include <vector>
 #include <functional>
@@ -86,6 +87,13 @@ protected:
 
     sf::Vector2f canvasToWorld(sf::Vector2i pixelPos) const;
 
+    // Shared State & Action History for Undo/Replay
+    std::vector<PlayerAction> m_sharedActionHistory;
+    bool m_hintUsed = false;
+    bool m_isReplaying = false;
+    float m_replayTimer = 0.0f;
+    size_t m_replayActionIndex = 0;
+
     // Virtual hooks for derived levels to customize
     virtual void onBackClicked();
     virtual void onHintClicked();
@@ -96,5 +104,11 @@ protected:
     virtual void onCustomDraw(sf::RenderTarget& target) {}
     virtual void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds);
 
+    // Level-specific hooks called by shared base handlers
+    virtual std::string getLevelSpecificHint() { return "Observe node structure and telemetry indicators."; }
+    virtual void reapplyActionSilently(const PlayerAction& action) {}
+    virtual void reapplyActionAnimated(const PlayerAction& action) { reapplyActionSilently(action); }
+
+    void recordSharedAction(const PlayerAction& action);
     void relayout(unsigned int width, unsigned int height);
 };

@@ -19,8 +19,9 @@ public:
     // Mark a level as won with given stars; also unlocks the next level
     static void setWon(int act, int level, int stars);
 
-    // Dev shortcut: unlock all levels
-    static void unlockAll();
+    // Dev shortcut: toggle unlock all levels <-> lock to start state
+    static bool toggleUnlockAll();
+    static bool s_devUnlockedAll;
 
     static bool s_loaded;
 

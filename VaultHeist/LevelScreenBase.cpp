@@ -180,23 +180,95 @@ void LevelScreenBase::onBackClicked()
         });
 }
 
+void LevelScreenBase::recordSharedAction(const PlayerAction& action)
+{
+    m_sharedActionHistory.push_back(action);
+}
+
 void LevelScreenBase::onHintClicked()
 {
-    m_engine.showToast("Observe node structure and telemetry indicators.", TOAST_HINT);
+    if (!m_hintUsed)
+    {
+        m_hintUsed = true;
+        std::string hint = getLevelSpecificHint();
+        m_engine.showToast(hint, TOAST_HINT);
+        m_engine.audio.playHint();
+    }
+    else
+    {
+        // Second press and later: do NOT show hint again. Add 2 to alarm meter.
+        m_currentAlarm += 2;
+        m_engine.showToast("Hint already used.", TOAST_ERROR);
+        m_engine.audio.playWrong();
+
+        if (m_currentAlarm >= m_alarmCap)
+        {
+            m_engine.audio.playLose();
+            showResultModal(false, 0, m_currentSteps, m_optimalSteps, m_penaltyPoints, 0,
+                nullptr,
+                [this]() { onResetClicked(); },
+                [this]() { onBackClicked(); });
+        }
+    }
 }
 
 void LevelScreenBase::onResetClicked()
 {
-    m_engine.showToast("Level configuration reset.", TOAST_INFO);
+    m_sharedActionHistory.clear();
+    m_hintUsed = false;
+    m_isReplaying = false;
+    m_replayTimer = 0.0f;
+    m_replayActionIndex = 0;
+    m_currentAlarm = 0;
+    m_score = 0;
+    m_currentSteps = 0;
+    m_penaltyPoints = 0;
+    m_engine.showToast("Level reset to initial state.", TOAST_INFO);
+    m_engine.audio.playClick();
 }
 
 void LevelScreenBase::onUndoClicked()
 {
-    m_engine.showToast("Undo feature not available in this chamber.", TOAST_INFO);
+    if (m_sharedActionHistory.empty())
+    {
+        m_engine.showToast("No moves made yet.", TOAST_INFO);
+        return;
+    }
+
+    std::vector<PlayerAction> historyCopy = m_sharedActionHistory;
+    historyCopy.pop_back();
+
+    // Call level reset to reset to clean state
+    onResetClicked();
+
+    // Reapply all actions except the last silently
+    for (const auto& act : historyCopy)
+    {
+        recordSharedAction(act);
+        reapplyActionSilently(act);
+    }
+
+    m_engine.showToast("Last action undone.", TOAST_INFO);
+    m_engine.audio.playClick();
 }
 
 void LevelScreenBase::onReplayClicked()
 {
+    if (m_sharedActionHistory.empty())
+    {
+        m_engine.showToast("No moves to replay.", TOAST_INFO);
+        return;
+    }
+
+    std::vector<PlayerAction> historyCopy = m_sharedActionHistory;
+
+    // Reset visually
+    onResetClicked();
+    m_sharedActionHistory = historyCopy;
+
+    m_isReplaying = true;
+    m_replayActionIndex = 0;
+    m_replayTimer = 0.5f;
     m_engine.showToast("Replaying operation sequence...", TOAST_INFO);
 }
 
@@ -385,6 +457,26 @@ void LevelScreenBase::update(float dt)
         return;
     }
     m_treeRenderer.update(dt);
+
+    // Shared Replay Player Animation Loop
+    if (m_isReplaying)
+    {
+        m_replayTimer -= dt;
+        if (m_replayTimer <= 0.0f)
+        {
+            if (m_replayActionIndex < m_sharedActionHistory.size())
+            {
+                reapplyActionAnimated(m_sharedActionHistory[m_replayActionIndex]);
+                m_replayActionIndex++;
+                m_replayTimer = 0.5f;
+            }
+            else
+            {
+                m_isReplaying = false;
+                m_engine.showToast("Replay completed.", TOAST_INFO);
+            }
+        }
+    }
 }
 
 void LevelScreenBase::draw(sf::RenderTarget& target)

@@ -7,6 +7,8 @@
 int SaveSystem::s_state[5][7] = {};
 bool SaveSystem::s_loaded = false;
 
+bool SaveSystem::s_devUnlockedAll = false;
+
 static std::string getSavePath()
 {
     return "savegame.dat";
@@ -99,12 +101,22 @@ void SaveSystem::setWon(int act, int level, int stars)
     save();
 }
 
-void SaveSystem::unlockAll()
+bool SaveSystem::toggleUnlockAll()
 {
-    if (!s_loaded) load();
-    for (int a = 1; a <= 4; a++)
-        for (int lv = 1; lv <= 5; lv++)
-            if (s_state[a][lv] < 0)
+    s_devUnlockedAll = !s_devUnlockedAll;
+    if (s_devUnlockedAll)
+    {
+        for (int a = 1; a <= 4; a++)
+            for (int lv = 1; lv <= 5; lv++)
                 s_state[a][lv] = 0;
-    save();
+    }
+    else
+    {
+        // Revert to pristine start state: all locked except 1.1
+        for (int a = 0; a < 5; a++)
+            for (int lv = 0; lv < 7; lv++)
+                s_state[a][lv] = -1;
+        s_state[1][1] = 0;
+    }
+    return s_devUnlockedAll;
 }

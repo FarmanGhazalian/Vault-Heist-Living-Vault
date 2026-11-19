@@ -159,9 +159,17 @@ void CampaignScreen::handleEvent(const sf::Event& event)
 		}
 		else if (kp->code == sf::Keyboard::Key::U && kp->control && kp->shift)
 		{
-			SaveSystem::unlockAll();
-			engine.audio.playWin();
-			engine.showToast("DEV OVERRIDE: All levels unlocked!", TOAST_INFO);
+			bool unlocked = SaveSystem::toggleUnlockAll();
+			if (unlocked)
+			{
+				engine.audio.playWin();
+				engine.showToast("DEV OVERRIDE: All levels unlocked!", TOAST_INFO);
+			}
+			else
+			{
+				engine.audio.playClick();
+				engine.showToast("DEV OVERRIDE: Levels locked back to start state.", TOAST_INFO);
+			}
 			return;
 		}
 	}
