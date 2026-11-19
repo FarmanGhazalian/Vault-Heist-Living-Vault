@@ -79,4 +79,6 @@ public:
 	int getCollectedCount();
 	int getTotalToCollect();
 	TreeNode* getTree();
+	bool isNodeSkipped(int value);
+	int getVisitedByPruningCount();
 };

@@ -1,6 +1,7 @@
 #include "LevelScreenBase.h"
 #include "GameEngine.h"
 #include "CampaignScreen.h"
+#include "SaveSystem.h"
 #include <algorithm>
 #include <cmath>
 
@@ -15,9 +16,17 @@ LevelScreenBase::LevelScreenBase(GameEngine& engine, const std::string& actTitle
     , m_currentSteps(0)
     , m_optimalSteps(0)
     , m_penaltyPoints(0)
-    , m_backBtn("< BACK", sf::FloatRect(sf::Vector2f(20.0f, 15.0f), sf::Vector2f(95.0f, 34.0f)), BTN_BACK)
-    , m_hintBtn("HINT [H]", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 36.0f)), BTN_SECONDARY)
-    , m_resetBtn("RESET [R]", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 36.0f)), BTN_SECONDARY)
+    , m_isPanning(false)
+    , m_panStartPixel(0, 0)
+    , m_panOriginCenter(0.0f, 0.0f)
+    , m_spaceHeld(false)
+    , m_zoomLevel(1.0f)
+    , m_fitBtn("FIT", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(44.0f, 24.0f)), BTN_SECONDARY)
+    , m_backBtn("< BACK", sf::FloatRect(sf::Vector2f(20.0f, 12.0f), sf::Vector2f(95.0f, 32.0f)), BTN_BACK)
+    , m_hintBtn("HINT", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(80.0f, 34.0f)), BTN_SECONDARY)
+    , m_undoBtn("UNDO", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(80.0f, 34.0f)), BTN_SECONDARY)
+    , m_replayBtn("REPLAY", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(80.0f, 34.0f)), BTN_SECONDARY)
+    , m_resetBtn("RESET", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(80.0f, 34.0f)), BTN_SECONDARY)
     , m_rootNode(nullptr)
 {
     sf::Vector2f size = m_engine.getWindowSize();
@@ -29,27 +38,55 @@ void LevelScreenBase::relayout(unsigned int width, unsigned int height)
     float w = static_cast<float>(width);
     float h = static_cast<float>(height);
 
-    // Top Header: 60px
-    float headerH = 60.0f;
-    m_backBtn.bounds = sf::FloatRect(sf::Vector2f(20.0f, 13.0f), sf::Vector2f(95.0f, 34.0f));
+    float headerH = 55.0f;
+    float actionBarH = 46.0f;
 
-    // Right Side Panel: ~26% of screen width (min 260px)
-    float panelW = std::max(270.0f, w * 0.26f);
-    float panelX = w - panelW - 15.0f;
+    m_backBtn.bounds = sf::FloatRect(sf::Vector2f(16.0f, 11.0f), sf::Vector2f(90.0f, 32.0f));
+
+    // Right Side Panel: ~27% width (min 280px)
+    float panelW = std::max(280.0f, w * 0.27f);
+    float panelX = w - panelW - 14.0f;
     float panelY = headerH + 10.0f;
-    float panelH = h - panelY - 15.0f;
+    float panelH = h - panelY - 14.0f;
     m_sidePanelBounds = sf::FloatRect(sf::Vector2f(panelX, panelY), sf::Vector2f(panelW, panelH));
 
-    // Left Tree Canvas Area: 72% width
-    float canvasW = panelX - 25.0f;
-    float canvasH = h - headerH - 25.0f;
-    m_canvasBounds = sf::FloatRect(sf::Vector2f(15.0f, headerH + 10.0f), sf::Vector2f(canvasW, canvasH));
+    // Left Tree Canvas Area
+    float canvasW = panelX - 24.0f;
+    float canvasH = h - headerH - actionBarH - 24.0f;
+    m_canvasBounds = sf::FloatRect(sf::Vector2f(14.0f, headerH + 10.0f), sf::Vector2f(canvasW, canvasH));
 
-    // Side panel buttons (at the bottom of side panel)
-    float btnY = panelY + panelH - 48.0f;
-    float halfBtnW = (panelW - 24.0f) * 0.5f;
-    m_hintBtn.bounds = sf::FloatRect(sf::Vector2f(panelX + 8.0f, btnY), sf::Vector2f(halfBtnW, 38.0f));
-    m_resetBtn.bounds = sf::FloatRect(sf::Vector2f(panelX + 16.0f + halfBtnW, btnY), sf::Vector2f(halfBtnW, 38.0f));
+    // Bottom Action Bar
+    float barY = m_canvasBounds.position.y + m_canvasBounds.size.y + 6.0f;
+    m_actionBarBounds = sf::FloatRect(sf::Vector2f(14.0f, barY), sf::Vector2f(canvasW, actionBarH));
+
+    // Position Action Bar Buttons (right-aligned)
+    float btnW = 82.0f;
+    float btnGap = 8.0f;
+    float rx = m_actionBarBounds.position.x + m_actionBarBounds.size.x - btnW - 6.0f;
+    float by = barY + 6.0f;
+
+    m_resetBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
+    rx -= (btnW + btnGap);
+    m_replayBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
+    rx -= (btnW + btnGap);
+    m_undoBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
+    rx -= (btnW + btnGap);
+    m_hintBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
+
+    // Setup Canvas sf::View
+    float vx = m_canvasBounds.position.x / w;
+    float vy = m_canvasBounds.position.y / h;
+    float vw = m_canvasBounds.size.x / w;
+    float vh = m_canvasBounds.size.y / h;
+    m_canvasView.setViewport(sf::FloatRect(sf::Vector2f(vx, vy), sf::Vector2f(vw, vh)));
+    m_canvasView.setSize(sf::Vector2f(m_canvasBounds.size.x * m_zoomLevel, m_canvasBounds.size.y * m_zoomLevel));
+    m_canvasView.setCenter(sf::Vector2f(m_canvasBounds.position.x + m_canvasBounds.size.x * 0.5f,
+                                        m_canvasBounds.position.y + m_canvasBounds.size.y * 0.5f));
+
+    // FIT button overlay in canvas
+    m_fitBtn.bounds = sf::FloatRect(
+        sf::Vector2f(m_canvasBounds.position.x + m_canvasBounds.size.x - 48.0f, m_canvasBounds.position.y + 6.0f),
+        sf::Vector2f(42.0f, 22.0f));
 
     if (m_rootNode)
     {
@@ -60,6 +97,11 @@ void LevelScreenBase::relayout(unsigned int width, unsigned int height)
 void LevelScreenBase::onResize(unsigned int width, unsigned int height)
 {
     relayout(width, height);
+}
+
+sf::Vector2f LevelScreenBase::canvasToWorld(sf::Vector2i pixelPos) const
+{
+    return m_engine.window.mapPixelToCoords(pixelPos, m_canvasView);
 }
 
 void LevelScreenBase::setAlarm(int currentAlarm, int alarmCapacity)
@@ -89,14 +131,49 @@ void LevelScreenBase::setInstruction(const std::string& text)
     m_instructionText = text;
 }
 
+void LevelScreenBase::addToLog(const std::string& entry)
+{
+    m_operationLog.push_back(entry);
+    if (m_operationLog.size() > 20)
+    {
+        m_operationLog.erase(m_operationLog.begin());
+    }
+}
+
 void LevelScreenBase::showResultModal(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
                                       std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback)
 {
+    if (victory)
+    {
+        int act = 0, lvl = 0;
+        size_t aPos = m_actTitle.find("ACT ");
+        if (aPos != std::string::npos)
+        {
+            act = std::atoi(m_actTitle.c_str() + aPos + 4);
+        }
+        size_t lPos = m_levelTitle.find("LEVEL ");
+        if (lPos != std::string::npos)
+        {
+            const char* p = m_levelTitle.c_str() + lPos + 6;
+            while (*p && *p != '.') p++;
+            if (*p == '.') lvl = std::atoi(p + 1);
+        }
+        if (act >= 1 && act <= 4 && lvl >= 1 && lvl <= 5)
+        {
+            SaveSystem::setWon(act, lvl, starCount);
+        }
+    }
     m_resultModal.show(victory, starCount, stepCount, optSteps, penaltyPoints, totalScore, nextCallback, retryCallback, backCallback);
 }
 
 void LevelScreenBase::onBackClicked()
 {
+    if (m_resultModal.active && m_resultModal.won)
+    {
+        m_engine.changeScreen(std::make_unique<CampaignScreen>(m_engine));
+        return;
+    }
+
     m_engine.showConfirmModal("LEAVE MISSION", "Are you sure you want to return to Campaign? Current infiltration progress will be lost.",
         [this]() {
             m_engine.changeScreen(std::make_unique<CampaignScreen>(m_engine));
@@ -105,12 +182,27 @@ void LevelScreenBase::onBackClicked()
 
 void LevelScreenBase::onHintClicked()
 {
-    m_engine.showToast("Observe node structure carefully.", TOAST_HINT);
+    m_engine.showToast("Observe node structure and telemetry indicators.", TOAST_HINT);
 }
 
 void LevelScreenBase::onResetClicked()
 {
     m_engine.showToast("Level configuration reset.", TOAST_INFO);
+}
+
+void LevelScreenBase::onUndoClicked()
+{
+    m_engine.showToast("Undo feature not available in this chamber.", TOAST_INFO);
+}
+
+void LevelScreenBase::onReplayClicked()
+{
+    m_engine.showToast("Replaying operation sequence...", TOAST_INFO);
+}
+
+void LevelScreenBase::onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds)
+{
+    // Default no‑op implementation – derived screens may override to draw custom side‑panel UI.
 }
 
 void LevelScreenBase::onNodeClicked(TreeNode* node)
@@ -121,7 +213,6 @@ void LevelScreenBase::onNodeClicked(TreeNode* node)
 
 void LevelScreenBase::handleEvent(const sf::Event& event)
 {
-    // Result modal takes precedence
     if (m_resultModal.active)
     {
         m_resultModal.handleEvent(event);
@@ -150,52 +241,129 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
             onResetClicked();
             return;
         }
-    }
-
-    m_backBtn.handleEvent(event);
-    m_hintBtn.handleEvent(event);
-    m_resetBtn.handleEvent(event);
-
-    if (m_backBtn.isClicked())
-    {
-        m_backBtn.resetClick();
-        onBackClicked();
-    }
-    if (m_hintBtn.isClicked())
-    {
-        m_hintBtn.resetClick();
-        onHintClicked();
-    }
-    if (m_resetBtn.isClicked())
-    {
-        m_resetBtn.resetClick();
-        onResetClicked();
-    }
-
-    // Node interaction inside canvas bounds only
-    if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
-    {
-        sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
-        if (m_rootNode && m_canvasBounds.contains(mpos))
+        else if (key->code == sf::Keyboard::Key::Space)
         {
-            TreeNode* hover = m_treeRenderer.getNodeAtPosition(m_rootNode, mpos);
-            m_treeRenderer.setHoveredNode(hover);
+            m_spaceHeld = true;
+        }
+        else if (key->code == sf::Keyboard::Key::Num0 || key->code == sf::Keyboard::Key::Numpad0)
+        {
+            m_zoomLevel = 1.0f;
+            m_isPanning = false;
+            relayout(m_engine.window.getSize().x, m_engine.window.getSize().y);
         }
     }
 
+    if (auto* keyRel = event.getIf<sf::Event::KeyReleased>())
+    {
+        if (keyRel->code == sf::Keyboard::Key::Space)
+        {
+            m_spaceHeld = false;
+        }
+    }
+
+    // UI Buttons
+    m_backBtn.handleEvent(event);
+    m_hintBtn.handleEvent(event);
+    m_undoBtn.handleEvent(event);
+    m_replayBtn.handleEvent(event);
+    m_resetBtn.handleEvent(event);
+    m_fitBtn.handleEvent(event);
+
+    if (m_backBtn.isClicked())   { m_backBtn.resetClick(); onBackClicked(); }
+    if (m_hintBtn.isClicked())   { m_hintBtn.resetClick(); onHintClicked(); }
+    if (m_undoBtn.isClicked())   { m_undoBtn.resetClick(); onUndoClicked(); }
+    if (m_replayBtn.isClicked()) { m_replayBtn.resetClick(); onReplayClicked(); }
+    if (m_resetBtn.isClicked())  { m_resetBtn.resetClick(); onResetClicked(); }
+
+    if (m_fitBtn.isClicked())
+    {
+        m_fitBtn.resetClick();
+        m_zoomLevel = 1.0f;
+        m_isPanning = false;
+        relayout(m_engine.window.getSize().x, m_engine.window.getSize().y);
+    }
+
+    // Mouse Wheel Zoom
+    if (auto* wheel = event.getIf<sf::Event::MouseWheelScrolled>())
+    {
+        sf::Vector2f mpos(static_cast<float>(wheel->position.x), static_cast<float>(wheel->position.y));
+        if (m_canvasBounds.contains(mpos))
+        {
+            float factor = (wheel->delta > 0) ? (1.0f / 1.15f) : 1.15f;
+            float newZoom = std::clamp(m_zoomLevel * factor, 0.4f, 4.0f);
+            factor = newZoom / m_zoomLevel;
+            m_zoomLevel = newZoom;
+
+            sf::Vector2f worldBefore = canvasToWorld(sf::Vector2i(wheel->position.x, wheel->position.y));
+            m_canvasView.zoom(factor);
+            sf::Vector2f worldAfter = canvasToWorld(sf::Vector2i(wheel->position.x, wheel->position.y));
+            m_canvasView.move(worldBefore - worldAfter);
+        }
+    }
+
+    // Mouse Press (Pan & Node Click)
     if (auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>())
     {
-        if (mouseBtn->button == sf::Mouse::Button::Left)
+        sf::Vector2f pixelPos(static_cast<float>(mouseBtn->position.x), static_cast<float>(mouseBtn->position.y));
+        bool inCanvas = m_canvasBounds.contains(pixelPos);
+
+        if (inCanvas && m_fitBtn.bounds.contains(pixelPos))
         {
-            sf::Vector2f mpos(static_cast<float>(mouseBtn->position.x), static_cast<float>(mouseBtn->position.y));
-            if (m_rootNode && m_canvasBounds.contains(mpos))
+            // handled by m_fitBtn
+        }
+        else if (mouseBtn->button == sf::Mouse::Button::Middle ||
+                 mouseBtn->button == sf::Mouse::Button::Right ||
+                 (mouseBtn->button == sf::Mouse::Button::Left && m_spaceHeld))
+        {
+            if (inCanvas)
             {
-                TreeNode* clicked = m_treeRenderer.getNodeAtPosition(m_rootNode, mpos);
+                m_isPanning = true;
+                m_panStartPixel = mouseBtn->position;
+                m_panOriginCenter = m_canvasView.getCenter();
+            }
+        }
+        else if (mouseBtn->button == sf::Mouse::Button::Left && !m_spaceHeld)
+        {
+            if (m_rootNode && inCanvas)
+            {
+                sf::Vector2f worldPos = canvasToWorld(mouseBtn->position);
+                TreeNode* clicked = m_treeRenderer.getNodeAtPosition(m_rootNode, worldPos);
                 if (clicked)
                 {
                     onNodeClicked(clicked);
                 }
             }
+        }
+    }
+
+    // Mouse Move (Pan update & Node hover)
+    if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
+    {
+        sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
+        if (m_isPanning)
+        {
+            sf::Vector2i cur = mouseMove->position;
+            sf::Vector2i delta = m_panStartPixel - cur;
+            float scaleX = m_canvasView.getSize().x / m_canvasBounds.size.x;
+            float scaleY = m_canvasView.getSize().y / m_canvasBounds.size.y;
+            m_canvasView.setCenter(m_panOriginCenter + sf::Vector2f(delta.x * scaleX, delta.y * scaleY));
+        }
+        else if (m_rootNode && m_canvasBounds.contains(mpos))
+        {
+            sf::Vector2f worldPos = canvasToWorld(mouseMove->position);
+            TreeNode* hover = m_treeRenderer.getNodeAtPosition(m_rootNode, worldPos);
+            m_treeRenderer.setHoveredNode(hover);
+        }
+    }
+
+    // Mouse Release (Stop Pan)
+    if (auto* mouseRel = event.getIf<sf::Event::MouseButtonReleased>())
+    {
+        if (mouseRel->button == sf::Mouse::Button::Middle ||
+            mouseRel->button == sf::Mouse::Button::Right ||
+            mouseRel->button == sf::Mouse::Button::Left)
+        {
+            m_isPanning = false;
         }
     }
 }
@@ -205,6 +373,15 @@ void LevelScreenBase::update(float dt)
     if (m_resultModal.active)
     {
         m_resultModal.update(dt);
+        // If a screen change was requested while the modal was active, defer it until now.
+        if (m_pendingScreenChange && m_pendingCallback)
+        {
+            // Reset flag before invoking to avoid re‑entrancy issues.
+            m_pendingScreenChange = false;
+            auto cb = std::move(m_pendingCallback);
+            m_pendingCallback = nullptr;
+            cb();
+        }
         return;
     }
     m_treeRenderer.update(dt);
@@ -218,7 +395,7 @@ void LevelScreenBase::draw(sf::RenderTarget& target)
 
     // 1. Top HUD Header Bar
     sf::RectangleShape hudBar(sf::Vector2f(w, 55.0f));
-    hudBar.setFillColor(sf::Color(13, 19, 33, 235));
+    hudBar.setFillColor(sf::Color(13, 19, 33, 240));
     hudBar.setOutlineThickness(1.0f);
     hudBar.setOutlineColor(Theme::BorderCyan);
     target.draw(hudBar);
@@ -228,108 +405,143 @@ void LevelScreenBase::draw(sf::RenderTarget& target)
     sf::Text titleText(theme.fontUI, m_levelTitle, 19);
     titleText.setFillColor(Theme::TextPrimary);
     titleText.setStyle(sf::Text::Bold);
-    titleText.setPosition(sf::Vector2f(130.0f, 10.0f));
+    titleText.setPosition(sf::Vector2f(125.0f, 10.0f));
     target.draw(titleText);
 
     sf::Text actText(theme.fontMono, m_actTitle, 11);
     actText.setFillColor(Theme::BorderCyan);
-    actText.setPosition(sf::Vector2f(130.0f, 32.0f));
+    actText.setPosition(sf::Vector2f(125.0f, 32.0f));
     target.draw(actText);
 
     // 2. Tree Canvas Area
-    theme.drawPanel(target, m_canvasBounds, sf::Color(0, 240, 255, 40), 1.0f);
+    theme.drawPanel(target, m_canvasBounds, sf::Color(0, 240, 255, 35), 1.0f);
+
+    // Render tree with canvas view
+    target.setView(m_canvasView);
     if (m_rootNode)
     {
         m_treeRenderer.draw(target, theme, m_rootNode);
     }
     onCustomDraw(target);
 
-    // 3. Right Side Panel HUD (25% Width)
-    theme.drawPanel(target, m_sidePanelBounds, Theme::BorderCyan, 1.2f);
-    theme.drawGlowOutline(target, m_sidePanelBounds, Theme::BorderCyan, 0.4f);
+    // Restore default view for GUI panels
+    target.setView(target.getDefaultView());
 
+    // Fit button overlay on canvas
+    m_fitBtn.draw(target, theme);
+
+    // 3. Bottom Action Bar
+    theme.drawPanel(target, m_actionBarBounds, Theme::BorderCyan, 1.0f);
+    m_hintBtn.draw(target, theme);
+    m_undoBtn.draw(target, theme);
+    m_replayBtn.draw(target, theme);
+    m_resetBtn.draw(target, theme);
+
+    // 4. Right Side Panel (3 Bordered Cards)
     float px = m_sidePanelBounds.position.x;
     float py = m_sidePanelBounds.position.y;
     float pw = m_sidePanelBounds.size.x;
+    float ph = m_sidePanelBounds.size.y;
 
-    // Panel Header: MISSION OBJECTIVE
-    sf::Text objHeader(theme.fontMono, "// MISSION BRIEFING", 12);
+    // Card 1: MISSION OBJECTIVE (height ~115px)
+    float c1H = 115.0f;
+    sf::FloatRect card1Bounds(sf::Vector2f(px, py), sf::Vector2f(pw, c1H));
+    theme.drawPanel(target, card1Bounds, Theme::BorderCyan, 1.0f);
+
+    sf::Text objHeader(theme.fontMono, "MISSION OBJECTIVE", 11);
     objHeader.setFillColor(Theme::BorderCyan);
     objHeader.setStyle(sf::Text::Bold);
-    objHeader.setPosition(sf::Vector2f(px + 14.0f, py + 14.0f));
+    objHeader.setPosition(sf::Vector2f(px + 12.0f, py + 10.0f));
     target.draw(objHeader);
 
-    sf::Text objBody(theme.fontUI, m_instructionText, 13);
-    objBody.setFillColor(Theme::TextPrimary);
-    objBody.setPosition(sf::Vector2f(px + 14.0f, py + 34.0f));
-    target.draw(objBody);
+    UIText::drawWrapped(target, theme.fontUI, m_instructionText, 12, Theme::TextPrimary,
+        sf::Vector2f(px + 12.0f, py + 28.0f), pw - 24.0f);
 
-    // Separator line
-    sf::Vertex sep1[2] = {
-        sf::Vertex(sf::Vector2f(px + 12.0f, py + 88.0f), Theme::BorderMuted),
-        sf::Vertex(sf::Vector2f(px + pw - 12.0f, py + 88.0f), Theme::BorderMuted)
-    };
-    target.draw(sep1, 2, sf::PrimitiveType::Lines);
+    // Card 2: TELEMETRY & ALARM (height ~140px)
+    float c2Y = py + c1H + 10.0f;
+    float c2H = 140.0f;
+    sf::FloatRect card2Bounds(sf::Vector2f(px, c2Y), sf::Vector2f(pw, c2H));
+    theme.drawPanel(target, card2Bounds, Theme::BorderCyan, 1.0f);
 
-    // Stats Section: Steps vs Optimal, Score, Penalties
-    sf::Text statsHeader(theme.fontMono, "// TELEMETRY & STATS", 11);
-    statsHeader.setFillColor(Theme::TextMuted);
-    statsHeader.setPosition(sf::Vector2f(px + 14.0f, py + 98.0f));
+    sf::Text statsHeader(theme.fontMono, "TELEMETRY", 11);
+    statsHeader.setFillColor(Theme::BorderCyan);
+    statsHeader.setStyle(sf::Text::Bold);
+    statsHeader.setPosition(sf::Vector2f(px + 12.0f, c2Y + 10.0f));
     target.draw(statsHeader);
 
     std::string sSteps = "STEPS: " + std::to_string(m_currentSteps) + " / OPTIMAL: " + std::to_string(m_optimalSteps);
     sf::Text txtSteps(theme.fontMono, sSteps, 12);
     txtSteps.setFillColor(Theme::TextPrimary);
-    txtSteps.setPosition(sf::Vector2f(px + 14.0f, py + 118.0f));
+    txtSteps.setPosition(sf::Vector2f(px + 12.0f, c2Y + 28.0f));
     target.draw(txtSteps);
 
-    std::string sScore = "SCORE: " + std::to_string(m_score) + " pts  (PENALTY: -" + std::to_string(m_penaltyPoints) + ")";
+    std::string sScore = "SCORE: " + std::to_string(m_score) + " pts  (-" + std::to_string(m_penaltyPoints) + ")";
     sf::Text txtScore(theme.fontMono, sScore, 12);
     txtScore.setFillColor(Theme::AccentYellow);
-    txtScore.setPosition(sf::Vector2f(px + 14.0f, py + 138.0f));
+    txtScore.setPosition(sf::Vector2f(px + 12.0f, c2Y + 48.0f));
     target.draw(txtScore);
 
-    // Alarm Meter Bar
-    sf::Text alarmLabel(theme.fontMono, "ALARM THRESHOLD (" + std::to_string(m_currentAlarm) + "/" + std::to_string(m_alarmCap) + "):", 11);
+    // Segmented Alarm Bar (10 segments)
+    sf::Text alarmLabel(theme.fontMono, "ALARM STATUS (" + std::to_string(m_currentAlarm) + "/" + std::to_string(m_alarmCap) + "):", 11);
     alarmLabel.setFillColor(Theme::TextMuted);
-    alarmLabel.setPosition(sf::Vector2f(px + 14.0f, py + 165.0f));
+    alarmLabel.setPosition(sf::Vector2f(px + 12.0f, c2Y + 72.0f));
     target.draw(alarmLabel);
 
-    float barW = pw - 28.0f;
-    float barH = 14.0f;
-    sf::RectangleShape alarmTrack(sf::Vector2f(barW, barH));
-    alarmTrack.setPosition(sf::Vector2f(px + 14.0f, py + 185.0f));
-    alarmTrack.setFillColor(sf::Color(10, 14, 23, 220));
-    alarmTrack.setOutlineThickness(1.0f);
-    alarmTrack.setOutlineColor(Theme::BorderMuted);
-    target.draw(alarmTrack);
+    float segBarW = pw - 24.0f;
+    float segH = 14.0f;
+    int numSegments = 10;
+    float segGap = 3.0f;
+    float segW = (segBarW - (numSegments - 1) * segGap) / static_cast<float>(numSegments);
+    int activeSegs = std::clamp(static_cast<int>(std::round(static_cast<float>(m_currentAlarm) / static_cast<float>(m_alarmCap) * numSegments)), 0, numSegments);
 
-    float alarmPct = std::clamp(static_cast<float>(m_currentAlarm) / static_cast<float>(m_alarmCap), 0.0f, 1.0f);
-    if (alarmPct > 0.0f)
+    for (int s = 0; s < numSegments; s++)
     {
-        sf::RectangleShape alarmFill(sf::Vector2f(barW * alarmPct, barH));
-        alarmFill.setPosition(sf::Vector2f(px + 14.0f, py + 185.0f));
-        sf::Color fillCol = (alarmPct > 0.7f) ? Theme::CrimsonAlarm : ((alarmPct > 0.4f) ? Theme::AccentYellow : Theme::SuccessEmerald);
-        alarmFill.setFillColor(fillCol);
-        target.draw(alarmFill);
+        sf::RectangleShape seg(sf::Vector2f(segW, segH));
+        seg.setPosition(sf::Vector2f(px + 12.0f + s * (segW + segGap), c2Y + 92.0f));
+        if (s < activeSegs)
+        {
+            sf::Color col = (s >= 7) ? Theme::CrimsonAlarm : ((s >= 4) ? Theme::AccentYellow : Theme::SuccessEmerald);
+            seg.setFillColor(col);
+        }
+        else
+        {
+            seg.setFillColor(sf::Color(25, 33, 44, 200));
+        }
+        seg.setOutlineThickness(1.0f);
+        seg.setOutlineColor(Theme::BorderMuted);
+        target.draw(seg);
     }
 
-    // Separator line before custom level area
-    sf::Vertex sep2[2] = {
-        sf::Vertex(sf::Vector2f(px + 12.0f, py + 215.0f), Theme::BorderMuted),
-        sf::Vertex(sf::Vector2f(px + pw - 12.0f, py + 215.0f), Theme::BorderMuted)
-    };
-    target.draw(sep2, 2, sf::PrimitiveType::Lines);
+    // Card 3: OPERATION LOG & CUSTOM LEVEL CONTROLS
+    float c3Y = c2Y + c2H + 10.0f;
+    float c3H = ph - (c3Y - py);
+    sf::FloatRect card3Bounds(sf::Vector2f(px, c3Y), sf::Vector2f(pw, c3H));
+    theme.drawPanel(target, card3Bounds, Theme::BorderCyan, 1.0f);
 
-    // 4. Custom Level Details Slot in Side Panel
-    sf::FloatRect customSlot(sf::Vector2f(px + 12.0f, py + 225.0f), sf::Vector2f(pw - 24.0f, m_sidePanelBounds.size.y - 285.0f));
+    sf::Text logHeader(theme.fontMono, "OPERATION LOG", 11);
+    logHeader.setFillColor(Theme::BorderCyan);
+    logHeader.setStyle(sf::Text::Bold);
+    logHeader.setPosition(sf::Vector2f(px + 12.0f, c3Y + 10.0f));
+    target.draw(logHeader);
+
+    // Render log lines or custom level slot
+    float logY = c3Y + 28.0f;
+    int displayCount = std::min(static_cast<int>(m_operationLog.size()), 4);
+    int startIdx = static_cast<int>(m_operationLog.size()) - displayCount;
+    for (int i = 0; i < displayCount; i++)
+    {
+        sf::Text line(theme.fontMono, "> " + m_operationLog[startIdx + i], 10);
+        line.setFillColor(Theme::TextMuted);
+        line.setPosition(sf::Vector2f(px + 12.0f, logY + i * 15.0f));
+        target.draw(line);
+    }
+
+    // Slot for custom derived level panels inside Card 3
+    float customSlotY = logY + displayCount * 15.0f + 6.0f;
+    sf::FloatRect customSlot(sf::Vector2f(px + 10.0f, customSlotY), sf::Vector2f(pw - 20.0f, c3H - (customSlotY - c3Y) - 6.0f));
     onDrawSidePanel(target, customSlot);
 
-    // 5. Side Panel Action Buttons
-    m_hintBtn.draw(target, theme);
-    m_resetBtn.draw(target, theme);
-
-    // 6. Result Modal (Rendered on top of everything when level finished)
+    // 5. Result Modal (top layer)
     if (m_resultModal.active)
     {
         m_resultModal.draw(target, theme, sf::Vector2f(w, h));

@@ -5,7 +5,19 @@
 #include "Act1Level3Screen.h"
 #include "Act1Level4Screen.h"
 #include "Act1Level5Screen.h"
+#include "Act2Level1Screen.h"
+#include "Act2Level2Screen.h"
+#include "Act2Level3Screen.h"
+#include "Act2Level4Screen.h"
+#include "Act2Level5Screen.h"
+#include "Act3Level1Screen.h"
+#include "Act3Level2Screen.h"
+#include "Act3Level3Screen.h"
+#include "Act3Level4Screen.h"
+#include "Act3Level5Screen.h"
+#include "Act4LevelScreen.h"
 #include "GameEngine.h"
+#include "SaveSystem.h"
 #include <algorithm>
 #include <cmath>
 
@@ -13,6 +25,7 @@ CampaignScreen::CampaignScreen(GameEngine& gameEngine)
 	: engine(gameEngine), windowSize(gameEngine.getWindowSize()),
 	  currentView(VIEW_ACTS), selectedAct(1)
 {
+	SaveSystem::load();
 	setupData();
 	updateLayout(windowSize.x, windowSize.y);
 }
@@ -42,10 +55,10 @@ void CampaignScreen::setupData()
 
 	// Act 3
 	levels.push_back({ 3, 1, "Read the Badges", 0, false });
-	levels.push_back({ 3, 2, "Manual Repair: Single Rotations", 0, false });
-	levels.push_back({ 3, 3, "Manual Repair: Double Rotations", 0, false });
-	levels.push_back({ 3, 4, "Auto Mode and Prediction", 0, false });
-	levels.push_back({ 3, 5, "Order-Statistic Heist (Boss)", 0, false });
+	levels.push_back({ 3, 2, "Manual Repair: Single", 0, false });
+	levels.push_back({ 3, 3, "Manual Repair: Double", 0, false });
+	levels.push_back({ 3, 4, "Auto Mode & Prediction", 0, false });
+	levels.push_back({ 3, 5, "Order-Statistic Heist", 0, false });
 
 	// Act 4
 	levels.push_back({ 4, 1, "Activate the Vault", 0, false });
@@ -59,13 +72,12 @@ void CampaignScreen::updateLayout(float w, float h)
 {
 	windowSize = sf::Vector2f(w, h);
 
-	// Back button at top-left
 	btnBack = Button("< BACK", sf::FloatRect(sf::Vector2f(24.0f, 24.0f), sf::Vector2f(100.0f, 36.0f)), BTN_BACK);
 
-	// Layout 4 Act Cards in a 2x2 grid or horizontal row
+	// Layout 4 Act Cards
 	actButtons.clear();
-	float cardW = std::min(420.0f, (w - 120.0f) * 0.5f);
-	float cardH = 130.0f;
+	float cardW = std::min(440.0f, (w - 120.0f) * 0.5f);
+	float cardH = 135.0f;
 	float gapX = 30.0f;
 	float gapY = 24.0f;
 	float totalGridW = cardW * 2.0f + gapX;
@@ -79,13 +91,13 @@ void CampaignScreen::updateLayout(float w, float h)
 		float x = startX + col * (cardW + gapX);
 		float y = startY + row * (cardH + gapY);
 
-		std::string label = "ACT " + std::to_string(acts[i].actNum) + ": " + acts[i].name;
+		std::string label = "ACT " + std::to_string(acts[i].actNum) + " - " + acts[i].name;
 		actButtons.push_back(Button(label, sf::FloatRect(sf::Vector2f(x, y), sf::Vector2f(cardW, cardH)), BTN_PRIMARY));
 	}
 
-	// Layout 5 Level Cards in a horizontal row / centered flex
+	// Layout 5 Level Cards
 	levelButtons.clear();
-	float lvlW = std::min(180.0f, (w - 120.0f) / 5.0f);
+	float lvlW = std::min(190.0f, (w - 120.0f) / 5.0f);
 	float lvlH = 220.0f;
 	float lGap = 16.0f;
 	float totalLvlW = 5.0f * lvlW + 4.0f * lGap;
@@ -130,23 +142,27 @@ void CampaignScreen::handleEvent(const sf::Event& event)
 		return;
 	}
 
-	if (event.is<sf::Event::KeyPressed>())
+	if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
 	{
-		if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
+		if (kp->code == sf::Keyboard::Key::Escape)
 		{
-			if (kp->code == sf::Keyboard::Key::Escape)
+			engine.audio.playClick();
+			if (currentView == VIEW_LEVELS)
 			{
-				engine.audio.playClick();
-				if (currentView == VIEW_LEVELS)
-				{
-					currentView = VIEW_ACTS;
-				}
-				else
-				{
-					engine.changeScreen(std::make_unique<MainMenuScreen>(engine));
-				}
-				return;
+				currentView = VIEW_ACTS;
 			}
+			else
+			{
+				engine.changeScreen(std::make_unique<MainMenuScreen>(engine));
+			}
+			return;
+		}
+		else if (kp->code == sf::Keyboard::Key::U && kp->control && kp->shift)
+		{
+			SaveSystem::unlockAll();
+			engine.audio.playWin();
+			engine.showToast("DEV OVERRIDE: All levels unlocked!", TOAST_INFO);
+			return;
 		}
 	}
 
@@ -200,6 +216,14 @@ void CampaignScreen::handleEvent(const sf::Event& event)
 				levelButtons[i].resetClick();
 				engine.audio.playClick();
 
+				int lvlIdx = static_cast<int>(i) + 1;
+				if (!SaveSystem::isUnlocked(selectedAct, lvlIdx))
+				{
+					engine.audio.playWrong();
+					engine.showToast("CHAMBER LOCKED - Complete previous level first!", TOAST_ERROR);
+					return;
+				}
+
 				if (selectedAct == 1)
 				{
 					if (i == 0) { engine.changeScreen(std::make_unique<Act1Level1Screen>(engine)); return; }
@@ -208,10 +232,34 @@ void CampaignScreen::handleEvent(const sf::Event& event)
 					if (i == 3) { engine.changeScreen(std::make_unique<Act1Level4Screen>(engine)); return; }
 					if (i == 4) { engine.changeScreen(std::make_unique<Act1Level5Screen>(engine)); return; }
 				}
+				else if (selectedAct == 2)
+				{
+					if (i == 0) { engine.changeScreen(std::make_unique<Act2Level1Screen>(engine)); return; }
+					if (i == 1) { engine.changeScreen(std::make_unique<Act2Level2Screen>(engine)); return; }
+					if (i == 2) { engine.changeScreen(std::make_unique<Act2Level3Screen>(engine)); return; }
+					if (i == 3) { engine.changeScreen(std::make_unique<Act2Level4Screen>(engine)); return; }
+					if (i == 4) { engine.changeScreen(std::make_unique<Act2Level5Screen>(engine)); return; }
+				}
+				else if (selectedAct == 3)
+				{
+					if (i == 0) { engine.changeScreen(std::make_unique<Act3Level1Screen>(engine)); return; }
+					if (i == 1) { engine.changeScreen(std::make_unique<Act3Level2Screen>(engine)); return; }
+					if (i == 2) { engine.changeScreen(std::make_unique<Act3Level3Screen>(engine)); return; }
+					if (i == 3) { engine.changeScreen(std::make_unique<Act3Level4Screen>(engine)); return; }
+					if (i == 4) { engine.changeScreen(std::make_unique<Act3Level5Screen>(engine)); return; }
+				}
+				else if (selectedAct == 4)
+				{
+					if (i >= 0 && i < 5)
+					{
+						engine.changeScreen(std::make_unique<Act4LevelScreen>(engine, static_cast<int>(i) + 1));
+						return;
+					}
+				}
 				else
 				{
 					std::string actTitle = acts[selectedAct - 1].name;
-					engine.showToast("Act " + std::to_string(selectedAct) + " (" + actTitle + ") unlocks in Act 2 Phase!", TOAST_INFO);
+					engine.showToast("Act " + std::to_string(selectedAct) + " (" + actTitle + ") unlocks in future acts!", TOAST_INFO);
 					return;
 				}
 			}
@@ -226,15 +274,12 @@ void CampaignScreen::update(float dt)
 
 void CampaignScreen::draw(sf::RenderTarget& target)
 {
-	// Back Button
 	btnBack.draw(target, engine.theme);
-
 	float cx = windowSize.x * 0.5f;
 
 	if (currentView == VIEW_ACTS)
 	{
-		// Header
-		sf::Text title(engine.theme.fontUI, "CAMPAIGN // SELECT OPERATION SECTOR", 28);
+		sf::Text title(engine.theme.fontUI, "CAMPAIGN - SELECT OPERATION SECTOR", 28);
 		title.setFillColor(Theme::TextPrimary);
 		sf::FloatRect tb = title.getLocalBounds();
 		title.setPosition(sf::Vector2f(std::round(cx - tb.size.x * 0.5f - tb.position.x), 36.0f));
@@ -246,18 +291,25 @@ void CampaignScreen::draw(sf::RenderTarget& target)
 		sub.setPosition(sf::Vector2f(std::round(cx - sb.size.x * 0.5f - sb.position.x), 74.0f));
 		target.draw(sub);
 
-		// Draw 4 Act Cards
 		for (size_t i = 0; i < actButtons.size(); i++)
 		{
 			actButtons[i].draw(target, engine.theme);
 
-			// Subtitle & details inside card
 			sf::Text actSub(engine.theme.fontUI, acts[i].subtitle, 13);
 			actSub.setFillColor(Theme::TextMuted);
 			actSub.setPosition(sf::Vector2f(actButtons[i].bounds.position.x + 18.0f, actButtons[i].bounds.position.y + 45.0f));
 			target.draw(actSub);
 
-			sf::Text badge(engine.theme.fontMono, "[5 MISSIONS // 0/15 STARS]", 12);
+			// Count stars in this act
+			int actStars = 0;
+			int actNum = acts[i].actNum;
+			for (int l = 1; l <= 5; l++)
+			{
+				int s = SaveSystem::getStars(actNum, l);
+				if (s > 0) actStars += s;
+			}
+			std::string badgeStr = "5 MISSIONS - " + std::to_string(actStars) + "/15 STARS";
+			sf::Text badge(engine.theme.fontMono, badgeStr, 12);
 			badge.setFillColor(Theme::AccentYellow);
 			badge.setPosition(sf::Vector2f(actButtons[i].bounds.position.x + 18.0f, actButtons[i].bounds.position.y + actButtons[i].bounds.size.y - 30.0f));
 			target.draw(badge);
@@ -265,9 +317,8 @@ void CampaignScreen::draw(sf::RenderTarget& target)
 	}
 	else
 	{
-		// Level Selection View
 		std::string actName = acts[selectedAct - 1].name;
-		sf::Text title(engine.theme.fontUI, "ACT " + std::to_string(selectedAct) + " // " + actName, 26);
+		sf::Text title(engine.theme.fontUI, "ACT " + std::to_string(selectedAct) + " - " + actName, 26);
 		title.setFillColor(Theme::BorderCyan);
 		sf::FloatRect tb = title.getLocalBounds();
 		title.setPosition(sf::Vector2f(std::round(cx - tb.size.x * 0.5f - tb.position.x), 36.0f));
@@ -279,12 +330,10 @@ void CampaignScreen::draw(sf::RenderTarget& target)
 		sub.setPosition(sf::Vector2f(std::round(cx - sb.size.x * 0.5f - sb.position.x), 72.0f));
 		target.draw(sub);
 
-		// Draw 5 Level Cards
 		for (size_t i = 0; i < levelButtons.size(); i++)
 		{
 			levelButtons[i].draw(target, engine.theme);
 
-			// Find matching level
 			std::string lTitle = "";
 			for (const auto& lvl : levels)
 			{
@@ -295,21 +344,27 @@ void CampaignScreen::draw(sf::RenderTarget& target)
 				}
 			}
 
-			// Level card content
-			sf::Text titleTxt(engine.theme.fontUI, lTitle, 13);
-			titleTxt.setFillColor(Theme::TextPrimary);
-			titleTxt.setPosition(sf::Vector2f(levelButtons[i].bounds.position.x + 12.0f, levelButtons[i].bounds.position.y + 50.0f));
-			target.draw(titleTxt);
+			// Wrapped / fitted title inside card
+			float maxTextW = levelButtons[i].bounds.size.x - 24.0f;
+			UIText::drawWrapped(target, engine.theme.fontUI, lTitle, 13, Theme::TextPrimary,
+				sf::Vector2f(levelButtons[i].bounds.position.x + 12.0f, levelButtons[i].bounds.position.y + 48.0f), maxTextW);
 
-			// Stars rating
-			sf::Text starsTxt(engine.theme.fontMono, "[***]", 16);
-			starsTxt.setFillColor(sf::Color(100, 116, 139)); // unearned grey stars
+			// Stars
+			int earnedStars = SaveSystem::getStars(selectedAct, static_cast<int>(i) + 1);
+			std::string starsStr = "";
+			for (int s = 0; s < 3; s++)
+			{
+				starsStr += (s < earnedStars) ? "* " : "- ";
+			}
+			sf::Text starsTxt(engine.theme.fontMono, starsStr, 15);
+			starsTxt.setFillColor(earnedStars > 0 ? Theme::AccentYellow : sf::Color(100, 116, 139));
 			starsTxt.setPosition(sf::Vector2f(levelButtons[i].bounds.position.x + 12.0f, levelButtons[i].bounds.position.y + levelButtons[i].bounds.size.y - 58.0f));
 			target.draw(starsTxt);
 
-			// Status indicator
-			sf::Text statusTxt(engine.theme.fontMono, "[UNLOCKED]", 11);
-			statusTxt.setFillColor(Theme::SuccessEmerald);
+			// Lock status
+			bool unlocked = SaveSystem::isUnlocked(selectedAct, static_cast<int>(i) + 1);
+			sf::Text statusTxt(engine.theme.fontMono, unlocked ? "UNLOCKED" : "LOCKED", 11);
+			statusTxt.setFillColor(unlocked ? Theme::SuccessEmerald : Theme::CrimsonAlarm);
 			statusTxt.setPosition(sf::Vector2f(levelButtons[i].bounds.position.x + 12.0f, levelButtons[i].bounds.position.y + levelButtons[i].bounds.size.y - 28.0f));
 			target.draw(statusTxt);
 		}

@@ -20,4 +20,5 @@ public:
 	TreeNode* inorderSuccessor(TreeNode* node);
 	int* rangeToArray(int lo, int hi, int& count);
 	int* getInsertPath(int key, int& length);
+	bool isVisitedByPrunedRange(int key, int lo, int hi);
 };

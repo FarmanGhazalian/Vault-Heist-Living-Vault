@@ -35,6 +35,8 @@ private:
     bool m_diameterBoxFocused;
     std::string m_diameterInputBuffer;
     sf::FloatRect m_diameterBoxBounds;
+    Button m_submitDiaBtn;
+    std::vector<std::pair<Button, char>> m_numpadBtns;
 
     // Shake & Error feedback
     float m_shakeTimer;

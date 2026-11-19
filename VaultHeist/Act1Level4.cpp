@@ -24,7 +24,7 @@ bool Level4DataLoader::loadJSON(const string& filePath)
 	}
 	data.levelName = j["levelName"];
 	data.totalNodes = j["totalNodes"];
-	data.optimalSteps = j["optimalSteps"];
+	data.optimalSteps = j.contains("optimalSteps") ? j["optimalSteps"].get<int>() : 0;
 	data.generate();
 
 	for (int i = 0; i < data.totalNodes; i++)
@@ -76,7 +76,6 @@ bool Act1Level4::initLevel(const std::string& jsonPath)
 	lcaFound = false;
 
 	solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, loader.data.totalNodes);
-	state = LevelState(loader.data.optimalSteps);
 
 	TreeNode* lcaNode = solTree.lca(roomA, roomB);
 	if (lcaNode != nullptr)
@@ -89,6 +88,9 @@ bool Act1Level4::initLevel(const std::string& jsonPath)
 	}
 	expectedPath = solTree.getPath(lcaNode, roomA, roomB, expectedPathLength);
 	pathCount = expectedPathLength;
+
+	int dynSteps = 1 + expectedPathLength;
+	state = LevelState(dynSteps);
 
 	return true;
 }

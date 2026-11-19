@@ -20,6 +20,7 @@ void Act1Level2Screen::resetLevel()
     m_slots.clear();
     m_preorder.clear();
     m_inorder.clear();
+    m_actionHistory.clear();
     m_draggedIndex = -1;
     m_hoveredSlotIndex = -1;
     m_shakeTimer = 0.0f;
@@ -155,6 +156,68 @@ void Act1Level2Screen::onResetClicked()
     m_engine.audio.playClick();
 }
 
+void Act1Level2Screen::recordAction(const PlayerAction& action)
+{
+    m_actionHistory.push_back(action);
+}
+
+void Act1Level2Screen::onUndoClicked()
+{
+    if (m_actionHistory.empty())
+    {
+        m_engine.showToast("No moves made yet.", TOAST_INFO);
+        return;
+    }
+
+    // Remove the last action
+    std::vector<PlayerAction> saved = m_actionHistory;
+    saved.pop_back();
+
+    // Reset everything from JSON
+    resetLevel();
+
+    // Replay remaining actions silently
+    for (const auto& act : saved)
+    {
+        ActionResult res = m_bridge.processAction(act);
+        syncWithState();
+
+        if (res.correct)
+        {
+            m_actionHistory.push_back(act);
+
+            // Find matching token and slot, apply placement visually
+            for (auto& tok : m_tokens)
+            {
+                if (tok.val == act.nodeB && !tok.isPlaced)
+                {
+                    for (auto& slot : m_slots)
+                    {
+                        if (slot.parentVal == act.nodeA && slot.direction == act.direction && slot.placedVal == -1)
+                        {
+                            tok.isPlaced = true;
+                            tok.currPos = slot.pos;
+                            slot.placedVal = tok.val;
+
+                            TreeSlot leftSlot{ tok.val, 0, slot.pos + sf::Vector2f(-75.0f, 70.0f), -1, true };
+                            TreeSlot rightSlot{ tok.val, 1, slot.pos + sf::Vector2f(75.0f, 70.0f), -1, true };
+                            m_slots.push_back(leftSlot);
+                            m_slots.push_back(rightSlot);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    m_draggedIndex = -1;
+    m_hoveredSlotIndex = -1;
+    m_engine.showToast("Last placement undone.", TOAST_INFO);
+    m_engine.audio.playClick();
+}
+
 void Act1Level2Screen::handleEvent(const sf::Event& event)
 {
     LevelScreenBase::handleEvent(event);
@@ -221,11 +284,13 @@ void Act1Level2Screen::handleEvent(const sf::Event& event)
 
                 if (res.correct)
                 {
+                    recordAction(action);
+
                     tok.isPlaced = true;
                     tok.currPos = slot.pos;
                     slot.placedVal = tok.val;
 
-                    // Spawn left and right child slots
+                    // Spawn child slots
                     TreeSlot leftSlot{ tok.val, 0, slot.pos + sf::Vector2f(-75.0f, 70.0f), -1, true };
                     TreeSlot rightSlot{ tok.val, 1, slot.pos + sf::Vector2f(75.0f, 70.0f), -1, true };
                     m_slots.push_back(leftSlot);
@@ -239,7 +304,6 @@ void Act1Level2Screen::handleEvent(const sf::Event& event)
                         const LevelState& s = m_bridge.getState();
                         showResultModal(true, ScoreSystem::stars(s), s.steps, s.optimalSteps, s.penaltyPoints, ScoreSystem::score(s),
                             [this]() {
-                                // Next Level -> Level 1.3
                                 m_engine.changeScreen(std::make_unique<Act1Level3Screen>(m_engine));
                             },
                             [this]() { resetLevel(); },
@@ -415,7 +479,7 @@ void Act1Level2Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
     float px = panelBounds.position.x;
     float py = panelBounds.position.y;
 
-    sf::Text hdr(theme.fontMono, "// BLUEPRINT SEQUENCES", 11);
+    sf::Text hdr(theme.fontMono, "BLUEPRINT SEQUENCES", 11);
     hdr.setFillColor(Theme::BorderCyan);
     hdr.setStyle(sf::Text::Bold);
     hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));

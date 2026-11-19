@@ -31,7 +31,7 @@ bool Level1DataLoader::loadJSON(const string& filePath)
 
     // 3. Metadata Extract karein
     rootId = data["rootId"];
-    optimalSteps = data["optimalSteps"];
+    optimalSteps = data.contains("optimalSteps") ? data["optimalSteps"].get<int>() : 0;
     traversalType = data["traversalType"];
     totalNodes = data["totalNodes"];
     if (rawNodes == nullptr)
@@ -100,7 +100,7 @@ bool Act1Level1::initLevel(const std::string& jsonPath)
     TreeNode* root = BuildTree(data.rootId);
     gameTree.setRoot(root);
     sequenceSize = data.totalNodes;
-    state = LevelState(data.optimalSteps);
+    state = LevelState(sequenceSize);
     if (expectedSequence != NULL)
     {
         delete[]expectedSequence;
@@ -175,10 +175,10 @@ ActionResult Act1Level1::processAction(const PlayerAction& action)
         else
         {
             result.correct = false;
-            result.alarmDelta = 1;
-            result.penaltyPoints = 0;
+            result.alarmDelta = 2;
+            result.penaltyPoints = 50;
 
-            onMistake(1, 0);
+            onMistake(2, 50);
 
             if (state.isFull()) {
                 state.finished = true;

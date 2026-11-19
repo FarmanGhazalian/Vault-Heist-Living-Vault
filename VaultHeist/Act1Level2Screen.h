@@ -17,6 +17,7 @@ public:
 protected:
     void onHintClicked() override;
     void onResetClicked() override;
+    void onUndoClicked() override;
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
 
@@ -62,4 +63,8 @@ private:
     void layoutTrayAndSlots(unsigned int width, unsigned int height);
     void updateSlotPositions();
     int getSlotAtPosition(sf::Vector2f pos);
+
+    // Undo support
+    std::vector<PlayerAction> m_actionHistory;
+    void recordAction(const PlayerAction& action);
 };

@@ -1,4 +1,5 @@
 #include "Act1Level5Screen.h"
+#include "Act2Level1Screen.h"
 #include "CampaignScreen.h"
 #include "GameEngine.h"
 #include <filesystem>
@@ -128,8 +129,8 @@ void Act1Level5Screen::onNodeClicked(TreeNode* node)
             const LevelState& s = m_bridge.getState();
             showResultModal(true, ScoreSystem::stars(s), s.steps, s.optimalSteps, s.penaltyPoints, ScoreSystem::score(s),
                 [this]() {
-                    // Next Level -> All Act 1 complete, return to Campaign sector
-                    m_engine.changeScreen(std::make_unique<CampaignScreen>(m_engine));
+                    // Next Level -> Transition to Act 2 Level 1
+                    m_engine.changeScreen(std::make_unique<Act2Level1Screen>(m_engine));
                 },
                 [this]() { resetLevel(); },
                 [this]() { onBackClicked(); }
@@ -269,6 +270,8 @@ void Act1Level5Screen::onCustomDraw(sf::RenderTarget& target)
         redRing.setOutlineColor(Theme::CrimsonAlarm);
         target.draw(redRing);
     }
+
+    TreeRenderer::drawNodeTooltip(target, m_engine.theme, m_rootNode, m_hoverNode, false);
 }
 
 void Act1Level5Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds)
@@ -278,7 +281,7 @@ void Act1Level5Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
     float py = panelBounds.position.y;
     float pw = panelBounds.size.x;
 
-    sf::Text hdr(theme.fontMono, "// INVERSION TELEMETRY", 11);
+    sf::Text hdr(theme.fontMono, "INVERSION TELEMETRY", 11);
     hdr.setFillColor(Theme::BorderCyan);
     hdr.setStyle(sf::Text::Bold);
     hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));

@@ -12,7 +12,22 @@ bool GameEngine::init()
 	theme.loadFonts();
 	audio.init();
 
-	window.create(sf::VideoMode(sf::Vector2u(1280, 720)), "Vault Heist: The Living Vault", sf::Style::Default);
+	sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+	unsigned int targetW = 1440;
+	unsigned int targetH = 900;
+	if (desktop.size.x > 80 && desktop.size.x < targetW + 60)
+	{
+		targetW = desktop.size.x - 60;
+	}
+	if (desktop.size.y > 80 && desktop.size.y < targetH + 80)
+	{
+		targetH = desktop.size.y - 80;
+	}
+	targetW = std::max(targetW, MinWindowWidth);
+	targetH = std::max(targetH, MinWindowHeight);
+
+	window.create(sf::VideoMode(sf::Vector2u(targetW, targetH)), "Vault Heist: The Living Vault", sf::Style::Default);
+	window.setView(sf::View(sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(static_cast<float>(targetW), static_cast<float>(targetH)))));
 	window.setFramerateLimit(60);
 
 	changeScreen(std::make_unique<LoaderScreen>(*this));

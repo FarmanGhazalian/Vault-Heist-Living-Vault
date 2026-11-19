@@ -5,6 +5,20 @@
 #include <functional>
 #include "Theme.h"
 
+// Shared text utilities
+namespace UIText
+{
+	// Word-wrap a string into lines that each fit within maxWidth pixels.
+	// Uses the given font and characterSize for measurement.
+	std::vector<std::string> wrapText(const sf::Font& font, const std::string& text,
+	                                  unsigned int charSize, float maxWidth);
+
+	// Draw multiple wrapped lines into a bounding box, returning total height used.
+	float drawWrapped(sf::RenderTarget& target, const sf::Font& font,
+	                  const std::string& text, unsigned int charSize,
+	                  sf::Color color, sf::Vector2f topLeft, float maxWidth);
+}
+
 // Button Style constants (no enum)
 constexpr int BTN_PRIMARY   = 0;
 constexpr int BTN_SECONDARY = 1;
@@ -102,7 +116,8 @@ public:
 
 	void handleEvent(const sf::Event& event);
 	void update(float dt);
-	void draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize) const;
+	void updateLayout(const sf::Vector2f& windowSize);
+	void draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize);
 };
 
 // Level Completion / Failure Summary Modal with Stars and 3 Buttons
@@ -135,7 +150,8 @@ public:
 
 	void handleEvent(const sf::Event& event);
 	void update(float dt);
-	void draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize) const;
+	void updateLayout(const sf::Vector2f& windowSize);
+	void draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize);
 };
 
 // Reusable Tween & FX Helpers

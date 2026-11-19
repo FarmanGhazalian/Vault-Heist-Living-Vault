@@ -223,7 +223,7 @@ void Act1Level1Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
     float px = panelBounds.position.x;
     float py = panelBounds.position.y;
 
-    sf::Text hdr(theme.fontMono, "// PATROL SEQUENCE LOG", 11);
+    sf::Text hdr(theme.fontMono, "PATROL LOG", 11);
     hdr.setFillColor(Theme::BorderCyan);
     hdr.setStyle(sf::Text::Bold);
     hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));
@@ -261,25 +261,5 @@ void Act1Level1Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
 
 void Act1Level1Screen::drawTooltip(sf::RenderTarget& target, const Theme& theme)
 {
-    if (!m_hoverNode) return;
-
-    sf::Vector2f pos = m_hoverNode->position + sf::Vector2f(Theme::NodeRadius + 12.0f, -Theme::NodeRadius);
-    float boxW = 145.0f;
-    float boxH = 68.0f;
-
-    sf::RectangleShape box(sf::Vector2f(boxW, boxH));
-    box.setPosition(pos);
-    box.setFillColor(sf::Color(17, 24, 39, 240));
-    box.setOutlineThickness(1.0f);
-    box.setOutlineColor(Theme::BorderCyan);
-    target.draw(box);
-
-    std::string info = "Room: " + std::to_string(m_hoverNode->val) + "\n" +
-                       "Height: " + std::to_string(m_hoverNode->height) + "\n" +
-                       "Subtree Size: " + std::to_string(m_hoverNode->size);
-
-    sf::Text tipText(theme.fontMono, info, 11);
-    tipText.setFillColor(Theme::TextPrimary);
-    tipText.setPosition(pos + sf::Vector2f(10.0f, 8.0f));
-    target.draw(tipText);
+    TreeRenderer::drawNodeTooltip(target, theme, m_rootNode, m_hoverNode, false);
 }

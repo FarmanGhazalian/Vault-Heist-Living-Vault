@@ -1,6 +1,7 @@
 #include "TreeRenderer.h"
 #include <cmath>
 #include <algorithm>
+#include <functional>
 
 TreeRenderer::TreeRenderer()
     : m_nodeRadius(28.0f)
@@ -75,14 +76,85 @@ void TreeRenderer::assignPositions(TreeNode* node, float x, float y, float avail
     }
 }
 
+int TreeRenderer::updateNodeMetrics(TreeNode* node)
+{
+    if (!node) return 0;
+    int lh = updateNodeMetrics(node->left);
+    int rh = updateNodeMetrics(node->right);
+    node->height = 1 + std::max(lh, rh);
+    int ls = node->left ? node->left->size : 0;
+    int rs = node->right ? node->right->size : 0;
+    node->size = 1 + ls + rs;
+    return node->height;
+}
+
 void TreeRenderer::computeLayout(TreeNode* root, sf::FloatRect canvasBounds)
 {
     if (!root) return;
+
+    updateNodeMetrics(root);
 
     float rootX = canvasBounds.position.x + (canvasBounds.size.x * 0.5f);
     float rootY = canvasBounds.position.y + m_nodeRadius + 20.0f;
 
     assignPositions(root, rootX, rootY, canvasBounds.size.x);
+}
+
+void TreeRenderer::drawNodeTooltip(sf::RenderTarget& target, const Theme& theme, TreeNode* root, TreeNode* hoverNode, bool hideHeight)
+{
+    if (!hoverNode) return;
+
+    // Compute depth and find parent from root
+    int depth = 0;
+    std::string parentStr = "None (Root)";
+    std::function<bool(TreeNode*, int, TreeNode*)> findParentAndDepth = [&](TreeNode* curr, int d, TreeNode* p) -> bool {
+        if (!curr) return false;
+        if (curr == hoverNode)
+        {
+            depth = d;
+            if (p) parentStr = std::to_string(p->val);
+            return true;
+        }
+        if (findParentAndDepth(curr->left, d + 1, curr)) return true;
+        return findParentAndDepth(curr->right, d + 1, curr);
+    };
+    if (root)
+    {
+        findParentAndDepth(root, 0, nullptr);
+    }
+
+    std::string heightStr = hideHeight ? "LOCKED" : std::to_string(hoverNode->height);
+
+    std::string info = "VALUE: " + std::to_string(hoverNode->val) + "\n" +
+                       "HEIGHT: " + heightStr;
+
+    sf::Vector2f pos = hoverNode->position + sf::Vector2f(Theme::NodeRadius + 14.0f, -Theme::NodeRadius - 10.0f);
+    float boxW = 120.0f;
+    float boxH = 46.0f;
+
+    // Keep tooltip inside target window
+    sf::Vector2f targetSize(static_cast<float>(target.getSize().x), static_cast<float>(target.getSize().y));
+    if (pos.x + boxW > targetSize.x - 10.0f)
+    {
+        pos.x = hoverNode->position.x - boxW - Theme::NodeRadius - 14.0f;
+    }
+    if (pos.y + boxH > targetSize.y - 10.0f)
+    {
+        pos.y = targetSize.y - boxH - 10.0f;
+    }
+    if (pos.y < 10.0f) pos.y = 10.0f;
+
+    sf::RectangleShape box(sf::Vector2f(boxW, boxH));
+    box.setPosition(pos);
+    box.setFillColor(sf::Color(17, 24, 39, 245));
+    box.setOutlineThickness(1.5f);
+    box.setOutlineColor(Theme::BorderCyan);
+    target.draw(box);
+
+    sf::Text tipText(theme.fontMono, info, 11);
+    tipText.setFillColor(Theme::TextPrimary);
+    tipText.setPosition(pos + sf::Vector2f(10.0f, 8.0f));
+    target.draw(tipText);
 }
 
 TreeNode* TreeRenderer::getNodeAtPosition(TreeNode* root, sf::Vector2f mousePos)

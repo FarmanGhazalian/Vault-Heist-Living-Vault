@@ -1,13 +1,40 @@
-#include<iostream>
-#include"ScoreSystem.h"
+#include <iostream>
+#include <cmath>
+#include "ScoreSystem.h"
 using namespace std;
 
+LevelState::LevelState(int optimal)
+{
+	optimalSteps = optimal;
+	alarmCap = ScoreSystem::computeCapacity(optimalSteps);
+	steps = 0;
+	alarm = 0;
+
+	penaltyCount = 0;
+	penaltyPoints = 0;
+	bonus = 0;
+
+	hintUsed = false;
+	finished = false;
+	won = false;
+}
+
+bool LevelState::checkGameOver()
+{
+	if (alarm >= alarmCap)
+	{
+		finished = true;
+		won = false;
+		return true;
+	}
+	return false;
+}
 
 void LevelState::addStep()
 {
 	steps++;
 	alarm++;
-	return;
+	checkGameOver();
 }
 
 void LevelState::addpenalty(int extraAlarm, int points)
@@ -16,23 +43,26 @@ void LevelState::addpenalty(int extraAlarm, int points)
 	steps++;
 	penaltyPoints += points;
 	alarm += extraAlarm;
-	return;
+	checkGameOver();
 }
 
 void LevelState::useHint()
 {
-	steps++;
-	alarm++;
-	hintUsed = true;
+    if (!hintUsed) {
+        // First hint: count as a normal step
+        steps++;
+        alarm++;
+        hintUsed = true;
+    } else {
+        // Second (or later) hint: penalty of +2 alarm only
+        alarm += 2;
+    }
+    checkGameOver();
 }
 
-bool LevelState::isFull()
+bool LevelState::isFull() const
 {
-	if (alarm >= alarmCap)
-	{
-		return true;
-	}
-	return false;
+	return alarm >= alarmCap;
 }
 
 int LevelState::remaining() const
@@ -49,9 +79,9 @@ void LevelState::reduceCapacity(int amount)
 	}
 }
 
-int  ScoreSystem::computeCapacity(int optimalSteps)
+int ScoreSystem::computeCapacity(int optimalSteps)
 {
-	return ceil(1.5 * optimalSteps) + 2;
+	return static_cast<int>(std::ceil(1.5 * optimalSteps)) + 2;
 }
 
 int ScoreSystem::stars(const LevelState& state)

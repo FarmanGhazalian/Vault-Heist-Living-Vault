@@ -191,7 +191,7 @@ void LoaderScreen::draw(sf::RenderTarget& target)
 	target.draw(status);
 
 	// Skip prompt hint
-	sf::Text skipTxt(engine.theme.fontMono, "[PRESS ANY KEY TO SKIP]", 11);
+	sf::Text skipTxt(engine.theme.fontMono, "PRESS ANY KEY TO SKIP", 11);
 	skipTxt.setFillColor(sf::Color(156, 163, 175, 120));
 	sf::FloatRect skB = skipTxt.getLocalBounds();
 	skipTxt.setPosition(sf::Vector2f(std::round(cx - skB.size.x * 0.5f - skB.position.x), windowSize.y - 36.0f));

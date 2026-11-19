@@ -241,3 +241,37 @@ int* BST::getInsertPath(int key, int& length)
 	length = count;
 	return path;
 }
+
+bool BST::isVisitedByPrunedRange(int key, int lo, int hi)
+{
+	TreeNode* curr = getRoot();
+	if (curr == NULL) return false;
+
+	while (curr != NULL)
+	{
+		if (curr->val == key)
+		{
+			return true;
+		}
+
+		if (key < curr->val)
+		{
+			// Left step allowed only if curr->val > lo
+			if (curr->val <= lo)
+			{
+				return false;
+			}
+			curr = curr->left;
+		}
+		else
+		{
+			// Right step allowed only if curr->val < hi
+			if (curr->val >= hi)
+			{
+				return false;
+			}
+			curr = curr->right;
+		}
+	}
+	return false;
+}

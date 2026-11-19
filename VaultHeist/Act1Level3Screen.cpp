@@ -168,7 +168,6 @@ void Act1Level3Screen::submitDiameter()
     if (res.correct)
     {
         m_engine.audio.playWin();
-        m_engine.showToast(res.message, TOAST_CORRECT);
         m_diameterBoxFocused = false;
 
         const LevelState& s = m_bridge.getState();
@@ -221,15 +220,42 @@ void Act1Level3Screen::handleEvent(const sf::Event& event)
         if (mouseBtn->button == sf::Mouse::Button::Left)
         {
             sf::Vector2f mpos(static_cast<float>(mouseBtn->position.x), static_cast<float>(mouseBtn->position.y));
-            if (m_bridge.isHeightsPhaseDone() && m_diameterBoxBounds.contains(mpos))
+            if (m_bridge.isHeightsPhaseDone())
             {
-                m_diameterBoxFocused = true;
-                m_focusedNode = nullptr;
-                m_engine.audio.playClick();
+                if (m_submitDiaBtn.bounds.contains(mpos))
+                {
+                    m_engine.audio.playClick();
+                    submitDiameter();
+                    return;
+                }
+                for (auto& np : m_numpadBtns)
+                {
+                    if (np.first.bounds.contains(mpos))
+                    {
+                        if (np.second == '<')
+                        {
+                            if (!m_diameterInputBuffer.empty()) m_diameterInputBuffer.pop_back();
+                        }
+                        else if (m_diameterInputBuffer.size() < 3)
+                        {
+                            m_diameterInputBuffer.push_back(np.second);
+                        }
+                        m_diameterBoxFocused = true;
+                        m_engine.audio.playClick();
+                        return;
+                    }
+                }
+                if (m_diameterBoxBounds.contains(mpos))
+                {
+                    m_diameterBoxFocused = true;
+                    m_focusedNode = nullptr;
+                    m_engine.audio.playClick();
+                }
             }
         }
     }
 
+    // Handle control keys only via KeyPressed (Enter, Backspace, Escape)
     if (auto* key = event.getIf<sf::Event::KeyPressed>())
     {
         if (m_focusedNode)
@@ -238,21 +264,31 @@ void Act1Level3Screen::handleEvent(const sf::Event& event)
             else if (key->code == sf::Keyboard::Key::Backspace) { if (!m_nodeInputBuffer.empty()) m_nodeInputBuffer.pop_back(); }
             else if (key->code == sf::Keyboard::Key::Escape) { m_focusedNode = nullptr; m_nodeInputBuffer.clear(); }
         }
-        else if (m_diameterBoxFocused)
+        else if (m_diameterBoxFocused || m_bridge.isHeightsPhaseDone())
         {
             if (key->code == sf::Keyboard::Key::Enter) submitDiameter();
             else if (key->code == sf::Keyboard::Key::Backspace) { if (!m_diameterInputBuffer.empty()) m_diameterInputBuffer.pop_back(); }
         }
     }
 
+    // Handle digit input ONLY via TextEntered to prevent double-entry
     if (auto* textEv = event.getIf<sf::Event::TextEntered>())
     {
         char32_t unicode = textEv->unicode;
         if (unicode >= '0' && unicode <= '9')
         {
-            char digit = static_cast<char>(unicode);
-            if (m_focusedNode && m_nodeInputBuffer.size() < 3) m_nodeInputBuffer.push_back(digit);
-            else if (m_diameterBoxFocused && m_diameterInputBuffer.size() < 3) m_diameterInputBuffer.push_back(digit);
+            char typedDigit = static_cast<char>(unicode);
+            if (m_focusedNode && m_nodeInputBuffer.size() < 3)
+            {
+                m_nodeInputBuffer.push_back(typedDigit);
+                m_engine.audio.playClick();
+            }
+            else if ((m_diameterBoxFocused || m_bridge.isHeightsPhaseDone()) && m_diameterInputBuffer.size() < 3)
+            {
+                m_diameterBoxFocused = true;
+                m_diameterInputBuffer.push_back(typedDigit);
+                m_engine.audio.playClick();
+            }
         }
     }
 }
@@ -357,7 +393,7 @@ void Act1Level3Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
     float py = panelBounds.position.y;
     float pw = panelBounds.size.x;
 
-    sf::Text hdr(theme.fontMono, "// HEIGHT & DIAMETER TELEMETRY", 11);
+    sf::Text hdr(theme.fontMono, "HEIGHT & DIAMETER", 11);
     hdr.setFillColor(Theme::BorderCyan);
     hdr.setStyle(sf::Text::Bold);
     hdr.setPosition(sf::Vector2f(px + 4.0f, py + 4.0f));
@@ -391,46 +427,57 @@ void Act1Level3Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
         sf::RectangleShape diaBox(sf::Vector2f(boxW, boxH));
         diaBox.setPosition(diaPos);
         diaBox.setFillColor(sf::Color(10, 14, 23, 240));
-        diaBox.setOutlineThickness(m_diameterBoxFocused ? 2.0f : 1.2f);
-        diaBox.setOutlineColor(m_diameterBoxFocused ? Theme::AccentYellow : Theme::BorderCyan);
+        diaBox.setOutlineThickness(2.0f);
+        diaBox.setOutlineColor(Theme::AccentYellow);
         target.draw(diaBox);
 
-        std::string str = "DIAMETER: " + m_diameterInputBuffer + (m_diameterBoxFocused ? "|" : "");
+        std::string str = "DIAMETER: " + m_diameterInputBuffer + "|";
         sf::Text diaText(theme.fontMono, str, 12);
-        diaText.setFillColor(m_diameterBoxFocused ? Theme::AccentYellow : Theme::TextPrimary);
+        diaText.setFillColor(Theme::AccentYellow);
         diaText.setPosition(diaPos + sf::Vector2f(10.0f, 12.0f));
         target.draw(diaText);
+
+        // Instructions
+        sf::Text tipText(theme.fontMono, "Type number + ENTER to submit", 10);
+        tipText.setFillColor(Theme::TextMuted);
+        tipText.setPosition(diaPos + sf::Vector2f(4.0f, boxH + 4.0f));
+        target.draw(tipText);
+
+        // SUBMIT button
+        float sbW = boxW;
+        float sbH = 30.0f;
+        sf::Vector2f sbPos(px + 6.0f, py + 80.0f + boxH + 24.0f);
+        m_submitDiaBtn.bounds = sf::FloatRect(sbPos, sf::Vector2f(sbW, sbH));
+        m_submitDiaBtn.label = "SUBMIT DIAMETER";
+        m_submitDiaBtn.draw(target, theme);
+
+        // Numpad 0-9 and backspace
+        float npW = (boxW - 8.0f) / 5.0f;
+        float npH = 24.0f;
+        float npStartY = py + 80.0f + boxH + 24.0f + sbH + 6.0f;
+        m_numpadBtns.clear();
+        for (int i = 0; i <= 9; i++)
+        {
+            int col = i % 5;
+            int row = i / 5;
+            Button nb;
+            nb.bounds = sf::FloatRect(sf::Vector2f(px + 6.0f + col * (npW + 2.0f), npStartY + row * (npH + 2.0f)), sf::Vector2f(npW, npH));
+            nb.label = std::to_string(i);
+            nb.draw(target, theme);
+            m_numpadBtns.push_back({ nb, '0' + static_cast<char>(i) });
+        }
+        // Backspace button
+        Button bkBtn;
+        bkBtn.bounds = sf::FloatRect(sf::Vector2f(px + 6.0f + 5.0f * (npW + 2.0f) - npW, npStartY), sf::Vector2f(npW, npH));
+        bkBtn.label = "<";
+        bkBtn.draw(target, theme);
+        m_numpadBtns.push_back({ bkBtn, '<' });
     }
 }
 
 void Act1Level3Screen::drawTooltip(sf::RenderTarget& target, const Theme& theme)
 {
     if (!m_hoverNode) return;
-
-    sf::Vector2f pos = m_hoverNode->position + sf::Vector2f(Theme::NodeRadius + 12.0f, -Theme::NodeRadius);
-    float boxW = 145.0f;
-    float boxH = 68.0f;
-
-    sf::RectangleShape box(sf::Vector2f(boxW, boxH));
-    box.setPosition(pos);
-    box.setFillColor(sf::Color(17, 24, 39, 240));
-    box.setOutlineThickness(1.0f);
-    box.setOutlineColor(Theme::BorderCyan);
-    target.draw(box);
-
-    std::string heightDisplay = "[LOCKED]";
-    auto it = m_solvedHeights.find(m_hoverNode->val);
-    if (it != m_solvedHeights.end())
-    {
-        heightDisplay = std::to_string(it->second);
-    }
-
-    std::string info = "Room: " + std::to_string(m_hoverNode->val) + "\n" +
-                       "Height: " + heightDisplay + "\n" +
-                       "Subtree Size: " + std::to_string(m_hoverNode->size);
-
-    sf::Text tipText(theme.fontMono, info, 11);
-    tipText.setFillColor(Theme::TextPrimary);
-    tipText.setPosition(pos + sf::Vector2f(10.0f, 8.0f));
-    target.draw(tipText);
+    bool hideHeight = (m_solvedHeights.find(m_hoverNode->val) == m_solvedHeights.end());
+    TreeRenderer::drawNodeTooltip(target, theme, m_rootNode, m_hoverNode, hideHeight);
 }

@@ -27,7 +27,7 @@ bool Level5DataLoader::loadJSON(const string& filePath)
     }
 	data.levelName = j["levelName"];
 	data.totalNodes = j["totalNodes"];
-	data.optimalSteps = j["optimalSteps"];
+	data.optimalSteps = j.contains("optimalSteps") ? j["optimalSteps"].get<int>() : 0;
 	data.generate();
 
 	for (int i = 0; i < data.totalNodes; i++)
@@ -83,6 +83,13 @@ bool Act1Level5::areChildrenReady(TreeNode* node) const
 	return true;
 }
 
+static int countNonLeafNodes(TreeNode* node)
+{
+	if (node == nullptr || (node->left == nullptr && node->right == nullptr))
+		return 0;
+	return 1 + countNonLeafNodes(node->left) + countNonLeafNodes(node->right);
+}
+
 bool Act1Level5::initLevel(const std::string& jsonPath)
 {
 	if (!loader.loadJSON(jsonPath)) return false;
@@ -95,8 +102,10 @@ bool Act1Level5::initLevel(const std::string& jsonPath)
 	swappedNodes = new TreeNode*[loader.data.totalNodes];
 	for (int i = 0; i < loader.data.totalNodes; i++) swappedNodes[i] = nullptr;
 
-	state = LevelState(loader.data.optimalSteps);
 	currentTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, loader.data.totalNodes);
+	int dynSteps = countNonLeafNodes(currentTree.getRoot());
+	if (dynSteps <= 0) dynSteps = 1;
+	state = LevelState(dynSteps);
 
 	mirrorTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, loader.data.totalNodes);
 	mirrorTree.Mirror();
@@ -119,9 +128,9 @@ ActionResult Act1Level5::processAction(const PlayerAction& action)
         }
         else
         {
-            onMistake(2, 50);
+            // Second hint incurs alarm penalty only (handled in LevelState::useHint)
             res.alarmDelta = 2;
-            res.penaltyPoints = 50;
+            res.penaltyPoints = 0;
             res.correct = true;
             res.message = "[Hint Already Used] " + getHint();
         }

@@ -20,6 +20,12 @@ public:
     // Compute node coordinates recursively based on canvas bounding box
     void computeLayout(TreeNode* root, sf::FloatRect canvasBounds);
 
+    // Compute heights and subtree sizes (leaf height = 1)
+    static int updateNodeMetrics(TreeNode* node);
+
+    // Shared tooltip renderer according to Rule 7
+    static void drawNodeTooltip(sf::RenderTarget& target, const Theme& theme, TreeNode* root, TreeNode* hoverNode, bool hideHeight = false);
+
     // Drawing
     void draw(sf::RenderTarget& target, const Theme& theme, TreeNode* root);
 

@@ -1,5 +1,108 @@
 #include "UIKit.h"
 #include <cmath>
+#include <sstream>
+#include <algorithm>
+
+namespace UIText
+{
+	std::vector<std::string> wrapText(const sf::Font& font, const std::string& text,
+	                                  unsigned int charSize, float maxWidth)
+	{
+		std::vector<std::string> lines;
+		if (text.empty() || maxWidth <= 10.0f)
+		{
+			lines.push_back(text);
+			return lines;
+		}
+
+		std::stringstream ss(text);
+		std::string rawLine;
+		while (std::getline(ss, rawLine, '\n'))
+		{
+			if (rawLine.empty())
+			{
+				lines.push_back("");
+				continue;
+			}
+
+			std::stringstream words(rawLine);
+			std::string word;
+			std::string currentLine = "";
+
+			sf::Text measurer(font, "", charSize);
+
+			while (words >> word)
+			{
+				std::string testLine = currentLine.empty() ? word : (currentLine + " " + word);
+				measurer.setString(testLine);
+				if (measurer.getLocalBounds().size.x <= maxWidth)
+				{
+					currentLine = testLine;
+				}
+				else
+				{
+					if (!currentLine.empty())
+					{
+						lines.push_back(currentLine);
+						currentLine = "";
+					}
+
+					// Check if single word exceeds maxWidth
+					measurer.setString(word);
+					if (measurer.getLocalBounds().size.x > maxWidth)
+					{
+						std::string partial = "";
+						for (char c : word)
+						{
+							measurer.setString(partial + c);
+							if (measurer.getLocalBounds().size.x > maxWidth)
+							{
+								if (!partial.empty()) lines.push_back(partial);
+								partial = std::string(1, c);
+							}
+							else
+							{
+								partial += c;
+							}
+						}
+						currentLine = partial;
+					}
+					else
+					{
+						currentLine = word;
+					}
+				}
+			}
+			if (!currentLine.empty())
+			{
+				lines.push_back(currentLine);
+			}
+		}
+		if (lines.empty()) lines.push_back("");
+		return lines;
+	}
+
+	float drawWrapped(sf::RenderTarget& target, const sf::Font& font,
+	                  const std::string& text, unsigned int charSize,
+	                  sf::Color color, sf::Vector2f topLeft, float maxWidth)
+	{
+		auto lines = wrapText(font, text, charSize, maxWidth);
+		float lineHeight = static_cast<float>(charSize) * 1.35f;
+		float y = topLeft.y;
+		for (const auto& line : lines)
+		{
+			if (!line.empty())
+			{
+				sf::Text t(font, line, charSize);
+				t.setFillColor(color);
+				t.setPosition(sf::Vector2f(topLeft.x, y));
+				target.draw(t);
+			}
+			y += lineHeight;
+		}
+		return y - topLeft.y;
+	}
+}
 
 Button::Button()
 	: bounds(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 40.0f)),
@@ -247,17 +350,20 @@ void ToastManager::handleEvent(const sf::Event& event, float windowWidth)
 		if (mb->button == sf::Mouse::Button::Left)
 		{
 			sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
-			float startX = (windowWidth - ToastWidth) * 0.5f;
+			float tw = std::min(ToastWidth, windowWidth * 0.9f);
+			float startX = (windowWidth - tw) * 0.5f;
 
+			float curY = 16.0f;
 			for (size_t i = 0; i < toasts.size(); i++)
 			{
-				float startY = 16.0f + static_cast<float>(i) * (ToastHeight + 8.0f);
-				sf::FloatRect rect(sf::Vector2f(startX, startY), sf::Vector2f(ToastWidth, ToastHeight));
+				float th = ToastHeight;
+				sf::FloatRect rect(sf::Vector2f(startX, curY), sf::Vector2f(tw, th + 20.0f));
 				if (rect.contains(mpos))
 				{
 					toasts.erase(toasts.begin() + i);
 					break;
 				}
+				curY += th + 10.0f;
 			}
 		}
 	}
@@ -265,33 +371,42 @@ void ToastManager::handleEvent(const sf::Event& event, float windowWidth)
 
 void ToastManager::draw(sf::RenderTarget& target, const Theme& theme, float windowWidth) const
 {
-	float startX = (windowWidth - ToastWidth) * 0.5f;
+	float tw = std::min(ToastWidth, windowWidth * 0.9f);
+	float startX = (windowWidth - tw) * 0.5f;
+	float curStackY = 16.0f;
 
 	for (size_t i = 0; i < toasts.size(); i++)
 	{
 		const auto& t = toasts[i];
-		float targetY = 16.0f + static_cast<float>(i) * (ToastHeight + 8.0f);
-		float curY = targetY - (1.0f - Tween::easeOutQuad(t.animProgress)) * 50.0f;
-
-		sf::FloatRect bounds(sf::Vector2f(startX, curY), sf::Vector2f(ToastWidth, ToastHeight));
-
 		sf::Color accentColor = Theme::BorderCyan;
-		std::string tag = "[INFO] ";
+		std::string tag = "INFO: ";
 		if (t.type == TOAST_HINT)
 		{
 			accentColor = Theme::AccentYellow;
-			tag = "[HINT] ";
+			tag = "HINT: ";
 		}
 		else if (t.type == TOAST_CORRECT)
 		{
 			accentColor = Theme::SuccessEmerald;
-			tag = "[SUCCESS] ";
+			tag = "OK: ";
 		}
 		else if (t.type == TOAST_ERROR)
 		{
 			accentColor = Theme::CrimsonAlarm;
-			tag = "[ALERT] ";
+			tag = "ALERT: ";
 		}
+
+		std::string fullText = tag + t.message;
+		float maxTextW = tw - 28.0f;
+		auto wrapped = UIText::wrapText(theme.fontUI, fullText, 13, maxTextW);
+		float textH = static_cast<float>(wrapped.size()) * 18.0f;
+		float cardH = std::max(ToastHeight, textH + 20.0f);
+
+		float targetY = curStackY;
+		curStackY += cardH + 8.0f;
+
+		float curY = targetY - (1.0f - Tween::easeOutQuad(t.animProgress)) * 50.0f;
+		sf::FloatRect bounds(sf::Vector2f(startX, curY), sf::Vector2f(tw, cardH));
 
 		// Dark glass card
 		sf::RectangleShape card(bounds.size);
@@ -307,12 +422,16 @@ void ToastManager::draw(sf::RenderTarget& target, const Theme& theme, float wind
 		bar.setFillColor(accentColor);
 		target.draw(bar);
 
-		// Tag + message text
-		std::string fullText = tag + t.message;
-		sf::Text txt(theme.fontUI, fullText, 14);
-		txt.setFillColor(Theme::TextPrimary);
-		txt.setPosition(sf::Vector2f(bounds.position.x + 14.0f, bounds.position.y + 13.0f));
-		target.draw(txt);
+		// Wrapped text rendering
+		float ty = bounds.position.y + 10.0f;
+		for (const auto& line : wrapped)
+		{
+			sf::Text txt(theme.fontUI, line, 13);
+			txt.setFillColor(Theme::TextPrimary);
+			txt.setPosition(sf::Vector2f(bounds.position.x + 14.0f, ty));
+			target.draw(txt);
+			ty += 18.0f;
+		}
 
 		// Remaining time thin bar at bottom
 		float timerW = bounds.size.x * (t.timeRemaining / t.totalTime);
@@ -382,6 +501,26 @@ void ModalPopup::handleEvent(const sf::Event& event)
 		}
 	}
 
+	if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
+	{
+		if (mb->button == sf::Mouse::Button::Left)
+		{
+			sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
+			if (btnConfirm.bounds.contains(mpos))
+			{
+				active = false;
+				auto cb = onConfirm;
+				if (cb) cb();
+				return;
+			}
+			if (type == MODAL_CONFIRM && btnCancel.bounds.contains(mpos))
+			{
+				close();
+				return;
+			}
+		}
+	}
+
 	btnConfirm.handleEvent(event);
 	if (type == MODAL_CONFIRM)
 	{
@@ -409,7 +548,7 @@ void ModalPopup::update(float dt)
 	(void)dt;
 }
 
-void ModalPopup::draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize) const
+void ModalPopup::draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize)
 {
 	if (!active) return;
 
@@ -418,9 +557,18 @@ void ModalPopup::draw(sf::RenderTarget& target, const Theme& theme, const sf::Ve
 	overlay.setFillColor(sf::Color(10, 14, 23, 200));
 	target.draw(overlay);
 
-	// Modal dimensions
+	// Wrap message and compute required modal height dynamically
 	float mw = std::min(480.0f, windowSize.x * 0.85f);
-	float mh = 220.0f;
+	float textPadding = 24.0f;
+	float maxTextW = mw - (textPadding * 2.0f);
+	auto wrappedLines = UIText::wrapText(theme.fontUI, message, 15, maxTextW);
+	float textLineHeight = 22.0f;
+	float totalTextH = static_cast<float>(wrappedLines.size()) * textLineHeight;
+
+	float headerH = 55.0f;
+	float buttonAreaH = 65.0f;
+	float mh = std::clamp(headerH + totalTextH + buttonAreaH + 20.0f, 200.0f, windowSize.y * 0.85f);
+
 	float mx = (windowSize.x - mw) * 0.5f;
 	float my = (windowSize.y - mh) * 0.5f;
 
@@ -444,34 +592,37 @@ void ModalPopup::draw(sf::RenderTarget& target, const Theme& theme, const sf::Ve
 	div[1].color = sf::Color(0, 240, 255, 70);
 	target.draw(div);
 
-	// Message
-	sf::Text msgText(theme.fontUI, message, 15);
-	msgText.setFillColor(Theme::TextPrimary);
-	msgText.setPosition(sf::Vector2f(mx + 20.0f, my + 60.0f));
-	target.draw(msgText);
+	// Wrapped message lines
+	float curLineY = my + 56.0f;
+	for (const auto& line : wrappedLines)
+	{
+		if (curLineY + textLineHeight > my + mh - buttonAreaH) break; // Clip inside boundary
+		sf::Text msgText(theme.fontUI, line, 15);
+		msgText.setFillColor(Theme::TextPrimary);
+		msgText.setPosition(sf::Vector2f(mx + textPadding, curLineY));
+		target.draw(msgText);
+		curLineY += textLineHeight;
+	}
 
 	// Buttons placement
-	float btnY = my + mh - 54.0f;
+	float btnY = my + mh - 50.0f;
 	if (type == MODAL_INFO)
 	{
-		Button okBtn = btnConfirm;
 		float bw = 140.0f;
-		okBtn.bounds = sf::FloatRect(sf::Vector2f(mx + (mw - bw) * 0.5f, btnY), sf::Vector2f(bw, 38.0f));
-		okBtn.draw(target, theme);
+		btnConfirm.bounds = sf::FloatRect(sf::Vector2f(mx + (mw - bw) * 0.5f, btnY), sf::Vector2f(bw, 38.0f));
+		btnConfirm.draw(target, theme);
 	}
 	else
 	{
-		Button cBtn = btnConfirm;
-		Button cancelBtn = btnCancel;
 		float bw = 120.0f;
 		float totalW = bw * 2.0f + 16.0f;
 		float startBtnX = mx + (mw - totalW) * 0.5f;
 
-		cBtn.bounds = sf::FloatRect(sf::Vector2f(startBtnX, btnY), sf::Vector2f(bw, 38.0f));
-		cancelBtn.bounds = sf::FloatRect(sf::Vector2f(startBtnX + bw + 16.0f, btnY), sf::Vector2f(bw, 38.0f));
+		btnConfirm.bounds = sf::FloatRect(sf::Vector2f(startBtnX, btnY), sf::Vector2f(bw, 38.0f));
+		btnCancel.bounds = sf::FloatRect(sf::Vector2f(startBtnX + bw + 16.0f, btnY), sf::Vector2f(bw, 38.0f));
 
-		cBtn.draw(target, theme);
-		cancelBtn.draw(target, theme);
+		btnConfirm.draw(target, theme);
+		btnCancel.draw(target, theme);
 	}
 }
 
@@ -492,29 +643,12 @@ LevelResultModal::LevelResultModal()
 {
 }
 
-void LevelResultModal::show(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
-                            std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback)
+void LevelResultModal::updateLayout(const sf::Vector2f& windowSize)
 {
-	active = true;
-	won = victory;
-	stars = std::clamp(starCount, 0, 3);
-	steps = stepCount;
-	optimalSteps = optSteps;
-	penalties = penaltyPoints;
-	finalScore = totalScore;
-
-	onNext = nextCallback;
-	onRetry = retryCallback;
-	onBack = backCallback;
-
-	title = won ? "MISSION ACCOMPLISHED" : "VAULT LOCKDOWN";
-	message = won ? "Security quadrant bypassed successfully!" : "Alarm threshold exceeded. Protocol aborted.";
-
-	// Default center positions (assumes standard 1280x720 window, updated dynamically on draw)
 	float mw = 480.0f;
 	float mh = 330.0f;
-	float mx = std::round((1280.0f - mw) * 0.5f);
-	float my = std::round((720.0f - mh) * 0.5f);
+	float mx = std::round((windowSize.x - mw) * 0.5f);
+	float my = std::round((windowSize.y - mh) * 0.5f);
 	float btnY = my + mh - 56.0f;
 
 	if (won && onNext)
@@ -534,6 +668,27 @@ void LevelResultModal::show(bool victory, int starCount, int stepCount, int optS
 	}
 }
 
+void LevelResultModal::show(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
+                            std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback)
+{
+	active = true;
+	won = victory;
+	stars = std::clamp(starCount, 0, 3);
+	steps = stepCount;
+	optimalSteps = optSteps;
+	penalties = penaltyPoints;
+	finalScore = totalScore;
+
+	onNext = nextCallback;
+	onRetry = retryCallback;
+	onBack = backCallback;
+
+	title = won ? "MISSION ACCOMPLISHED" : "VAULT LOCKDOWN";
+	message = won ? "Security quadrant bypassed successfully!" : "Alarm threshold exceeded. Protocol aborted.";
+
+	updateLayout(sf::Vector2f(1280.0f, 720.0f));
+}
+
 void LevelResultModal::close()
 {
 	active = false;
@@ -545,24 +700,30 @@ void LevelResultModal::handleEvent(const sf::Event& event)
 
 	if (const auto* mb = event.getIf<sf::Event::MouseButtonPressed>())
 	{
-		sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
-		if (won && onNext && btnNext.bounds.contains(mpos))
+		if (mb->button == sf::Mouse::Button::Left)
 		{
-			close();
-			onNext();
-			return;
-		}
-		if (btnRetry.bounds.contains(mpos))
-		{
-			close();
-			if (onRetry) onRetry();
-			return;
-		}
-		if (btnBack.bounds.contains(mpos))
-		{
-			close();
-			if (onBack) onBack();
-			return;
+			sf::Vector2f mpos(static_cast<float>(mb->position.x), static_cast<float>(mb->position.y));
+			if (won && onNext && btnNext.bounds.contains(mpos))
+			{
+				close();
+				auto cb = onNext;
+				if (cb) cb();
+				return;
+			}
+			if (btnRetry.bounds.contains(mpos))
+			{
+				close();
+				auto cb = onRetry;
+				if (cb) cb();
+				return;
+			}
+			if (btnBack.bounds.contains(mpos))
+			{
+				close();
+				auto cb = onBack;
+				if (cb) cb();
+				return;
+			}
 		}
 	}
 
@@ -573,7 +734,8 @@ void LevelResultModal::handleEvent(const sf::Event& event)
 		{
 			btnNext.resetClick();
 			close();
-			onNext();
+			auto cb = onNext;
+			if (cb) cb();
 			return;
 		}
 	}
@@ -583,7 +745,8 @@ void LevelResultModal::handleEvent(const sf::Event& event)
 	{
 		btnRetry.resetClick();
 		close();
-		if (onRetry) onRetry();
+		auto cb = onRetry;
+		if (cb) cb();
 		return;
 	}
 
@@ -592,7 +755,8 @@ void LevelResultModal::handleEvent(const sf::Event& event)
 	{
 		btnBack.resetClick();
 		close();
-		if (onBack) onBack();
+		auto cb = onBack;
+		if (cb) cb();
 		return;
 	}
 
@@ -620,9 +784,11 @@ void LevelResultModal::update(float dt)
 	(void)dt;
 }
 
-void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize) const
+void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const sf::Vector2f& windowSize)
 {
 	if (!active) return;
+
+	updateLayout(windowSize);
 
 	// Dim backdrop
 	sf::RectangleShape backdrop(windowSize);
@@ -649,18 +815,24 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 	titleText.setPosition(sf::Vector2f(std::round(mx + (mw - tb.size.x) * 0.5f - tb.position.x), my + 20.0f));
 	target.draw(titleText);
 
-	// Sub-message
-	sf::Text msgText(theme.fontUI, message, 13);
-	msgText.setFillColor(Theme::TextMuted);
-	sf::FloatRect mb = msgText.getLocalBounds();
-	msgText.setPosition(sf::Vector2f(std::round(mx + (mw - mb.size.x) * 0.5f - mb.position.x), my + 52.0f));
-	target.draw(msgText);
+	// Sub-message with wrap support
+	auto msgLines = UIText::wrapText(theme.fontUI, message, 13, mw - 40.0f);
+	float msgY = my + 50.0f;
+	for (const auto& line : msgLines)
+	{
+		sf::Text msgText(theme.fontUI, line, 13);
+		msgText.setFillColor(Theme::TextMuted);
+		sf::FloatRect mb = msgText.getLocalBounds();
+		msgText.setPosition(sf::Vector2f(std::round(mx + (mw - mb.size.x) * 0.5f - mb.position.x), msgY));
+		target.draw(msgText);
+		msgY += 16.0f;
+	}
 
 	// Draw Stars [ ★ ★ ★ ]
 	std::string starStr = "";
 	for (int i = 0; i < 3; i++)
 	{
-		starStr += (i < stars) ? "[*] " : "[ ] ";
+		starStr += (i < stars) ? "* " : "- ";
 	}
 	sf::Text starText(theme.fontMono, won ? ("RATING: " + starStr) : "RATING: FAILED", 15);
 	starText.setFillColor(won ? Theme::AccentYellow : Theme::CrimsonAlarm);
@@ -698,32 +870,16 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 	tCol2.setPosition(sf::Vector2f(sbX + sbW * 0.52f, sbY + 22.0f));
 	target.draw(tCol2);
 
-	// Draw Actual Member Buttons (Const-cast to draw directly so positions match 100%)
-	auto* nonConstThis = const_cast<LevelResultModal*>(this);
-	float btnY = my + mh - 56.0f;
-
+	// Draw Actual Member Buttons
 	if (won && onNext)
 	{
-		float totalBtnW = 130.0f + 105.0f + 115.0f + 20.0f;
-		float startBX = mx + (mw - totalBtnW) * 0.5f;
-
-		nonConstThis->btnNext.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(130.0f, 38.0f));
-		nonConstThis->btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX + 140.0f, btnY), sf::Vector2f(105.0f, 38.0f));
-		nonConstThis->btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 255.0f, btnY), sf::Vector2f(115.0f, 38.0f));
-
-		nonConstThis->btnNext.draw(target, theme);
-		nonConstThis->btnRetry.draw(target, theme);
-		nonConstThis->btnBack.draw(target, theme);
+		btnNext.draw(target, theme);
+		btnRetry.draw(target, theme);
+		btnBack.draw(target, theme);
 	}
 	else
 	{
-		float totalBtnW = 120.0f + 130.0f + 16.0f;
-		float startBX = mx + (mw - totalBtnW) * 0.5f;
-
-		nonConstThis->btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(120.0f, 38.0f));
-		nonConstThis->btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 136.0f, btnY), sf::Vector2f(130.0f, 38.0f));
-
-		nonConstThis->btnRetry.draw(target, theme);
-		nonConstThis->btnBack.draw(target, theme);
+		btnRetry.draw(target, theme);
+		btnBack.draw(target, theme);
 	}
 }

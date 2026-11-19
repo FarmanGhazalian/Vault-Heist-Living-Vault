@@ -25,26 +25,13 @@ struct LevelState
 	bool finished;
 	bool won;
 
-	LevelState(int optimal = 0)
-	{
-		optimalSteps = optimal;
-		alarmCap = ScoreSystem::computeCapacity(optimalSteps);
-		steps = 0;
-		alarm = 0;
-
-		penaltyCount = 0;
-		penaltyPoints = 0;
-		bonus = 0;
-
-		hintUsed = false;
-		finished = false;
-		won = false;
-	}
+	LevelState(int optimal = 0);
 
 	void addStep();
 	void addpenalty(int extraAlarm = 1, int points = 0);
 	void useHint();
-	bool isFull();
+	bool isFull() const;
+	bool checkGameOver();
 	int remaining() const;
 	void reduceCapacity(int amount);
 };

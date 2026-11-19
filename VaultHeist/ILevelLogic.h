@@ -34,6 +34,11 @@ public:
 		return state.remaining();
 	}
 
+	bool checkAlarmGameOver()
+	{
+		return state.checkGameOver();
+	}
+
 
 	int getCalculatedScore() const
 	{
@@ -45,4 +50,8 @@ public:
 		return ScoreSystem::stars(state);
 	}
 
+    // Undo/Replay/Reset hooks (optional implementations)
+    virtual void undoLastAction() {}
+    virtual void replayActions() {}
+    virtual void resetLevel() {}
 };

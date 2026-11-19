@@ -30,7 +30,7 @@ bool Level2DataLoader::loadJSON(const string& filePath)
         }
     }
     data.levelName = j["levelName"];
-    data.optimalSteps = j["optimalSteps"];
+    data.optimalSteps = j.contains("optimalSteps") ? j["optimalSteps"].get<int>() : 0;
     data.traversalType = j["traversalType"];
     data.totalNodes = j["totalNodes"];
     data.generate();
@@ -81,7 +81,7 @@ bool Act1Level2::initLevel(const string& jsonPath)
     }
     totalNodes = loader.data.totalNodes;
     correctlyPlacementCount = 0;
-    state = LevelState(loader.data.optimalSteps);
+    state = LevelState(totalNodes);
 
     solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, totalNodes);
     return true;

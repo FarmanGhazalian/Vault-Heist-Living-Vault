@@ -31,7 +31,7 @@ bool Level3DataLoader::loadJSON(const string& filePath)
 	}
 	data.levelName = j["levelName"];
 	data.totalNodes = j["totalNodes"];
-	data.optimalSteps = j["optimalSteps"];
+	data.optimalSteps = j.contains("optimalSteps") ? j["optimalSteps"].get<int>() : 0;
 	data.generate();
 
 	for (int i = 0; i < data.totalNodes; i++)
@@ -113,7 +113,7 @@ bool Act1Level3::initLevel(const string& jsonPath)
 	}
 	totalNodes = loader.data.totalNodes;
 	solTree.buildFromPreIn(loader.data.preArr, loader.data.inArr, totalNodes);
-	state = LevelState(loader.data.optimalSteps);
+	state = LevelState(totalNodes + 1);
 	generate();
 	genrateHeight();
 	actualDiameter = solTree.diameter();
@@ -179,9 +179,9 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 		currIndex = findIndex(action.nodeA);
 		if (currIndex == -1)
 		{
-			onMistake(1, 25);
-			res.penaltyPoints = 25;
-			res.alarmDelta = 1;
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
 			res.correct = false;
 			res.message = "Room not found!";
 			return res;
@@ -189,9 +189,9 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 
 		if (playerHeight[currIndex] != -1)
 		{
-			onMistake(1, 25);
-			res.penaltyPoints = 25;
-			res.alarmDelta = 1;
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
 			res.correct = false;
 			res.message = "Already solved!";
 			return res;
@@ -200,9 +200,9 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 		TreeNode* currNode = solTree.findNode(action.nodeA);
 		if (currNode == NULL)
 		{
-			onMistake(1, 25);
-			res.penaltyPoints = 25;
-			res.alarmDelta = 1;
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
 			res.correct = false;
 			res.message = "Room node not located in blueprint!";
 			return res;
@@ -226,17 +226,17 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 		bool ready = (leftReady && rightReady);
 
 		if (!ready) {
-			onMistake(1, 25);
-			res.penaltyPoints = 25;
-			res.alarmDelta = 1;
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
 			res.correct = false;
 			res.message = "Wrong Order! Solve children of this room first!";
 		}
 		else if (action.nodeB != actualHeight[currIndex])
 		{
-			onMistake(1, 25);
-			res.penaltyPoints = 25;
-			res.alarmDelta = 1;
+			onMistake(2, 50);
+			res.penaltyPoints = 50;
+			res.alarmDelta = 2;
 			res.correct = false;
 			res.message = "Incorrect Height! Alarm increased!";
 		}
@@ -260,13 +260,14 @@ ActionResult Act1Level3::processAction(const PlayerAction& action)
 	}
 	else if (heightsPhaseDone && action.type == ENTER_DIAMETER)
 	{
-		if (action.nodeB == actualDiameter)
+		if (action.nodeB == actualDiameter || action.nodeB == actualDiameter + 1)
 		{
 			res.message = "Diameter Verified! Alarm Neutralized!";
 			state.finished = true;
 			state.won = true;
 			onValidStep();
-
+			res.correct = true;
+			res.accepted = true;
 		}
 		else {
 			onMistake(2, 50);

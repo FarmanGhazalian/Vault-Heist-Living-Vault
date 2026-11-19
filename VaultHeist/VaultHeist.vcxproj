@@ -195,6 +195,18 @@
     <ClCompile Include="Act1Level3Screen.cpp" />
     <ClCompile Include="Act1Level4Screen.cpp" />
     <ClCompile Include="Act1Level5Screen.cpp" />
+    <ClCompile Include="Act2Level1Screen.cpp" />
+    <ClCompile Include="Act2Level2Screen.cpp" />
+    <ClCompile Include="Act2Level3Screen.cpp" />
+    <ClCompile Include="Act2Level4Screen.cpp" />
+    <ClCompile Include="Act2Level5Screen.cpp" />
+    <ClCompile Include="SaveSystem.cpp" />
+    <ClCompile Include="Act3Level1Screen.cpp" />
+    <ClCompile Include="Act3Level2Screen.cpp" />
+    <ClCompile Include="Act3Level3Screen.cpp" />
+    <ClCompile Include="Act3Level4Screen.cpp" />
+    <ClCompile Include="Act3Level5Screen.cpp" />
+    <ClCompile Include="Act4LevelScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -215,6 +227,7 @@
     <ClInclude Include="Act3Level3.h" />
     <ClInclude Include="Act3Level4.h" />
     <ClInclude Include="Act3Level5.h" />
+    <ClInclude Include="Act4LevelScreen.h" />
     <ClInclude Include="Act1level1.h" />
     <ClInclude Include="Act1Level2.h" />
     <ClInclude Include="Act1Level3.h" />
@@ -245,6 +258,17 @@
     <ClInclude Include="Act1Level3Screen.h" />
     <ClInclude Include="Act1Level4Screen.h" />
     <ClInclude Include="Act1Level5Screen.h" />
+    <ClInclude Include="Act2Level1Screen.h" />
+    <ClInclude Include="Act2Level2Screen.h" />
+    <ClInclude Include="Act2Level3Screen.h" />
+    <ClInclude Include="Act2Level4Screen.h" />
+    <ClInclude Include="Act2Level5Screen.h" />
+    <ClInclude Include="SaveSystem.h" />
+    <ClInclude Include="Act3Level1Screen.h" />
+    <ClInclude Include="Act3Level2Screen.h" />
+    <ClInclude Include="Act3Level3Screen.h" />
+    <ClInclude Include="Act3Level4Screen.h" />
+    <ClInclude Include="Act3Level5Screen.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Act1Level1.json" />

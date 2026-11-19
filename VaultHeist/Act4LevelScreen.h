@@ -1,0 +1,60 @@
+#pragma once
+#include "LevelScreenBase.h"
+#include "PlayerAction.h"
+#include <memory>
+#include <vector>
+
+class ILevelLogic;
+class MaxHeap;
+
+// Act4LevelScreen: Unified Screen for Act 4 (The Heap Fortress, Levels 4.1 to 4.5)
+// Visualizes the complete binary tree structure of the MaxHeap with array mapping underneath.
+// Supports:
+// - Clicking pairs of nodes to trigger SWAP_ELEMENTS
+// - Extracting root / sift operations
+// - Full Action Bar (Hint, Undo, Replay, Reset)
+// - Centered zoom/pan, tooltip inspection, and result modal
+class Act4LevelScreen : public LevelScreenBase
+{
+public:
+    Act4LevelScreen(GameEngine& engine, int levelNum);
+    ~Act4LevelScreen() override = default;
+
+    void update(float dt) override;
+    void handleEvent(const sf::Event& event) override;
+
+protected:
+    void onNodeClicked(TreeNode* node) override;
+    void onHintClicked() override;
+    void onResetClicked() override;
+    void onUndoClicked() override;
+    void onReplayClicked() override;
+    void onCustomDraw(sf::RenderTarget& target) override;
+    void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+
+private:
+    int m_levelNum;
+    std::unique_ptr<ILevelLogic> m_logic;
+    std::vector<PlayerAction> m_actionHistory;
+
+    // Selection for swap
+    int m_firstSelectedIdx;
+    TreeNode* m_firstSelectedNode;
+
+    // Transient feedback
+    float m_shakeTimer;
+    TreeNode* m_shakingNode;
+    float m_correctTimer;
+    TreeNode* m_correctNode;
+    TreeNode* m_hoverNode;
+
+    // Dynamic heap tree structure
+    std::vector<std::unique_ptr<TreeNode>> m_heapTreeNodes;
+
+    void resetLevel();
+    void syncWithState();
+    const MaxHeap* getHeap() const;
+    void rebuildTreeFromHeap();
+    int getNodeHeapIndex(TreeNode* node) const;
+    void recordAction(const PlayerAction& action);
+};

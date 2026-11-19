@@ -42,7 +42,7 @@ void MainMenuScreen::updateLayout(float w, float h)
 	btnQuit        = Button("QUIT HEIST",   sf::FloatRect(sf::Vector2f(startX, startY + 6.0f * (bh + gap)), sf::Vector2f(bw, bh)), BTN_DANGER);
 
 	// Mute toggle button at top right
-	btnMute = Button(engine.audio.isMuted() ? "[AUDIO: MUTED]" : "[AUDIO: ON]",
+	btnMute = Button(engine.audio.isMuted() ? "AUDIO: MUTED" : "AUDIO: ON",
 	                 sf::FloatRect(sf::Vector2f(w - 150.0f, 20.0f), sf::Vector2f(130.0f, 32.0f)), BTN_BACK);
 }
 
@@ -80,7 +80,7 @@ void MainMenuScreen::handleEvent(const sf::Event& event)
 	if (btnMute.isClicked())
 	{
 		engine.audio.toggleMute();
-		btnMute.label = engine.audio.isMuted() ? "[AUDIO: MUTED]" : "[AUDIO: ON]";
+		btnMute.label = engine.audio.isMuted() ? "AUDIO: MUTED" : "AUDIO: ON";
 		btnMute.resetClick();
 	}
 

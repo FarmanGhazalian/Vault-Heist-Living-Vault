@@ -281,3 +281,20 @@ TreeNode* Act2Level4::getTree()
 {
 	return bst.getRoot();
 }
+
+bool Act2Level4::isNodeSkipped(int value)
+{
+	return !bst.isVisitedByPrunedRange(value, loader.data.lo, loader.data.hi);
+}
+
+static int countVisitedHelper(BST& bst, TreeNode* node, int lo, int hi)
+{
+	if (node == NULL) return 0;
+	int cnt = bst.isVisitedByPrunedRange(node->val, lo, hi) ? 1 : 0;
+	return cnt + countVisitedHelper(bst, node->left, lo, hi) + countVisitedHelper(bst, node->right, lo, hi);
+}
+
+int Act2Level4::getVisitedByPruningCount()
+{
+	return countVisitedHelper(bst, bst.getRoot(), loader.data.lo, loader.data.hi);
+}
