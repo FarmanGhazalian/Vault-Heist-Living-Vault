@@ -70,10 +70,10 @@ void Act1Level2Screen::resetLevel()
 void Act1Level2Screen::layoutTrayAndSlots(unsigned int width, unsigned int height)
 {
     (void)width;
-    float h = static_cast<float>(height);
+    (void)height;
 
     // Layout token tray inside canvas bottom
-    float trayY = h - 65.0f;
+    float trayY = m_canvasBounds.position.y + m_canvasBounds.size.y - 45.0f;
     float tokenSpacing = 52.0f;
     float trayStartX = m_canvasBounds.position.x + 35.0f;
 
