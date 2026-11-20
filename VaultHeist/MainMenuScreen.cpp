@@ -3,6 +3,7 @@
 #include "InfoScreen.h"
 #include "SettingsScreen.h"
 #include "SandboxScreen.h"
+#include "EndlessScreen.h"
 #include "GameEngine.h"
 #include <cmath>
 #include <algorithm>
@@ -97,7 +98,7 @@ void MainMenuScreen::handleEvent(const sf::Event& event)
 	{
 		engine.audio.playClick();
 		btnEndless.resetClick();
-		engine.showInfoModal("ENDLESS MODE // CLASSIFIED", "Infinite procedural security vaults will unlock in Phase 3.\nTest your endurance and survival under constant alarm pressure!");
+		engine.changeScreen(std::make_unique<EndlessScreen>(engine));
 	}
 
 	if (btnSandbox.isClicked())

@@ -212,6 +212,7 @@
     <ClCompile Include="SettingsScreen.cpp" />
     <ClCompile Include="PlayerNameScreen.cpp" />
     <ClCompile Include="SandboxScreen.cpp" />
+    <ClCompile Include="EndlessScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -280,8 +281,10 @@
     <ClInclude Include="SettingsScreen.h" />
     <ClInclude Include="PlayerNameScreen.h" />
     <ClInclude Include="SandboxScreen.h" />
+    <ClInclude Include="EndlessScreen.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="endless_config.json" />
     <None Include="Act1Level1.json" />
     <None Include="Act1Level2.json" />
     <None Include="Act1Level3.json" />

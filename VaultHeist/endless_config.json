@@ -1,0 +1,8 @@
+{
+    "alarm_capacity": 12,
+    "alarm_recovery_per_wave": 2,
+    "base_wave_bonus": 500,
+    "bonus_per_wave_multiplier": 100,
+    "min_nodes": 5,
+    "max_nodes_cap": 12
+}
