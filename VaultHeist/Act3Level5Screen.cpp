@@ -1,4 +1,5 @@
 #include "Act3Level5Screen.h"
+#include "Act4LevelScreen.h"
 #include "CampaignScreen.h"
 #include "GameEngine.h"
 #include "SaveSystem.h"
@@ -93,7 +94,7 @@ void Act3Level5Screen::onNodeClicked(TreeNode* node)
             int scr = ScoreSystem::score(state);
             SaveSystem::setWon(3, 5, stars);
             showResultModal(true, stars, state.steps, state.optimalSteps, state.penaltyPoints, scr,
-                [this]() { m_engine.changeScreen(std::make_unique<CampaignScreen>(m_engine)); },
+                [this]() { m_engine.changeScreen(std::make_unique<Act4LevelScreen>(m_engine, 1)); },
                 [this]() { resetLevel(); m_resultModal.active = false; },
                 [this]() { m_engine.changeScreen(std::make_unique<CampaignScreen>(m_engine)); });
         }

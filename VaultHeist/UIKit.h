@@ -128,6 +128,7 @@ public:
 	bool won;
 	std::string title;
 	std::string message;
+	std::string leaderboardText;
 	int stars;
 	int steps;
 	int optimalSteps;
@@ -136,16 +137,19 @@ public:
 
 	Button btnNext;
 	Button btnRetry;
+	Button btnReplay;
 	Button btnBack;
 
 	std::function<void()> onNext;
 	std::function<void()> onRetry;
+	std::function<void()> onReplay;
 	std::function<void()> onBack;
 
 	LevelResultModal();
 
 	void show(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
-	          std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback);
+	          std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback,
+	          std::function<void()> replayCallback = nullptr, const std::string& lbMsg = "");
 	void close();
 
 	void handleEvent(const sf::Event& event);

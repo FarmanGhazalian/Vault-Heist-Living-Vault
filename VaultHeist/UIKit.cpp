@@ -632,6 +632,7 @@ void ModalPopup::draw(sf::RenderTarget& target, const Theme& theme, const sf::Ve
 LevelResultModal::LevelResultModal()
 	: active(false)
 	, won(false)
+	, leaderboardText("")
 	, stars(0)
 	, steps(0)
 	, optimalSteps(0)
@@ -639,6 +640,7 @@ LevelResultModal::LevelResultModal()
 	, finalScore(0)
 	, btnNext("NEXT LEVEL", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(130.0f, 38.0f)), BTN_PRIMARY)
 	, btnRetry("RETRY", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 38.0f)), BTN_SECONDARY)
+	, btnReplay("REPLAY", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 38.0f)), BTN_SECONDARY)
 	, btnBack("CAMPAIGN", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(110.0f, 38.0f)), BTN_BACK)
 {
 }
@@ -646,10 +648,10 @@ LevelResultModal::LevelResultModal()
 void LevelResultModal::updateLayout(const sf::Vector2f& windowSize)
 {
 	float mw = 480.0f;
-	float mh = 330.0f;
+	float mh = 350.0f;
 	float mx = std::round((windowSize.x - mw) * 0.5f);
 	float my = std::round((windowSize.y - mh) * 0.5f);
-	float btnY = my + mh - 56.0f;
+	float btnY = my + mh - 52.0f;
 
 	if (won && onNext)
 	{
@@ -658,6 +660,14 @@ void LevelResultModal::updateLayout(const sf::Vector2f& windowSize)
 		btnNext.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(130.0f, 38.0f));
 		btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX + 140.0f, btnY), sf::Vector2f(105.0f, 38.0f));
 		btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 255.0f, btnY), sf::Vector2f(115.0f, 38.0f));
+	}
+	else if (!won && onReplay)
+	{
+		float totalBtnW = 105.0f + 105.0f + 115.0f + 20.0f;
+		float startBX = mx + (mw - totalBtnW) * 0.5f;
+		btnRetry.bounds = sf::FloatRect(sf::Vector2f(startBX, btnY), sf::Vector2f(105.0f, 38.0f));
+		btnReplay.bounds = sf::FloatRect(sf::Vector2f(startBX + 115.0f, btnY), sf::Vector2f(105.0f, 38.0f));
+		btnBack.bounds = sf::FloatRect(sf::Vector2f(startBX + 230.0f, btnY), sf::Vector2f(115.0f, 38.0f));
 	}
 	else
 	{
@@ -669,7 +679,8 @@ void LevelResultModal::updateLayout(const sf::Vector2f& windowSize)
 }
 
 void LevelResultModal::show(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
-                            std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback)
+                            std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback,
+                            std::function<void()> replayCallback, const std::string& lbMsg)
 {
 	active = true;
 	won = victory;
@@ -678,9 +689,11 @@ void LevelResultModal::show(bool victory, int starCount, int stepCount, int optS
 	optimalSteps = optSteps;
 	penalties = penaltyPoints;
 	finalScore = totalScore;
+	leaderboardText = lbMsg;
 
 	onNext = nextCallback;
 	onRetry = retryCallback;
+	onReplay = replayCallback;
 	onBack = backCallback;
 
 	title = won ? "MISSION ACCOMPLISHED" : "VAULT LOCKDOWN";
@@ -717,6 +730,13 @@ void LevelResultModal::handleEvent(const sf::Event& event)
 				if (cb) cb();
 				return;
 			}
+			if (!won && onReplay && btnReplay.bounds.contains(mpos))
+			{
+				close();
+				auto cb = onReplay;
+				if (cb) cb();
+				return;
+			}
 			if (btnBack.bounds.contains(mpos))
 			{
 				close();
@@ -748,6 +768,19 @@ void LevelResultModal::handleEvent(const sf::Event& event)
 		auto cb = onRetry;
 		if (cb) cb();
 		return;
+	}
+
+	if (!won && onReplay)
+	{
+		btnReplay.handleEvent(event);
+		if (btnReplay.isClicked())
+		{
+			btnReplay.resetClick();
+			close();
+			auto cb = onReplay;
+			if (cb) cb();
+			return;
+		}
 	}
 
 	btnBack.handleEvent(event);
@@ -797,7 +830,7 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 
 	// Modal window dimensions
 	float mw = 480.0f;
-	float mh = 330.0f;
+	float mh = 350.0f;
 	float mx = std::round((windowSize.x - mw) * 0.5f);
 	float my = std::round((windowSize.y - mh) * 0.5f);
 	sf::FloatRect bounds(sf::Vector2f(mx, my), sf::Vector2f(mw, mh));
@@ -812,12 +845,12 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 	titleText.setFillColor(borderColor);
 	titleText.setStyle(sf::Text::Bold);
 	sf::FloatRect tb = titleText.getLocalBounds();
-	titleText.setPosition(sf::Vector2f(std::round(mx + (mw - tb.size.x) * 0.5f - tb.position.x), my + 20.0f));
+	titleText.setPosition(sf::Vector2f(std::round(mx + (mw - tb.size.x) * 0.5f - tb.position.x), my + 18.0f));
 	target.draw(titleText);
 
 	// Sub-message with wrap support
 	auto msgLines = UIText::wrapText(theme.fontUI, message, 13, mw - 40.0f);
-	float msgY = my + 50.0f;
+	float msgY = my + 46.0f;
 	for (const auto& line : msgLines)
 	{
 		sf::Text msgText(theme.fontUI, line, 13);
@@ -838,14 +871,14 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 	starText.setFillColor(won ? Theme::AccentYellow : Theme::CrimsonAlarm);
 	starText.setStyle(sf::Text::Bold);
 	sf::FloatRect stb = starText.getLocalBounds();
-	starText.setPosition(sf::Vector2f(std::round(mx + (mw - stb.size.x) * 0.5f - stb.position.x), my + 82.0f));
+	starText.setPosition(sf::Vector2f(std::round(mx + (mw - stb.size.x) * 0.5f - stb.position.x), my + 78.0f));
 	target.draw(starText);
 
 	// Stats Box
 	float sbW = mw - 50.0f;
-	float sbH = 95.0f;
+	float sbH = 90.0f;
 	float sbX = mx + 25.0f;
-	float sbY = my + 118.0f;
+	float sbY = my + 108.0f;
 
 	sf::RectangleShape statsBox(sf::Vector2f(sbW, sbH));
 	statsBox.setPosition(sf::Vector2f(sbX, sbY));
@@ -859,7 +892,7 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 	                   "OPTIMAL STEPS:" + std::to_string(optimalSteps);
 	sf::Text tCol1(theme.fontMono, col1, 12);
 	tCol1.setFillColor(Theme::TextPrimary);
-	tCol1.setPosition(sf::Vector2f(sbX + 20.0f, sbY + 22.0f));
+	tCol1.setPosition(sf::Vector2f(sbX + 20.0f, sbY + 20.0f));
 	target.draw(tCol1);
 
 	std::string col2 = "PENALTIES:   -" + std::to_string(penalties) + " pts\n" +
@@ -867,14 +900,32 @@ void LevelResultModal::draw(sf::RenderTarget& target, const Theme& theme, const 
 	sf::Text tCol2(theme.fontMono, col2, 12);
 	tCol2.setFillColor(won ? Theme::SuccessEmerald : Theme::CrimsonAlarm);
 	tCol2.setStyle(sf::Text::Bold);
-	tCol2.setPosition(sf::Vector2f(sbX + sbW * 0.52f, sbY + 22.0f));
+	tCol2.setPosition(sf::Vector2f(sbX + sbW * 0.52f, sbY + 20.0f));
 	target.draw(tCol2);
 
-	// Draw Actual Member Buttons
+	// Leaderboard Line
+	if (!leaderboardText.empty())
+	{
+		sf::Text tLb(theme.fontMono, leaderboardText, 13);
+		bool isHigh = (leaderboardText.find("New high score") != std::string::npos);
+		tLb.setFillColor(isHigh ? Theme::AccentYellow : Theme::TextMuted);
+		tLb.setStyle(isHigh ? sf::Text::Bold : sf::Text::Regular);
+		sf::FloatRect lbb = tLb.getLocalBounds();
+		tLb.setPosition(sf::Vector2f(std::round(mx + (mw - lbb.size.x) * 0.5f - lbb.position.x), my + 215.0f));
+		target.draw(tLb);
+	}
+
+	// Draw Buttons
 	if (won && onNext)
 	{
 		btnNext.draw(target, theme);
 		btnRetry.draw(target, theme);
+		btnBack.draw(target, theme);
+	}
+	else if (!won && onReplay)
+	{
+		btnRetry.draw(target, theme);
+		btnReplay.draw(target, theme);
 		btnBack.draw(target, theme);
 	}
 	else

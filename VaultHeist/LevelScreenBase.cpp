@@ -2,6 +2,8 @@
 #include "GameEngine.h"
 #include "CampaignScreen.h"
 #include "SaveSystem.h"
+#include "LeaderboardManager.h"
+#include "AnimationController.h"
 #include <algorithm>
 #include <cmath>
 
@@ -133,6 +135,7 @@ void LevelScreenBase::addToLog(const std::string& entry)
 void LevelScreenBase::showResultModal(bool victory, int starCount, int stepCount, int optSteps, int penaltyPoints, int totalScore,
                                       std::function<void()> nextCallback, std::function<void()> retryCallback, std::function<void()> backCallback)
 {
+    std::string rankMsg = "";
     if (victory)
     {
         int act = 0, lvl = 0;
@@ -152,8 +155,31 @@ void LevelScreenBase::showResultModal(bool victory, int starCount, int stepCount
         {
             SaveSystem::setWon(act, lvl, starCount);
         }
+
+        std::string modeStr = m_levelTitle.empty() ? "Campaign" : m_levelTitle;
+        int rank = LeaderboardManager::submitScore(GameEngine::getPlayerName(), modeStr, std::to_string(starCount) + " Stars", totalScore);
+        if (rank > 0)
+        {
+            rankMsg = "New high score, rank " + std::to_string(rank);
+        }
+        else
+        {
+            rankMsg = "Score did not reach the top 10";
+        }
     }
-    m_resultModal.show(victory, starCount, stepCount, optSteps, penaltyPoints, totalScore, nextCallback, retryCallback, backCallback);
+    else
+    {
+        rankMsg = "Score did not reach the top 10";
+    }
+
+    std::function<void()> replayCb = nullptr;
+    if (!victory)
+    {
+        replayCb = [this]() { onReplayClicked(); };
+    }
+
+    m_resultModal.show(victory, starCount, stepCount, optSteps, penaltyPoints, totalScore,
+                       nextCallback, retryCallback, backCallback, replayCb, rankMsg);
 }
 
 void LevelScreenBase::onBackClicked()
@@ -585,9 +611,10 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
 
 void LevelScreenBase::update(float dt)
 {
+    float scaledDt = AnimationController::apply(dt);
     if (m_resultModal.active)
     {
-        m_resultModal.update(dt);
+        m_resultModal.update(scaledDt);
         // If a screen change was requested while the modal was active, defer it until now.
         if (m_pendingScreenChange && m_pendingCallback)
         {
@@ -599,12 +626,12 @@ void LevelScreenBase::update(float dt)
         }
         return;
     }
-    m_treeRenderer.update(dt);
+    m_treeRenderer.update(scaledDt);
 
     // Shared Replay Player Animation Loop
     if (m_isReplaying)
     {
-        m_replayTimer -= dt;
+        m_replayTimer -= scaledDt;
         if (m_replayTimer <= 0.0f)
         {
             if (m_replayActionIndex < m_sharedActionHistory.size())

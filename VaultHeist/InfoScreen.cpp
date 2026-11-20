@@ -1,8 +1,11 @@
 #include "InfoScreen.h"
 #include "MainMenuScreen.h"
 #include "GameEngine.h"
+#include "LeaderboardManager.h"
 #include <cmath>
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 
 InfoScreen::InfoScreen(GameEngine& gameEngine, int screenMode)
 	: engine(gameEngine), windowSize(gameEngine.getWindowSize()), mode(screenMode)
@@ -86,8 +89,8 @@ void InfoScreen::draw(sf::RenderTarget& target)
 
 	if (mode == MODE_LEADERBOARD)
 	{
-		// Table Headers
-		sf::Text headers(engine.theme.fontMono, "RANK    AGENT CODE      SECTOR              SCORE    ALARM    STARS", 13);
+		// Table Headers: Rank, Player, Mode, Waves or Stars, Score
+		sf::Text headers(engine.theme.fontMono, "RANK      PLAYER          MODE            WAVES / STARS   SCORE", 13);
 		headers.setFillColor(Theme::AccentYellow);
 		headers.setPosition(sf::Vector2f(px, py));
 		target.draw(headers);
@@ -99,13 +102,37 @@ void InfoScreen::draw(sf::RenderTarget& target)
 		div[1].color = Theme::BorderMuted;
 		target.draw(div);
 
-		// Empty state message
-		sf::Text emptyMsg(engine.theme.fontUI, "No vault heist records logged in local system storage yet.\nInfiltrate and clear campaign sectors to record your heist breaches!", 16);
-		emptyMsg.setFillColor(Theme::TextMuted);
-		emptyMsg.setPosition(sf::Vector2f(px, py + 80.0f));
-		target.draw(emptyMsg);
+		const auto& records = LeaderboardManager::getRecords();
+		if (records.empty())
+		{
+			// Empty state message
+			sf::Text emptyMsg(engine.theme.fontUI, "No scores yet", 18);
+			emptyMsg.setFillColor(Theme::TextMuted);
+			emptyMsg.setPosition(sf::Vector2f(px + 20.0f, py + 70.0f));
+			target.draw(emptyMsg);
+		}
+		else
+		{
+			float rowY = py + 34.0f;
+			for (size_t i = 0; i < records.size(); ++i)
+			{
+				const auto& r = records[i];
+				std::ostringstream oss;
+				oss << std::left << "#" << std::setw(9) << (i + 1)
+				    << std::setw(16) << r.name.substr(0, 14)
+				    << std::setw(16) << r.mode.substr(0, 14)
+				    << std::setw(16) << r.waves_or_stars.substr(0, 14)
+				    << std::right << std::setw(6) << r.score;
 
-		sf::Text tip(engine.theme.fontMono, "TIP: Faster clears with 0 alarms unlock Master Agent tier ratings.", 12);
+				sf::Text rowText(engine.theme.fontMono, oss.str(), 13);
+				rowText.setFillColor(i == 0 ? Theme::AccentYellow : (i < 3 ? Theme::BorderCyan : Theme::TextPrimary));
+				rowText.setPosition(sf::Vector2f(px, rowY));
+				target.draw(rowText);
+				rowY += 26.0f;
+			}
+		}
+
+		sf::Text tip(engine.theme.fontMono, "Top 10 leaderboard records saved in local security database.", 12);
 		tip.setFillColor(Theme::BorderCyan);
 		tip.setPosition(sf::Vector2f(px, contentPanel.bounds.position.y + contentPanel.bounds.size.y - 36.0f));
 		target.draw(tip);

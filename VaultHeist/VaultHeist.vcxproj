@@ -207,6 +207,10 @@
     <ClCompile Include="Act3Level4Screen.cpp" />
     <ClCompile Include="Act3Level5Screen.cpp" />
     <ClCompile Include="Act4LevelScreen.cpp" />
+    <ClCompile Include="SettingsManager.cpp" />
+    <ClCompile Include="LeaderboardManager.cpp" />
+    <ClCompile Include="SettingsScreen.cpp" />
+    <ClCompile Include="PlayerNameScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -269,6 +273,11 @@
     <ClInclude Include="Act3Level3Screen.h" />
     <ClInclude Include="Act3Level4Screen.h" />
     <ClInclude Include="Act3Level5Screen.h" />
+    <ClInclude Include="AnimationController.h" />
+    <ClInclude Include="SettingsManager.h" />
+    <ClInclude Include="LeaderboardManager.h" />
+    <ClInclude Include="SettingsScreen.h" />
+    <ClInclude Include="PlayerNameScreen.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Act1Level1.json" />

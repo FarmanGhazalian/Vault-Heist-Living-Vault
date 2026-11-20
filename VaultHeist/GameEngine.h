@@ -20,6 +20,9 @@ public:
 	static constexpr unsigned int MinWindowWidth  = 960;
 	static constexpr unsigned int MinWindowHeight = 600;
 
+	static inline std::string s_playerName = "Player";
+	static std::string getPlayerName() { return s_playerName.empty() ? "Player" : s_playerName; }
+
 	std::unique_ptr<Screen> currentScreen;
 	std::unique_ptr<Screen> nextScreen;
 

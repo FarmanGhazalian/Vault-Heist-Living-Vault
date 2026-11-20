@@ -1,5 +1,7 @@
 #include "GameEngine.h"
 #include "LoaderScreen.h"
+#include "SettingsManager.h"
+#include "LeaderboardManager.h"
 #include <algorithm>
 
 GameEngine::GameEngine()
@@ -11,6 +13,8 @@ bool GameEngine::init()
 {
 	theme.loadFonts();
 	audio.init();
+	SettingsManager::init(audio);
+	LeaderboardManager::init();
 
 	sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
 	unsigned int targetW = 1440;

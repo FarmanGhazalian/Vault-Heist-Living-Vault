@@ -1,6 +1,7 @@
 #include "MainMenuScreen.h"
 #include "CampaignScreen.h"
 #include "InfoScreen.h"
+#include "SettingsScreen.h"
 #include "GameEngine.h"
 #include <cmath>
 #include <algorithm>
@@ -123,7 +124,7 @@ void MainMenuScreen::handleEvent(const sf::Event& event)
 	{
 		engine.audio.playClick();
 		btnSettings.resetClick();
-		engine.showInfoModal("SETTINGS & AUDIO", "Audio mute can be toggled using the top-right button.\nDisplay, resolution, and keybind preferences coming in Phase 3.");
+		engine.changeScreen(std::make_unique<SettingsScreen>(engine));
 	}
 
 	if (btnQuit.isClicked())

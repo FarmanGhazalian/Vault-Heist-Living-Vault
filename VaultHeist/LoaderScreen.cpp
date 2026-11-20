@@ -1,5 +1,6 @@
 #include "LoaderScreen.h"
 #include "MainMenuScreen.h"
+#include "PlayerNameScreen.h"
 #include "GameEngine.h"
 #include "UIKit.h"
 #include <cmath>
@@ -27,7 +28,7 @@ void LoaderScreen::proceedToMenu()
 	if (!finished)
 	{
 		finished = true;
-		engine.changeScreen(std::make_unique<MainMenuScreen>(engine));
+		engine.changeScreen(std::make_unique<PlayerNameScreen>(engine));
 	}
 }
 
