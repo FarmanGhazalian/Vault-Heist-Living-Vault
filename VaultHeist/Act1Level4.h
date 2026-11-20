@@ -55,9 +55,8 @@ private:
 
 	bool lcaFound = false;
 
-protected:
-	string getHint();
 public:
+	string getHint();
 	Act1Level4() : ILevelLogic(loader.data.optimalSteps)
 	{
 		expectedPath = nullptr;

@@ -34,6 +34,7 @@ public:
     // Contextual Info for GUI HUD
     std::string getObjective() const;
     std::string getHint();
+    ILevelLogic* getLogic() const { return m_logic.get(); }
 
     // Level-specific queries
     int getAct() const { return m_act; }

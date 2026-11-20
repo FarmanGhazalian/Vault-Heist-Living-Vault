@@ -137,21 +137,23 @@ void Act2Level3Screen::submitCase(int caseVal)
     }
 }
 
-void Act2Level3Screen::onHintClicked()
+std::string Act2Level3Screen::getLevelSpecificHint()
 {
     PlayerAction action;
     action.type = CLICK_HINT;
     ActionResult res = m_logic.processAction(action);
-    m_engine.showToast(res.message, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return res.message;
+}
+
+ILevelLogic* Act2Level3Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act2Level3Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Deletion mission reset.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act2Level3Screen::onNodeClicked(TreeNode* node)

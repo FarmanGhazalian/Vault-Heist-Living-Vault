@@ -15,11 +15,14 @@ public:
     void handleEvent(const sf::Event& event) override;
 
 protected:
-    void onHintClicked() override;
     void onResetClicked() override;
     void onNodeClicked(TreeNode* node) override;
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+    std::string getLevelSpecificHint() override;
+    ILevelLogic* getLevelLogic() override;
+    void resetLevel() override;
+    void syncWithState() override;
 
 private:
     LevelBridge m_bridge;
@@ -38,7 +41,5 @@ private:
     // Tooltip hover
     TreeNode* m_hoverNode;
 
-    void resetLevel();
-    void syncWithState();
     void drawTooltip(sf::RenderTarget& target, const Theme& theme);
 };

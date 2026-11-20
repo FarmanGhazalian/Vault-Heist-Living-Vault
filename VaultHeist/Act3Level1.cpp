@@ -156,9 +156,9 @@ ActionResult Act3Level1::processAction(const PlayerAction& action)
 		if (state.hintUsed)
 		{
 			result.correct       = false;
-			result.alarmDelta    = 1;
-			result.penaltyPoints = 50;
-			onMistake(1, 50);
+			result.alarmDelta = 2;
+			result.penaltyPoints = 0;
+			onMistake(2, 0);
 
 			if (state.isFull())
 			{
@@ -208,7 +208,7 @@ ActionResult Act3Level1::processAction(const PlayerAction& action)
 		{
 			// Not an unbalanced node
 			result.correct       = false;
-			result.alarmDelta    = 1;
+			result.alarmDelta = 2;
 			result.penaltyPoints = 0;
 			onMistake(1, 0);
 
@@ -235,7 +235,7 @@ ActionResult Act3Level1::processAction(const PlayerAction& action)
 
 		// Correct unbalanced node, not yet found
 		result.correct       = true;
-		result.alarmDelta    = 1;
+		result.alarmDelta = 2;
 		result.penaltyPoints = 0;
 
 		found[idx] = true;

@@ -3,6 +3,7 @@
 #include "UIKit.h"
 #include "TreeRenderer.h"
 #include "PlayerAction.h"
+#include "ILevelLogic.h"
 #include <string>
 #include <vector>
 #include <functional>
@@ -94,8 +95,17 @@ protected:
     float m_replayTimer = 0.0f;
     size_t m_replayActionIndex = 0;
 
+    bool m_eventConsumed = false;
+    Button* m_pressedBtn = nullptr;
+
+    // Backend & state hooks
+    virtual ILevelLogic* getLevelLogic() { return nullptr; }
+    virtual void resetLevel() {}
+    virtual void syncWithState() {}
+
     // Virtual hooks for derived levels to customize
     virtual void onBackClicked();
+    virtual void onFitClicked();
     virtual void onHintClicked();
     virtual void onResetClicked();
     virtual void onUndoClicked();
@@ -111,4 +121,6 @@ protected:
 
     void recordSharedAction(const PlayerAction& action);
     void relayout(unsigned int width, unsigned int height);
+
+    static void layoutButtonBar(const std::vector<Button*>& buttons, const sf::FloatRect& containerBounds, float btnW = 88.0f, float btnH = 34.0f, float spacing = 10.0f);
 };

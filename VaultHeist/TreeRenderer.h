@@ -23,6 +23,9 @@ public:
     // Compute heights and subtree sizes (leaf height = 1)
     static int updateNodeMetrics(TreeNode* node);
 
+    // Shared tooltip height conversion (leaf = 0 in tooltip only)
+    static int getTooltipHeight(const TreeNode* node);
+
     // Shared tooltip renderer according to Rule 7
     static void drawNodeTooltip(sf::RenderTarget& target, const Theme& theme, TreeNode* root, TreeNode* hoverNode, bool hideHeight = false);
 

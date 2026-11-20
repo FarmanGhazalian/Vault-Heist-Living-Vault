@@ -100,37 +100,40 @@ void TreeRenderer::computeLayout(TreeNode* root, sf::FloatRect canvasBounds)
     assignPositions(root, rootX, rootY, canvasBounds.size.x);
 }
 
+int TreeRenderer::getTooltipHeight(const TreeNode* node)
+{
+    if (!node) return 0;
+    // In backend / AVL spec, leaf height is 1.
+    // In tooltip only, leaf shows 0.
+    // So tooltip height = stored height minus 1 (clamped to 0).
+    return (node->height > 0) ? (node->height - 1) : 0;
+}
+
 void TreeRenderer::drawNodeTooltip(sf::RenderTarget& target, const Theme& theme, TreeNode* root, TreeNode* hoverNode, bool hideHeight)
 {
     if (!hoverNode) return;
 
-    // Compute depth and find parent from root
-    int depth = 0;
-    std::string parentStr = "None (Root)";
-    std::function<bool(TreeNode*, int, TreeNode*)> findParentAndDepth = [&](TreeNode* curr, int d, TreeNode* p) -> bool {
-        if (!curr) return false;
-        if (curr == hoverNode)
-        {
-            depth = d;
-            if (p) parentStr = std::to_string(p->val);
-            return true;
-        }
-        if (findParentAndDepth(curr->left, d + 1, curr)) return true;
-        return findParentAndDepth(curr->right, d + 1, curr);
-    };
-    if (root)
+    // Balance factor stays height(left) - height(right) using stored values, unchanged.
+    int leftH = (hoverNode->left) ? hoverNode->left->height : 0;
+    int rightH = (hoverNode->right) ? hoverNode->right->height : 0;
+    int bf = leftH - rightH;
+
+    std::string info;
+    if (hideHeight)
     {
-        findParentAndDepth(root, 0, nullptr);
+        info = "KEY: " + std::to_string(hoverNode->val) + "\n" +
+               "BALANCE: " + std::to_string(bf);
+    }
+    else
+    {
+        info = "KEY: " + std::to_string(hoverNode->val) + "\n" +
+               "HEIGHT: " + std::to_string(getTooltipHeight(hoverNode)) + "\n" +
+               "BALANCE: " + std::to_string(bf);
     }
 
-    std::string heightStr = hideHeight ? "LOCKED" : std::to_string(hoverNode->height);
-
-    std::string info = "VALUE: " + std::to_string(hoverNode->val) + "\n" +
-                       "HEIGHT: " + heightStr;
-
     sf::Vector2f pos = hoverNode->position + sf::Vector2f(Theme::NodeRadius + 14.0f, -Theme::NodeRadius - 10.0f);
-    float boxW = 120.0f;
-    float boxH = 46.0f;
+    float boxW = 130.0f;
+    float boxH = hideHeight ? 48.0f : 64.0f;
 
     // Keep tooltip inside target window
     sf::Vector2f targetSize(static_cast<float>(target.getSize().x), static_cast<float>(target.getSize().y));

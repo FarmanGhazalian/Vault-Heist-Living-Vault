@@ -1,68 +1,29 @@
 #include "SaveSystem.h"
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cstring>
 
 int SaveSystem::s_state[5][7] = {};
 bool SaveSystem::s_loaded = false;
-
 bool SaveSystem::s_devUnlockedAll = false;
-
-static std::string getSavePath()
-{
-    return "savegame.dat";
-}
 
 void SaveSystem::load()
 {
-    // Initialize: everything locked
+    // Fresh start: everything locked
     for (int a = 0; a < 5; a++)
+    {
         for (int lv = 0; lv < 7; lv++)
-            s_state[a][lv] = -1;
-
-    // Level 1.1 always unlocked
-    s_state[1][1] = 0;
-
-    std::ifstream f(getSavePath());
-    if (!f.is_open())
-    {
-        s_loaded = true;
-        return;
-    }
-
-    std::string line;
-    while (std::getline(f, line))
-    {
-        if (line.empty()) continue;
-        int act = 0, lv = 0, stars = -1;
-        char dot = 0, eq = 0;
-        std::istringstream ss(line);
-        ss >> act >> dot >> lv >> eq >> stars;
-        if (act >= 1 && act <= 4 && lv >= 1 && lv <= 5)
         {
-            s_state[act][lv] = stars;
+            s_state[a][lv] = -1;
         }
     }
-    // Always ensure 1.1 is at least unlocked
-    if (s_state[1][1] < 0) s_state[1][1] = 0;
+
+    // Level 1.1 always unlocked, zero stars, no disk progress loaded
+    s_state[1][1] = 0;
+    s_devUnlockedAll = false;
     s_loaded = true;
 }
 
 void SaveSystem::save()
 {
-    std::ofstream f(getSavePath());
-    if (!f.is_open()) return;
-    for (int a = 1; a <= 4; a++)
-    {
-        for (int lv = 1; lv <= 5; lv++)
-        {
-            if (s_state[a][lv] >= 0)
-            {
-                f << a << "." << lv << "=" << s_state[a][lv] << "\n";
-            }
-        }
-    }
+    // Fresh start policy: Do not write campaign progress to disk.
 }
 
 bool SaveSystem::isUnlocked(int act, int level)
@@ -87,6 +48,7 @@ void SaveSystem::setWon(int act, int level, int stars)
     if (stars > s_state[act][level])
         s_state[act][level] = stars;
 
+    // Winning a level unlocks the next level for this session only
     int nextLevel = level + 1;
     int nextAct = act;
     if (nextLevel > 5)
@@ -98,24 +60,32 @@ void SaveSystem::setWon(int act, int level, int stars)
     {
         s_state[nextAct][nextLevel] = 0;
     }
-    save();
 }
 
 bool SaveSystem::toggleUnlockAll()
 {
+    if (!s_loaded) load();
     s_devUnlockedAll = !s_devUnlockedAll;
     if (s_devUnlockedAll)
     {
         for (int a = 1; a <= 4; a++)
+        {
             for (int lv = 1; lv <= 5; lv++)
+            {
                 s_state[a][lv] = 0;
+            }
+        }
     }
     else
     {
-        // Revert to pristine start state: all locked except 1.1
+        // Revert to pristine fresh start state: all locked except 1.1, stars cleared
         for (int a = 0; a < 5; a++)
+        {
             for (int lv = 0; lv < 7; lv++)
+            {
                 s_state[a][lv] = -1;
+            }
+        }
         s_state[1][1] = 0;
     }
     return s_devUnlockedAll;

@@ -64,19 +64,20 @@ void Act1Level4Screen::syncWithState()
     }
 }
 
-void Act1Level4Screen::onHintClicked()
+std::string Act1Level4Screen::getLevelSpecificHint()
 {
-    std::string hint = m_bridge.getHint();
-    m_engine.showToast(hint, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return m_bridge.getHint();
+}
+
+ILevelLogic* Act1Level4Screen::getLevelLogic()
+{
+    return m_bridge.getLogic();
 }
 
 void Act1Level4Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Mission reset. Re-acquire LCA.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act1Level4Screen::onNodeClicked(TreeNode* node)

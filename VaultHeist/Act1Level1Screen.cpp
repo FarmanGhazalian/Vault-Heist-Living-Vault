@@ -53,6 +53,11 @@ std::string Act1Level1Screen::getLevelSpecificHint()
     return m_bridge.getHint();
 }
 
+ILevelLogic* Act1Level1Screen::getLevelLogic()
+{
+    return m_bridge.getLogic();
+}
+
 void Act1Level1Screen::reapplyActionSilently(const PlayerAction& action)
 {
     TreeNode* target = nullptr;

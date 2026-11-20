@@ -182,9 +182,9 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 		if (state.hintUsed)
 		{
 			result.correct = false;
-			result.alarmDelta = 1;
-			result.penaltyPoints = 50;
-			onMistake(1, 50);
+			result.alarmDelta = 2;
+			result.penaltyPoints = 0;
+			onMistake(2, 0);
 
 			if (state.isFull())
 			{
@@ -224,7 +224,7 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 			if (action.nodeA == currentPath[currentPathIdx])
 			{
 				result.correct = true;
-				result.alarmDelta = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 
 				onValidStep();
@@ -242,7 +242,7 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 			else
 			{
 				result.correct = false;
-				result.alarmDelta = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 
 				onMistake(1, 0);
@@ -284,7 +284,7 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 		if (action.direction == expectedDir)
 		{
 			result.correct = true;
-			result.alarmDelta = 1;
+			result.alarmDelta = 2;
 			result.penaltyPoints = 0;
 
 			onValidStep();
@@ -315,7 +315,7 @@ ActionResult Act2Level2::processAction(const PlayerAction& action)
 		else
 		{
 			result.correct = false;
-			result.alarmDelta = 1;
+			result.alarmDelta = 2;
 			result.penaltyPoints = 0;
 
 			onMistake(1, 0);

@@ -59,19 +59,20 @@ void Act1Level3Screen::syncWithState()
     }
 }
 
-void Act1Level3Screen::onHintClicked()
+std::string Act1Level3Screen::getLevelSpecificHint()
 {
-    std::string hint = m_bridge.getHint();
-    m_engine.showToast(hint, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return m_bridge.getHint();
+}
+
+ILevelLogic* Act1Level3Screen::getLevelLogic()
+{
+    return m_bridge.getLogic();
 }
 
 void Act1Level3Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Level reset. Calculate heights bottom-up.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act1Level3Screen::onNodeClicked(TreeNode* node)
@@ -478,6 +479,6 @@ void Act1Level3Screen::onDrawSidePanel(sf::RenderTarget& target, const sf::Float
 void Act1Level3Screen::drawTooltip(sf::RenderTarget& target, const Theme& theme)
 {
     if (!m_hoverNode) return;
-    bool hideHeight = (m_solvedHeights.find(m_hoverNode->val) == m_solvedHeights.end());
-    TreeRenderer::drawNodeTooltip(target, theme, m_rootNode, m_hoverNode, hideHeight);
+    // In Level 1.3, hide the height line in the tooltip so it never shows or contradicts the puzzle answer.
+    TreeRenderer::drawNodeTooltip(target, theme, m_rootNode, m_hoverNode, true);
 }

@@ -72,19 +72,24 @@ int Act3Level2Screen::computeBF(TreeNode* node) const
     return lh - rh;
 }
 
-void Act3Level2Screen::onHintClicked()
+std::string Act3Level2Screen::getLevelSpecificHint()
 {
     int phase = m_logic.getPhase();
     if (phase == 1)
-        m_engine.showToast("Phase 1: Click the node where |BF| = 2 (shown in red).", TOAST_HINT);
+        return "Phase 1: Click the node where |BF| = 2 (shown in red).";
     else
-        m_engine.showToast("Phase 2: LL=left heavy child left heavy. RR=right heavy. LR/RL=zigzag cases.", TOAST_HINT);
+        return "Phase 2: LL=left heavy child left heavy. RR=right heavy. LR/RL=zigzag cases.";
+}
+
+ILevelLogic* Act3Level2Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act3Level2Screen::onResetClicked()
 {
-    m_engine.showConfirmModal("RESET LEVEL", "Reset this level?",
-        [this]() { resetLevel(); });
+    LevelScreenBase::onResetClicked();
+    resetLevel();
 }
 
 void Act3Level2Screen::onNodeClicked(TreeNode* node)

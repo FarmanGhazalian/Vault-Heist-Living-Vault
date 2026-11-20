@@ -74,16 +74,21 @@ int Act3Level4Screen::computeBF(TreeNode* node) const
     return lh - rh;
 }
 
-void Act3Level4Screen::onHintClicked()
+std::string Act3Level4Screen::getLevelSpecificHint()
 {
     int nextKey = m_logic.getCurrentInsertKey();
-    m_engine.showToast("Incoming key is " + std::to_string(nextKey) + ". Mentally insert it and check if any node's |BF| becomes 2.", TOAST_HINT);
+    return "Incoming key is " + std::to_string(nextKey) + ". Mentally insert it and check if any node's |BF| becomes 2.";
+}
+
+ILevelLogic* Act3Level4Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act3Level4Screen::onResetClicked()
 {
-    m_engine.showConfirmModal("RESET LEVEL", "Reset this level?",
-        [this]() { resetLevel(); });
+    LevelScreenBase::onResetClicked();
+    resetLevel();
 }
 
 void Act3Level4Screen::handleEvent(const sf::Event& event)

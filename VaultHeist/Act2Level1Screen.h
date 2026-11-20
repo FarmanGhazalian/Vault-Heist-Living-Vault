@@ -14,10 +14,13 @@ public:
 
 protected:
     void onNodeClicked(TreeNode* node) override;
-    void onHintClicked() override;
     void onResetClicked() override;
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+    std::string getLevelSpecificHint() override;
+    ILevelLogic* getLevelLogic() override;
+    void resetLevel() override;
+    void syncWithState() override;
 
 private:
     Act2Level1 m_logic;
@@ -29,7 +32,4 @@ private:
     TreeNode* m_shakingNode;
     float m_pulseTimer;
     TreeNode* m_hoverNode;
-
-    void resetLevel();
-    void syncWithState();
 };

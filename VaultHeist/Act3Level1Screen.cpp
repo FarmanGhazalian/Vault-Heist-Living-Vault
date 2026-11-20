@@ -82,15 +82,20 @@ int Act3Level1Screen::computeBF(TreeNode* node) const
     return lh - rh;
 }
 
-void Act3Level1Screen::onHintClicked()
+std::string Act3Level1Screen::getLevelSpecificHint()
 {
-    m_engine.showToast("Look for nodes with |BF| = 2. BF = left_height - right_height.", TOAST_HINT);
+    return "Look for nodes with |BF| = 2. BF = left_height - right_height.";
+}
+
+ILevelLogic* Act3Level1Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act3Level1Screen::onResetClicked()
 {
-    m_engine.showConfirmModal("RESET LEVEL", "Reset this level? All progress will be lost.",
-        [this]() { resetLevel(); });
+    LevelScreenBase::onResetClicked();
+    resetLevel();
 }
 
 void Act3Level1Screen::onNodeClicked(TreeNode* node)

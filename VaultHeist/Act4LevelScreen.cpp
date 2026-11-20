@@ -92,7 +92,6 @@ void Act4LevelScreen::resetLevel()
     m_shakingNode = nullptr;
     m_correctTimer = 0.0f;
     m_correctNode = nullptr;
-    m_actionHistory.clear();
 
     switch (m_levelNum)
     {
@@ -140,65 +139,35 @@ void Act4LevelScreen::syncWithState()
     setPenalty(state.penaltyPoints);
 }
 
-void Act4LevelScreen::onHintClicked()
+std::string Act4LevelScreen::getLevelSpecificHint()
 {
-    if (!m_logic) return;
+    if (!m_logic) return "Select parent and child to swap and satisfy heap order.";
     PlayerAction action;
     action.type = CLICK_HINT;
     ActionResult res = m_logic->processAction(action);
-    m_engine.showToast(res.message.empty() ? "Select parent and child to swap and satisfy heap order." : res.message, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return res.message.empty() ? "Select parent and child to swap and satisfy heap order." : res.message;
+}
+
+ILevelLogic* Act4LevelScreen::getLevelLogic()
+{
+    return m_logic.get();
 }
 
 void Act4LevelScreen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Heap configuration reset.", TOAST_INFO);
-    m_engine.audio.playClick();
-}
-
-void Act4LevelScreen::recordAction(const PlayerAction& action)
-{
-    m_actionHistory.push_back(action);
-}
-
-void Act4LevelScreen::onUndoClicked()
-{
-    if (m_actionHistory.empty())
-    {
-        m_engine.showToast("No moves made yet.", TOAST_INFO);
-        return;
-    }
-
-    std::vector<PlayerAction> history = m_actionHistory;
-    history.pop_back();
-
-    resetLevel();
-
-    for (const auto& act : history)
-    {
-        if (m_logic)
-        {
-            ActionResult res = m_logic->processAction(act);
-            if (res.correct)
-            {
-                m_actionHistory.push_back(act);
-            }
-        }
-    }
-
     rebuildTreeFromHeap();
-    syncWithState();
-    m_firstSelectedIdx = -1;
-    m_firstSelectedNode = nullptr;
-    m_engine.showToast("Last move undone.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
-void Act4LevelScreen::onReplayClicked()
+void Act4LevelScreen::reapplyActionSilently(const PlayerAction& action)
 {
-    m_engine.showToast("Replaying operation sequence...", TOAST_INFO);
+    if (m_logic)
+    {
+        m_logic->processAction(action);
+        rebuildTreeFromHeap();
+    }
+    syncWithState();
 }
 
 void Act4LevelScreen::onNodeClicked(TreeNode* node)
@@ -237,7 +206,7 @@ void Act4LevelScreen::onNodeClicked(TreeNode* node)
 
     if (res.correct)
     {
-        recordAction(action);
+        recordSharedAction(action);
         m_engine.audio.playCorrect();
         m_correctNode = node;
         m_correctTimer = 0.5f;

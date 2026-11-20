@@ -15,11 +15,14 @@ public:
     void handleEvent(const sf::Event& event) override;
 
 protected:
-    void onHintClicked() override;
     void onResetClicked() override;
-    void onUndoClicked() override;
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+    std::string getLevelSpecificHint() override;
+    ILevelLogic* getLevelLogic() override;
+    void resetLevel() override;
+    void syncWithState() override;
+    void reapplyActionSilently(const PlayerAction& action) override;
 
 private:
     LevelBridge m_bridge;
@@ -58,13 +61,7 @@ private:
     float m_shakeTimer;
     int m_shakingTokenVal;
 
-    void resetLevel();
-    void syncWithState();
     void layoutTrayAndSlots(unsigned int width, unsigned int height);
     void updateSlotPositions();
     int getSlotAtPosition(sf::Vector2f pos);
-
-    // Undo support
-    std::vector<PlayerAction> m_actionHistory;
-    void recordAction(const PlayerAction& action);
 };

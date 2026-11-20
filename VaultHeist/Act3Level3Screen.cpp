@@ -83,19 +83,24 @@ int Act3Level3Screen::computeBF(TreeNode* node) const
     return lh - rh;
 }
 
-void Act3Level3Screen::onHintClicked()
+std::string Act3Level3Screen::getLevelSpecificHint()
 {
     int phase = m_logic.getPhase();
     if (phase == 1)
-        m_engine.showToast("Phase 1: Observe the sign of BF for root and its heavy child. LR/RL are double rotations.", TOAST_HINT);
+        return "Phase 1: Observe the sign of BF for root and its heavy child. LR/RL are double rotations.";
     else
-        m_engine.showToast("Phase 2: For double rotations, first rotate the child, then the root.", TOAST_HINT);
+        return "Phase 2: For double rotations, first rotate the child, then the root.";
+}
+
+ILevelLogic* Act3Level3Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act3Level3Screen::onResetClicked()
 {
-    m_engine.showConfirmModal("RESET LEVEL", "Reset this level?",
-        [this]() { resetLevel(); });
+    LevelScreenBase::onResetClicked();
+    resetLevel();
 }
 
 void Act3Level3Screen::onNodeClicked(TreeNode* node)

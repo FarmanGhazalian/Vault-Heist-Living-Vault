@@ -16,14 +16,15 @@ public:
 
 protected:
     void onNodeClicked(TreeNode* node) override;
-    void onHintClicked() override;
     void onResetClicked() override;
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+    std::string getLevelSpecificHint() override;
+    ILevelLogic* getLevelLogic() override;
+    void resetLevel() override;
+    void syncWithState() override;
 
 private:
-    void resetLevel();
-    void syncWithState();
     void drawSubtreeSizes(sf::RenderTarget& target, TreeNode* node);
 
     Act3Level5 m_logic;

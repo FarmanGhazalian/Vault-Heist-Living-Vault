@@ -51,16 +51,21 @@ void Act3Level5Screen::syncWithState()
     setPenalty(state.penaltyPoints);
 }
 
-void Act3Level5Screen::onHintClicked()
+std::string Act3Level5Screen::getLevelSpecificHint()
 {
     int k = m_logic.getK();
-    m_engine.showToast("k=" + std::to_string(k) + ". If left size is S: if k <= S go left; if k == S+1 target is here; if k > S+1 go right with k' = k - (S+1).", TOAST_HINT);
+    return "k=" + std::to_string(k) + ". If left size is S: if k <= S go left; if k == S+1 target is here; if k > S+1 go right with k' = k - (S+1).";
+}
+
+ILevelLogic* Act3Level5Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act3Level5Screen::onResetClicked()
 {
-    m_engine.showConfirmModal("RESET LEVEL", "Reset this level?",
-        [this]() { resetLevel(); });
+    LevelScreenBase::onResetClicked();
+    resetLevel();
 }
 
 void Act3Level5Screen::onNodeClicked(TreeNode* node)

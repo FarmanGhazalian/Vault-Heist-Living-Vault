@@ -196,8 +196,10 @@ std::string LevelBridge::getHint()
 {
     if (m_logic)
     {
-        m_logic->onHintRequested();
+        // Do NOT call onHintRequested here - hint state is managed by LevelScreenBase::onHintClicked.
+        if (m_l2) return m_l2->getHint();
         if (m_l3) return m_l3->getHint();
+        if (m_l4) return m_l4->getHint();
         if (m_l5) return m_l5->getHint();
     }
     return "Analyze parent-child relationships and node values.";

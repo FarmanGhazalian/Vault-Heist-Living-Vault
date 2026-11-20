@@ -113,21 +113,23 @@ void Act2Level2Screen::computeVacantSlots()
     }
 }
 
-void Act2Level2Screen::onHintClicked()
+std::string Act2Level2Screen::getLevelSpecificHint()
 {
     PlayerAction action;
     action.type = CLICK_HINT;
     ActionResult res = m_logic.processAction(action);
-    m_engine.showToast(res.message, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return res.message;
+}
+
+ILevelLogic* Act2Level2Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act2Level2Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Insertion sequence reset to initial state.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act2Level2Screen::onNodeClicked(TreeNode* node)

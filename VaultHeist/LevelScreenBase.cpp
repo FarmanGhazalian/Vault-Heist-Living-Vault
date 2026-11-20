@@ -59,19 +59,9 @@ void LevelScreenBase::relayout(unsigned int width, unsigned int height)
     float barY = m_canvasBounds.position.y + m_canvasBounds.size.y + 6.0f;
     m_actionBarBounds = sf::FloatRect(sf::Vector2f(14.0f, barY), sf::Vector2f(canvasW, actionBarH));
 
-    // Position Action Bar Buttons (right-aligned)
-    float btnW = 82.0f;
-    float btnGap = 8.0f;
-    float rx = m_actionBarBounds.position.x + m_actionBarBounds.size.x - btnW - 6.0f;
-    float by = barY + 6.0f;
-
-    m_resetBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
-    rx -= (btnW + btnGap);
-    m_replayBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
-    rx -= (btnW + btnGap);
-    m_undoBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
-    rx -= (btnW + btnGap);
-    m_hintBtn.bounds = sf::FloatRect(sf::Vector2f(rx, by), sf::Vector2f(btnW, 34.0f));
+    // Position Action Bar Buttons centered horizontally under the canvas
+    std::vector<Button*> actionButtons = { &m_hintBtn, &m_undoBtn, &m_replayBtn, &m_resetBtn };
+    layoutButtonBar(actionButtons, m_actionBarBounds, 88.0f, 34.0f, 12.0f);
 
     // Setup Canvas sf::View
     float vx = m_canvasBounds.position.x / w;
@@ -185,35 +175,78 @@ void LevelScreenBase::recordSharedAction(const PlayerAction& action)
     m_sharedActionHistory.push_back(action);
 }
 
+void LevelScreenBase::layoutButtonBar(const std::vector<Button*>& buttons, const sf::FloatRect& containerBounds, float btnW, float btnH, float spacing)
+{
+    if (buttons.empty()) return;
+    float totalW = static_cast<float>(buttons.size()) * btnW + static_cast<float>(buttons.size() - 1) * spacing;
+    float startX = containerBounds.position.x + (containerBounds.size.x - totalW) * 0.5f;
+    float btnY = containerBounds.position.y + (containerBounds.size.y - btnH) * 0.5f;
+
+    for (size_t i = 0; i < buttons.size(); ++i)
+    {
+        if (buttons[i])
+        {
+            buttons[i]->bounds = sf::FloatRect(sf::Vector2f(startX + static_cast<float>(i) * (btnW + spacing), btnY), sf::Vector2f(btnW, btnH));
+        }
+    }
+}
+
+void LevelScreenBase::onFitClicked()
+{
+    m_zoomLevel = 1.0f;
+    m_isPanning = false;
+    relayout(m_engine.window.getSize().x, m_engine.window.getSize().y);
+}
+
 void LevelScreenBase::onHintClicked()
 {
+    ILevelLogic* logic = getLevelLogic();
+
     if (!m_hintUsed)
     {
         m_hintUsed = true;
+        if (logic)
+        {
+            logic->state.hintUsed = true;
+        }
         std::string hint = getLevelSpecificHint();
         m_engine.showToast(hint, TOAST_HINT);
         m_engine.audio.playHint();
     }
     else
     {
-        // Second press and later: do NOT show hint again. Add 2 to alarm meter.
-        m_currentAlarm += 2;
+        // Second press and later: do NOT show a hint.
+        // Show message: Hint already used.
+        // Add exactly 2 to the alarm meter per press.
+        if (logic)
+        {
+            logic->state.alarm += 2;
+            logic->state.checkGameOver();
+            m_currentAlarm = logic->state.alarm;
+        }
+        else
+        {
+            m_currentAlarm += 2;
+        }
         m_engine.showToast("Hint already used.", TOAST_ERROR);
         m_engine.audio.playWrong();
+    }
 
-        if (m_currentAlarm >= m_alarmCap)
-        {
-            m_engine.audio.playLose();
-            showResultModal(false, 0, m_currentSteps, m_optimalSteps, m_penaltyPoints, 0,
-                nullptr,
-                [this]() { onResetClicked(); },
-                [this]() { onBackClicked(); });
-        }
+    syncWithState();
+
+    if (m_currentAlarm >= m_alarmCap)
+    {
+        m_engine.audio.playLose();
+        showResultModal(false, 0, m_currentSteps, m_optimalSteps, m_penaltyPoints, 0,
+            nullptr,
+            [this]() { onResetClicked(); },
+            [this]() { onBackClicked(); });
     }
 }
 
 void LevelScreenBase::onResetClicked()
 {
+    resetLevel();
     m_sharedActionHistory.clear();
     m_hintUsed = false;
     m_isReplaying = false;
@@ -223,6 +256,20 @@ void LevelScreenBase::onResetClicked()
     m_score = 0;
     m_currentSteps = 0;
     m_penaltyPoints = 0;
+
+    ILevelLogic* logic = getLevelLogic();
+    if (logic)
+    {
+        logic->state.alarm = 0;
+        logic->state.steps = 0;
+        logic->state.penaltyPoints = 0;
+        logic->state.penaltyCount = 0;
+        logic->state.hintUsed = false;
+        logic->state.finished = false;
+        logic->state.won = false;
+    }
+
+    syncWithState();
     m_engine.showToast("Level reset to initial state.", TOAST_INFO);
     m_engine.audio.playClick();
 }
@@ -238,8 +285,25 @@ void LevelScreenBase::onUndoClicked()
     std::vector<PlayerAction> historyCopy = m_sharedActionHistory;
     historyCopy.pop_back();
 
-    // Call level reset to reset to clean state
-    onResetClicked();
+    // Silently reset level from JSON without emitting reset sound/toast
+    resetLevel();
+    m_sharedActionHistory.clear();
+    m_hintUsed = false;
+    m_isReplaying = false;
+    m_replayTimer = 0.0f;
+    m_replayActionIndex = 0;
+
+    ILevelLogic* logic = getLevelLogic();
+    if (logic)
+    {
+        logic->state.alarm = 0;
+        logic->state.steps = 0;
+        logic->state.penaltyPoints = 0;
+        logic->state.penaltyCount = 0;
+        logic->state.hintUsed = false;
+        logic->state.finished = false;
+        logic->state.won = false;
+    }
 
     // Reapply all actions except the last silently
     for (const auto& act : historyCopy)
@@ -248,6 +312,7 @@ void LevelScreenBase::onUndoClicked()
         reapplyActionSilently(act);
     }
 
+    syncWithState();
     m_engine.showToast("Last action undone.", TOAST_INFO);
     m_engine.audio.playClick();
 }
@@ -262,19 +327,33 @@ void LevelScreenBase::onReplayClicked()
 
     std::vector<PlayerAction> historyCopy = m_sharedActionHistory;
 
-    // Reset visually
-    onResetClicked();
+    // Reset visually & silently
+    resetLevel();
     m_sharedActionHistory = historyCopy;
+
+    ILevelLogic* logic = getLevelLogic();
+    if (logic)
+    {
+        logic->state.alarm = 0;
+        logic->state.steps = 0;
+        logic->state.penaltyPoints = 0;
+        logic->state.penaltyCount = 0;
+        logic->state.hintUsed = false;
+        logic->state.finished = false;
+        logic->state.won = false;
+    }
+    syncWithState();
 
     m_isReplaying = true;
     m_replayActionIndex = 0;
     m_replayTimer = 0.5f;
     m_engine.showToast("Replaying operation sequence...", TOAST_INFO);
+    m_engine.audio.playClick();
 }
 
 void LevelScreenBase::onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds)
 {
-    // Default no‑op implementation – derived screens may override to draw custom side‑panel UI.
+    // Default no-op implementation - derived screens may override to draw custom side-panel UI.
 }
 
 void LevelScreenBase::onNodeClicked(TreeNode* node)
@@ -285,15 +364,19 @@ void LevelScreenBase::onNodeClicked(TreeNode* node)
 
 void LevelScreenBase::handleEvent(const sf::Event& event)
 {
+    m_eventConsumed = false;
+
     if (m_resultModal.active)
     {
         m_resultModal.handleEvent(event);
+        m_eventConsumed = true;
         return;
     }
 
     if (auto* resized = event.getIf<sf::Event::Resized>())
     {
         onResize(resized->size.x, resized->size.y);
+        return;
     }
 
     if (auto* key = event.getIf<sf::Event::KeyPressed>())
@@ -301,16 +384,19 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
         if (key->code == sf::Keyboard::Key::Escape)
         {
             onBackClicked();
+            m_eventConsumed = true;
             return;
         }
         else if (key->code == sf::Keyboard::Key::H)
         {
             onHintClicked();
+            m_eventConsumed = true;
             return;
         }
         else if (key->code == sf::Keyboard::Key::R)
         {
             onResetClicked();
+            m_eventConsumed = true;
             return;
         }
         else if (key->code == sf::Keyboard::Key::Space)
@@ -319,9 +405,25 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
         }
         else if (key->code == sf::Keyboard::Key::Num0 || key->code == sf::Keyboard::Key::Numpad0)
         {
-            m_zoomLevel = 1.0f;
-            m_isPanning = false;
-            relayout(m_engine.window.getSize().x, m_engine.window.getSize().y);
+            onFitClicked();
+            m_eventConsumed = true;
+            return;
+        }
+        else if (key->code == sf::Keyboard::Key::U && key->control && key->shift)
+        {
+            bool unlocked = SaveSystem::toggleUnlockAll();
+            if (unlocked)
+            {
+                m_engine.audio.playWin();
+                m_engine.showToast("DEV OVERRIDE: All levels unlocked!", TOAST_INFO);
+            }
+            else
+            {
+                m_engine.audio.playClick();
+                m_engine.showToast("DEV OVERRIDE: Levels locked back to start state.", TOAST_INFO);
+            }
+            m_eventConsumed = true;
+            return;
         }
     }
 
@@ -333,29 +435,60 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
         }
     }
 
-    // UI Buttons
-    m_backBtn.handleEvent(event);
-    m_hintBtn.handleEvent(event);
-    m_undoBtn.handleEvent(event);
-    m_replayBtn.handleEvent(event);
-    m_resetBtn.handleEvent(event);
-    m_fitBtn.handleEvent(event);
+    // Topmost hit-test routing for buttons:
+    // One click triggers exactly one handler. Topmost visible button consumes the click.
+    std::vector<Button*> activeBtns = { &m_backBtn, &m_fitBtn, &m_hintBtn, &m_undoBtn, &m_replayBtn, &m_resetBtn };
 
-    if (m_backBtn.isClicked())   { m_backBtn.resetClick(); onBackClicked(); }
-    if (m_hintBtn.isClicked())   { m_hintBtn.resetClick(); onHintClicked(); }
-    if (m_undoBtn.isClicked())   { m_undoBtn.resetClick(); onUndoClicked(); }
-    if (m_replayBtn.isClicked()) { m_replayBtn.resetClick(); onReplayClicked(); }
-    if (m_resetBtn.isClicked())  { m_resetBtn.resetClick(); onResetClicked(); }
-
-    if (m_fitBtn.isClicked())
+    if (auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>())
     {
-        m_fitBtn.resetClick();
-        m_zoomLevel = 1.0f;
-        m_isPanning = false;
-        relayout(m_engine.window.getSize().x, m_engine.window.getSize().y);
+        if (mouseBtn->button == sf::Mouse::Button::Left)
+        {
+            sf::Vector2f mpos(static_cast<float>(mouseBtn->position.x), static_cast<float>(mouseBtn->position.y));
+            for (auto* btn : activeBtns)
+            {
+                if (btn && btn->enabled && btn->bounds.contains(mpos))
+                {
+                    m_pressedBtn = btn;
+                    btn->handleEvent(event);
+                    m_eventConsumed = true;
+                    return;
+                }
+            }
+        }
+    }
+    else if (auto* mouseRel = event.getIf<sf::Event::MouseButtonReleased>())
+    {
+        if (mouseRel->button == sf::Mouse::Button::Left && m_pressedBtn)
+        {
+            Button* btn = m_pressedBtn;
+            m_pressedBtn = nullptr;
+            btn->handleEvent(event);
+            m_eventConsumed = true;
+
+            if (btn->isClicked())
+            {
+                btn->resetClick();
+                if (btn == &m_backBtn)        onBackClicked();
+                else if (btn == &m_hintBtn)   onHintClicked();
+                else if (btn == &m_undoBtn)   onUndoClicked();
+                else if (btn == &m_replayBtn) onReplayClicked();
+                else if (btn == &m_resetBtn)  onResetClicked();
+                else if (btn == &m_fitBtn)    onFitClicked();
+            }
+            return;
+        }
     }
 
-    // Mouse Wheel Zoom
+    // Mouse hover for buttons
+    if (event.getIf<sf::Event::MouseMoved>())
+    {
+        for (auto* btn : activeBtns)
+        {
+            if (btn) btn->handleEvent(event);
+        }
+    }
+
+    // Mouse Wheel Zoom centered on cursor
     if (auto* wheel = event.getIf<sf::Event::MouseWheelScrolled>())
     {
         sf::Vector2f mpos(static_cast<float>(wheel->position.x), static_cast<float>(wheel->position.y));
@@ -370,45 +503,53 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
             m_canvasView.zoom(factor);
             sf::Vector2f worldAfter = canvasToWorld(sf::Vector2i(wheel->position.x, wheel->position.y));
             m_canvasView.move(worldBefore - worldAfter);
+            m_eventConsumed = true;
+            return;
         }
     }
 
-    // Mouse Press (Pan & Node Click)
+    // Canvas Pan and Node Click
     if (auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>())
     {
         sf::Vector2f pixelPos(static_cast<float>(mouseBtn->position.x), static_cast<float>(mouseBtn->position.y));
         bool inCanvas = m_canvasBounds.contains(pixelPos);
 
-        if (inCanvas && m_fitBtn.bounds.contains(pixelPos))
+        if (inCanvas)
         {
-            // handled by m_fitBtn
-        }
-        else if (mouseBtn->button == sf::Mouse::Button::Middle ||
-                 mouseBtn->button == sf::Mouse::Button::Right ||
-                 (mouseBtn->button == sf::Mouse::Button::Left && m_spaceHeld))
-        {
-            if (inCanvas)
+            if (mouseBtn->button == sf::Mouse::Button::Middle ||
+                mouseBtn->button == sf::Mouse::Button::Right ||
+                (mouseBtn->button == sf::Mouse::Button::Left && m_spaceHeld))
             {
                 m_isPanning = true;
                 m_panStartPixel = mouseBtn->position;
                 m_panOriginCenter = m_canvasView.getCenter();
+                m_eventConsumed = true;
+                return;
             }
-        }
-        else if (mouseBtn->button == sf::Mouse::Button::Left && !m_spaceHeld)
-        {
-            if (m_rootNode && inCanvas)
+            else if (mouseBtn->button == sf::Mouse::Button::Left && !m_spaceHeld)
             {
                 sf::Vector2f worldPos = canvasToWorld(mouseBtn->position);
-                TreeNode* clicked = m_treeRenderer.getNodeAtPosition(m_rootNode, worldPos);
+                TreeNode* clicked = (m_rootNode) ? m_treeRenderer.getNodeAtPosition(m_rootNode, worldPos) : nullptr;
                 if (clicked)
                 {
                     onNodeClicked(clicked);
+                    m_eventConsumed = true;
+                    return;
+                }
+                else
+                {
+                    // Dragging canvas background freely (no clamping)
+                    m_isPanning = true;
+                    m_panStartPixel = mouseBtn->position;
+                    m_panOriginCenter = m_canvasView.getCenter();
+                    m_eventConsumed = true;
+                    return;
                 }
             }
         }
     }
 
-    // Mouse Move (Pan update & Node hover)
+    // Mouse Move (Pan update and Node hover)
     if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
     {
         sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
@@ -419,6 +560,8 @@ void LevelScreenBase::handleEvent(const sf::Event& event)
             float scaleX = m_canvasView.getSize().x / m_canvasBounds.size.x;
             float scaleY = m_canvasView.getSize().y / m_canvasBounds.size.y;
             m_canvasView.setCenter(m_panOriginCenter + sf::Vector2f(delta.x * scaleX, delta.y * scaleY));
+            m_eventConsumed = true;
+            return;
         }
         else if (m_rootNode && m_canvasBounds.contains(mpos))
         {

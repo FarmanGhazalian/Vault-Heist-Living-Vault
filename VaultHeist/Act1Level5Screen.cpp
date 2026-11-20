@@ -56,19 +56,20 @@ void Act1Level5Screen::syncWithState()
     setAlarm(state.alarm, state.alarmCap);
 }
 
-void Act1Level5Screen::onHintClicked()
+std::string Act1Level5Screen::getLevelSpecificHint()
 {
-    std::string hint = m_bridge.getHint();
-    m_engine.showToast(hint, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return m_bridge.getHint();
+}
+
+ILevelLogic* Act1Level5Screen::getLevelLogic()
+{
+    return m_bridge.getLogic();
 }
 
 void Act1Level5Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Vault structure reset to original orientation.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act1Level5Screen::startSwapAnimation()

@@ -84,38 +84,59 @@ void Act2Level5Screen::syncWithState()
     }
 }
 
-void Act2Level5Screen::onHintClicked()
+std::string Act2Level5Screen::getLevelSpecificHint()
 {
     PlayerAction action;
     action.type = CLICK_HINT;
     ActionResult res = m_logic.processAction(action);
-    m_engine.showToast(res.message, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return res.message;
+}
+
+ILevelLogic* Act2Level5Screen::getLevelLogic()
+{
+    return &m_logic;
 }
 
 void Act2Level5Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Boss encounter reset.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
-void Act2Level5Screen::onUndoClicked()
+void Act2Level5Screen::reapplyActionSilently(const PlayerAction& action)
 {
-    m_visitedPath.clear();
-    if (m_rootNode)
+    ActionResult res = m_logic.processAction(action);
+    if (res.correct)
     {
-        std::function<void(TreeNode*)> clearVisited = [&](TreeNode* n) {
-            if (!n) return;
-            n->isVisited = false;
-            clearVisited(n->left);
-            clearVisited(n->right);
-        };
-        clearVisited(m_rootNode);
+        m_visitedPath.push_back(action.nodeA);
+        if (m_rootNode)
+        {
+            std::function<TreeNode*(TreeNode*, int)> findN = [&](TreeNode* curr, int val) -> TreeNode* {
+                if (!curr) return nullptr;
+                if (curr->val == val) return curr;
+                TreeNode* l = findN(curr->left, val);
+                if (l) return l;
+                return findN(curr->right, val);
+            };
+            TreeNode* n = findN(m_rootNode, action.nodeA);
+            if (n) n->isVisited = true;
+        }
+        if (action.nodeA == m_currentTarget)
+        {
+            m_visitedPath.clear();
+            if (m_rootNode)
+            {
+                std::function<void(TreeNode*)> clearVisited = [&](TreeNode* n) {
+                    if (!n) return;
+                    n->isVisited = false;
+                    clearVisited(n->left);
+                    clearVisited(n->right);
+                };
+                clearVisited(m_rootNode);
+            }
+        }
     }
-    m_engine.showToast("Phase path highlights cleared.", TOAST_INFO);
-    m_engine.audio.playClick();
+    syncWithState();
 }
 
 void Act2Level5Screen::onNodeClicked(TreeNode* node)
@@ -131,6 +152,7 @@ void Act2Level5Screen::onNodeClicked(TreeNode* node)
 
     if (res.correct)
     {
+        recordSharedAction(action);
         m_visitedPath.push_back(node->val);
         node->isVisited = true;
         m_engine.audio.playCorrect();

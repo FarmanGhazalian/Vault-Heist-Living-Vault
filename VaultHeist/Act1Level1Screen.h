@@ -20,6 +20,9 @@ protected:
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
     std::string getLevelSpecificHint() override;
+    ILevelLogic* getLevelLogic() override;
+    void resetLevel() override;
+    void syncWithState() override;
     void reapplyActionSilently(const PlayerAction& action) override;
     void reapplyActionAnimated(const PlayerAction& action) override;
 
@@ -38,7 +41,5 @@ private:
     // Hover tooltip info
     TreeNode* m_hoverNode;
 
-    void syncWithState();
-    void resetLevel();
     void drawTooltip(sf::RenderTarget& target, const Theme& theme);
 };

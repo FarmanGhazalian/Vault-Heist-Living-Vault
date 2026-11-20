@@ -25,17 +25,18 @@ public:
 
 protected:
     void onNodeClicked(TreeNode* node) override;
-    void onHintClicked() override;
     void onResetClicked() override;
-    void onUndoClicked() override;
-    void onReplayClicked() override;
     void onCustomDraw(sf::RenderTarget& target) override;
     void onDrawSidePanel(sf::RenderTarget& target, const sf::FloatRect& panelBounds) override;
+    std::string getLevelSpecificHint() override;
+    ILevelLogic* getLevelLogic() override;
+    void resetLevel() override;
+    void syncWithState() override;
+    void reapplyActionSilently(const PlayerAction& action) override;
 
 private:
     int m_levelNum;
     std::unique_ptr<ILevelLogic> m_logic;
-    std::vector<PlayerAction> m_actionHistory;
 
     // Selection for swap
     int m_firstSelectedIdx;
@@ -51,10 +52,7 @@ private:
     // Dynamic heap tree structure
     std::vector<std::unique_ptr<TreeNode>> m_heapTreeNodes;
 
-    void resetLevel();
-    void syncWithState();
     const MaxHeap* getHeap() const;
     void rebuildTreeFromHeap();
     int getNodeHeapIndex(TreeNode* node) const;
-    void recordAction(const PlayerAction& action);
 };

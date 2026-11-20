@@ -20,7 +20,6 @@ void Act1Level2Screen::resetLevel()
     m_slots.clear();
     m_preorder.clear();
     m_inorder.clear();
-    m_actionHistory.clear();
     m_draggedIndex = -1;
     m_hoveredSlotIndex = -1;
     m_shakeTimer = 0.0f;
@@ -141,81 +140,53 @@ void Act1Level2Screen::syncWithState()
     setAlarm(state.alarm, state.alarmCap);
 }
 
-void Act1Level2Screen::onHintClicked()
+std::string Act1Level2Screen::getLevelSpecificHint()
 {
-    std::string hint = m_bridge.getHint();
-    m_engine.showToast(hint, TOAST_HINT);
-    m_engine.audio.playHint();
-    syncWithState();
+    return m_bridge.getHint();
+}
+
+ILevelLogic* Act1Level2Screen::getLevelLogic()
+{
+    return m_bridge.getLogic();
 }
 
 void Act1Level2Screen::onResetClicked()
 {
+    LevelScreenBase::onResetClicked();
     resetLevel();
-    m_engine.showToast("Blueprint skeleton reset.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
-void Act1Level2Screen::recordAction(const PlayerAction& action)
+void Act1Level2Screen::reapplyActionSilently(const PlayerAction& act)
 {
-    m_actionHistory.push_back(action);
-}
+    ActionResult res = m_bridge.processAction(act);
+    syncWithState();
 
-void Act1Level2Screen::onUndoClicked()
-{
-    if (m_actionHistory.empty())
+    if (res.correct)
     {
-        m_engine.showToast("No moves made yet.", TOAST_INFO);
-        return;
-    }
-
-    // Remove the last action
-    std::vector<PlayerAction> saved = m_actionHistory;
-    saved.pop_back();
-
-    // Reset everything from JSON
-    resetLevel();
-
-    // Replay remaining actions silently
-    for (const auto& act : saved)
-    {
-        ActionResult res = m_bridge.processAction(act);
-        syncWithState();
-
-        if (res.correct)
+        // Find matching token and slot, apply placement visually
+        for (auto& tok : m_tokens)
         {
-            m_actionHistory.push_back(act);
-
-            // Find matching token and slot, apply placement visually
-            for (auto& tok : m_tokens)
+            if (tok.val == act.nodeB && !tok.isPlaced)
             {
-                if (tok.val == act.nodeB && !tok.isPlaced)
+                for (auto& slot : m_slots)
                 {
-                    for (auto& slot : m_slots)
+                    if (slot.parentVal == act.nodeA && slot.direction == act.direction && slot.placedVal == -1)
                     {
-                        if (slot.parentVal == act.nodeA && slot.direction == act.direction && slot.placedVal == -1)
-                        {
-                            tok.isPlaced = true;
-                            tok.currPos = slot.pos;
-                            slot.placedVal = tok.val;
+                        tok.isPlaced = true;
+                        tok.currPos = slot.pos;
+                        slot.placedVal = tok.val;
 
-                            TreeSlot leftSlot{ tok.val, 0, slot.pos + sf::Vector2f(-75.0f, 70.0f), -1, true };
-                            TreeSlot rightSlot{ tok.val, 1, slot.pos + sf::Vector2f(75.0f, 70.0f), -1, true };
-                            m_slots.push_back(leftSlot);
-                            m_slots.push_back(rightSlot);
-                            break;
-                        }
+                        TreeSlot leftSlot{ tok.val, 0, slot.pos + sf::Vector2f(-75.0f, 70.0f), -1, true };
+                        TreeSlot rightSlot{ tok.val, 1, slot.pos + sf::Vector2f(75.0f, 70.0f), -1, true };
+                        m_slots.push_back(leftSlot);
+                        m_slots.push_back(rightSlot);
+                        break;
                     }
-                    break;
                 }
+                break;
             }
         }
     }
-
-    m_draggedIndex = -1;
-    m_hoveredSlotIndex = -1;
-    m_engine.showToast("Last placement undone.", TOAST_INFO);
-    m_engine.audio.playClick();
 }
 
 void Act1Level2Screen::handleEvent(const sf::Event& event)
@@ -284,7 +255,7 @@ void Act1Level2Screen::handleEvent(const sf::Event& event)
 
                 if (res.correct)
                 {
-                    recordAction(action);
+                    recordSharedAction(action);
 
                     tok.isPlaced = true;
                     tok.currPos = slot.pos;

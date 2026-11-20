@@ -158,9 +158,9 @@ ActionResult Act3Level3::processAction(const PlayerAction& action)
 		if (state.hintUsed)
 		{
 			result.correct       = false;
-			result.alarmDelta    = 1;
-			result.penaltyPoints = 50;
-			onMistake(1, 50);
+			result.alarmDelta = 2;
+			result.penaltyPoints = 0;
+			onMistake(2, 0);
 
 			if (state.isFull())
 			{
@@ -202,7 +202,7 @@ ActionResult Act3Level3::processAction(const PlayerAction& action)
 			if (action.value == problem)
 			{
 				result.correct       = true;
-				result.alarmDelta    = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 				onValidStep();
 				phase          = 2;
@@ -242,7 +242,7 @@ ActionResult Act3Level3::processAction(const PlayerAction& action)
 			if (action.nodeA == expNode && action.direction == expDir)
 			{
 				result.correct       = true;
-				result.alarmDelta    = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 				avl.applyRotation(action.nodeA, action.direction);
 				onValidStep();

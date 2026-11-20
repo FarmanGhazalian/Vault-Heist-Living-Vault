@@ -120,9 +120,9 @@ ActionResult Act3Level2::processAction(const PlayerAction& action)
 		if (state.hintUsed)
 		{
 			result.correct       = false;
-			result.alarmDelta    = 1;
-			result.penaltyPoints = 50;
-			onMistake(1, 50);
+			result.alarmDelta = 2;
+			result.penaltyPoints = 0;
+			onMistake(2, 0);
 
 			if (state.isFull())
 			{
@@ -161,7 +161,7 @@ ActionResult Act3Level2::processAction(const PlayerAction& action)
 			if (action.nodeA == unbalancedNodeVal)
 			{
 				result.correct       = true;
-				result.alarmDelta    = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 				onValidStep();
 				phase          = 2;
@@ -170,7 +170,7 @@ ActionResult Act3Level2::processAction(const PlayerAction& action)
 			else
 			{
 				result.correct       = false;
-				result.alarmDelta    = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 				onMistake(1, 0);
 
@@ -197,7 +197,7 @@ ActionResult Act3Level2::processAction(const PlayerAction& action)
 			if (action.value == storedProblem)
 			{
 				result.correct       = true;
-				result.alarmDelta    = 1;
+				result.alarmDelta = 2;
 				result.penaltyPoints = 0;
 				onValidStep();
 				state.finished = true;
