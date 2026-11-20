@@ -2,6 +2,7 @@
 #include "CampaignScreen.h"
 #include "InfoScreen.h"
 #include "SettingsScreen.h"
+#include "SandboxScreen.h"
 #include "GameEngine.h"
 #include <cmath>
 #include <algorithm>
@@ -103,7 +104,7 @@ void MainMenuScreen::handleEvent(const sf::Event& event)
 	{
 		engine.audio.playClick();
 		btnSandbox.resetClick();
-		engine.showInfoModal("SANDBOX MODE // LAB ACCESS", "Interactive Tree Construction Sandbox will unlock in Phase 3.\nExperiment freely with Binary Trees, BSTs, AVL, and Heaps.");
+		engine.changeScreen(std::make_unique<SandboxScreen>(engine));
 	}
 
 	if (btnLeaderboard.isClicked())

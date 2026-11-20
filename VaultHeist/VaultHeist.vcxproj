@@ -211,6 +211,7 @@
     <ClCompile Include="LeaderboardManager.cpp" />
     <ClCompile Include="SettingsScreen.cpp" />
     <ClCompile Include="PlayerNameScreen.cpp" />
+    <ClCompile Include="SandboxScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -278,6 +279,7 @@
     <ClInclude Include="LeaderboardManager.h" />
     <ClInclude Include="SettingsScreen.h" />
     <ClInclude Include="PlayerNameScreen.h" />
+    <ClInclude Include="SandboxScreen.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Act1Level1.json" />
