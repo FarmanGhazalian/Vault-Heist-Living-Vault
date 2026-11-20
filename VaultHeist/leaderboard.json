@@ -6,8 +6,20 @@
         "waves_or_stars": "Wave 3"
     },
     {
+        "mode": "LEVEL 1.4: WHERE ESCAPE ROUTES MEET",
+        "name": "PlayerZakir",
+        "score": 960,
+        "waves_or_stars": "3 Stars"
+    },
+    {
         "mode": "LEVEL 1.2: DECODE THE BLUEPRINT",
         "name": "PlayerFarman",
+        "score": 950,
+        "waves_or_stars": "3 Stars"
+    },
+    {
+        "mode": "LEVEL 1.2: DECODE THE BLUEPRINT",
+        "name": "PlayerZakir",
         "score": 950,
         "waves_or_stars": "3 Stars"
     },
@@ -24,9 +36,9 @@
         "waves_or_stars": "3 Stars"
     },
     {
-        "mode": "LEVEL 1.1: VAULT PATROL",
-        "name": "PlayerFarman",
-        "score": 910,
+        "mode": "LEVEL 1.3: ALARM SPREADS UPWARD",
+        "name": "PlayerZakir",
+        "score": 940,
         "waves_or_stars": "3 Stars"
     },
     {
