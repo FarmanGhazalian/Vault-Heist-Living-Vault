@@ -1,5 +1,11 @@
 [
     {
+        "mode": "Endless",
+        "name": "PlayerFarman",
+        "score": 2100,
+        "waves_or_stars": "Wave 3"
+    },
+    {
         "mode": "LEVEL 1.2: DECODE THE BLUEPRINT",
         "name": "PlayerFarman",
         "score": 950,
