@@ -1,13 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Source Files\backend">
+      <UniqueIdentifier>{03cd15f5-d710-44bd-94d2-3fbe26bb75b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gui">
+      <UniqueIdentifier>{e5a1d903-62a7-42b5-9ddc-0e626aab7c66}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\backend">
+      <UniqueIdentifier>{c32663f7-affa-462b-b124-0dde9e5cce16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gui">
+      <UniqueIdentifier>{e333d928-7e0c-477f-abc4-f9cace6c9e82}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
@@ -15,257 +27,418 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\backend\LevelGenerator.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Act1Level1.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Act1Level2.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Act1Level3.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Act1Level4.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Act1Level5.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BinaryTree.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\BinaryTree.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="DataStructure.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\DataStructure.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="ScoreSystem.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\ScoreSystem.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level1.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\GameEngine.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level2.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\Theme.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level3.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\UIKit.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level4.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\AudioManager.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level5.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\PlaceholderScreen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\LoaderScreen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Theme.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\MainMenuScreen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="UIKit.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\CampaignScreen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="AudioManager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\InfoScreen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="PlaceholderScreen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\BST.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="LoaderScreen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act2Level1.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="MainMenuScreen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act2Level2.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="CampaignScreen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act2Level3.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="InfoScreen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act2Level4.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="BST.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act2Level5.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="EventLog.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act3Level1.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="TreeRenderer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act3Level2.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="LevelScreenBase.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act3Level3.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="LevelBridge.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act3Level4.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level1Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act3Level5.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level2Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\AVL.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level3Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\MaxHeap.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level4Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act4Level1.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act1Level5Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act4Level2.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act2Level1Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act4Level3.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act2Level2Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act4Level4.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act2Level3Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\Act4Level5.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act2Level4Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\EventLog.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act2Level5Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\TreeRenderer.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="SaveSystem.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\LevelScreenBase.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act3Level1Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\backend\LevelBridge.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
-    <ClCompile Include="Act3Level2Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\Act1Level1Screen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act3Level3Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\Act1Level2Screen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act3Level4Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\Act1Level3Screen.cpp">
+      <Filter>Source Files\gui</Filter>
     </ClCompile>
-    <ClCompile Include="Act3Level5Screen.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\gui\Act1Level4Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act1Level5Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act2Level1Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act2Level2Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act2Level3Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act2Level4Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act2Level5Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\SaveSystem.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act3Level1Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act3Level2Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act3Level3Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act3Level4Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act3Level5Screen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\Act4LevelScreen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\SettingsManager.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\LeaderboardManager.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\SettingsScreen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\PlayerNameScreen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\SandboxScreen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gui\EndlessScreen.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Validator.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\TestSuite.cpp">
+      <Filter>Source Files\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\Benchmark.cpp">
+      <Filter>Source Files\backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BST.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\BST.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="TreeNode.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act2Level1.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="BinaryTree.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act2Level2.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="DataStructure.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act2Level3.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="ScoreSystem.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act2Level4.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="ILevelLogic.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act2Level5.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1level1.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\AVL.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerAction.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\MaxHeap.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level2.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act4Level1.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level3.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act4Level2.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level4.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act4Level3.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level5.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act4Level4.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act4Level5.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act3Level1.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Theme.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act3Level2.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="UIKit.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act3Level3.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="AudioManager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act3Level4.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="PlaceholderScreen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act3Level5.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="LoaderScreen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\Act4LevelScreen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="MainMenuScreen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act1level1.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="CampaignScreen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act1Level2.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="InfoScreen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act1Level3.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="EventLog.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act1Level4.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="TreeRenderer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\Act1Level5.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="LevelScreenBase.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\BinaryTree.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="LevelBridge.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\DataStructure.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level1Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\ILevelLogic.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level2Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\PlayerAction.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level3Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\ScoreSystem.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level4Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\TreeNode.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act1Level5Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\Screen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act2Level1Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\GameEngine.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act2Level2Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\Theme.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act2Level3Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\UIKit.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act2Level4Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\AudioManager.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act2Level5Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\PlaceholderScreen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="SaveSystem.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\LoaderScreen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act3Level1Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\MainMenuScreen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act3Level2Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\CampaignScreen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act3Level3Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\InfoScreen.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-    <ClInclude Include="Act3Level4Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\backend\EventLog.h">
+      <Filter>Header Files\backend</Filter>
     </ClInclude>
-    <ClInclude Include="Act3Level5Screen.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gui\TreeRenderer.h">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Act1Level1.json" />
-    <None Include="Act1Level2.json" />
-    <None Include="Act1Level3.json" />
-    <None Include="Act1Level4.json" />
-    <None Include="Act1Level5.json" />
+    <ClInclude Include="include\gui\LevelScreenBase.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\LevelBridge.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act1Level1Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act1Level2Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act1Level3Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act1Level4Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act1Level5Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act2Level1Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act2Level2Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act2Level3Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act2Level4Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act2Level5Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\SaveSystem.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act3Level1Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act3Level2Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act3Level3Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act3Level4Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\Act3Level5Screen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\AnimationController.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\SettingsManager.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\LeaderboardManager.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\SettingsScreen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\PlayerNameScreen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\SandboxScreen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui\EndlessScreen.h">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\Validator.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\TestSuite.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="include\backend\Benchmark.h">
+      <Filter>Header Files\backend</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

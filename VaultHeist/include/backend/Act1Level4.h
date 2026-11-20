@@ -1,0 +1,80 @@
+#pragma once
+#include <fstream>
+#include <iostream>
+#include <string>
+#include"nlohmann/json.hpp"
+#include"backend/ILevelLogic.h"
+#include "backend/PlayerAction.h"
+#include"backend/BinaryTree.h"
+
+using namespace std;
+using json = nlohmann::json;
+
+
+
+struct L4_data
+{
+    string levelId = "";
+    string levelName = "";
+    int optimalSteps = 0;
+    int totalNodes;
+    int* preArr;
+    int* inArr;
+    int roomA = -1;
+    int roomB = -1;
+	void generate();
+};
+
+
+
+
+class Level4DataLoader
+{
+public:
+    L4_data data;
+
+	bool loadJSON(const string& filePath);
+};
+
+
+
+
+class Act1Level4 : public ILevelLogic {
+private:
+	Level4DataLoader loader;
+	BinaryTree solTree;
+
+	int roomA = -1;
+	int roomB = -1;
+	int actualLCA = -1;
+
+	int* expectedPath;
+	int pathCount = 0;
+	int currentPathIndex = 0;
+	int expectedPathLength = 0;
+
+	bool lcaFound = false;
+
+public:
+	string getHint();
+	Act1Level4() : ILevelLogic(loader.data.optimalSteps)
+	{
+		expectedPath = nullptr;
+	}
+
+	void onValidStep() override;
+	void onMistake(int extraAlarm = 1, int penaltyPoints = 0) override;
+	void onHintRequested() override;
+
+	bool initLevel(const std::string& jsonPath);
+
+	ActionResult processAction(const PlayerAction& action);
+
+	const BinaryTree& getTree() const { return solTree; }
+	int getRoomA() const { return roomA; }
+	int getRoomB() const { return roomB; }
+	bool isLCAFound() const { return lcaFound; }
+	int getCurrentPathIndex() const { return currentPathIndex; }
+	int getPathCount() const { return pathCount; }
+};
+
