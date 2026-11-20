@@ -2,5 +2,12 @@
   "levelId": "3.1",
   "levelName": "Read the Badges",
   "optimalSteps": 3,
-  "keys": [10, 20, 30, 40, 50]
+  "seed": 42,
+  "generator": {
+    "type": "act3_avl",
+    "targetCase": "badges",
+    "count": 5,
+    "minValue": 10,
+    "maxValue": 80
+  }
 }

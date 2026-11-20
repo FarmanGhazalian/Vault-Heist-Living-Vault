@@ -2,6 +2,13 @@
   "levelId": "2.5",
   "levelName": "The Lazy Architect",
   "optimalSteps": 9,
-  "keys": [10, 20, 30, 40, 50, 60, 70],
-  "targets": [30, 60]
+  "seed": 42,
+  "generator": {
+    "type": "act2_bst",
+    "count": 7,
+    "minValue": 10,
+    "maxValue": 90,
+    "shape": "skewed",
+    "targetCount": 2
+  }
 }

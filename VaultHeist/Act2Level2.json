@@ -2,6 +2,12 @@
   "levelId": "2.2",
   "levelName": "Stash Loot",
   "optimalSteps": 10,
-  "initialKeys": [50, 30, 70, 20, 80],
-  "insertKeys": [40, 65, 10]
+  "seed": 42,
+  "generator": {
+    "type": "act2_bst",
+    "initialCount": 5,
+    "insertCount": 3,
+    "minValue": 10,
+    "maxValue": 90
+  }
 }

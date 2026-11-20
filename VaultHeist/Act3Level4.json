@@ -2,6 +2,13 @@
   "levelId": "3.4",
   "levelName": "Predict the Rotation",
   "optimalSteps": 3,
-  "keys": [50, 30, 70, 20, 40],
-  "insertKeys": [10, 35, 60]
+  "seed": 42,
+  "generator": {
+    "type": "act3_avl",
+    "targetCase": "insert_predict",
+    "initialCount": 5,
+    "insertCount": 3,
+    "minValue": 10,
+    "maxValue": 80
+  }
 }

@@ -1042,6 +1042,13 @@ void SandboxScreen::draw(sf::RenderTarget& target)
     btnClear.draw(target, engine.theme);
     if (m_mode == SB_AVL) btnAutoBalance.draw(target, engine.theme);
 
+    // Current Structure Seed Display
+    std::string seedStr = "SEED: " + std::to_string(m_currentSeed);
+    sf::Text tSeed(engine.theme.fontMono, seedStr, 13);
+    tSeed.setFillColor(Theme::TextMuted);
+    tSeed.setPosition(sf::Vector2f(windowSize.x - 420.0f, 20.0f));
+    target.draw(tSeed);
+
     // Canvas Frame
     engine.theme.drawPanel(target, m_canvasBounds, Theme::BorderCyan, 1.2f);
     engine.theme.drawGlowOutline(target, m_canvasBounds, Theme::BorderCyan, 0.5f);

@@ -1,5 +1,6 @@
 #include<iostream>
 #include"Act1Level2.h"
+#include"LevelGenerator.h"
 using namespace std;
 
 void L2_data::generate()
@@ -18,6 +19,7 @@ bool Level2DataLoader::loadJSON(const string& filePath)
 
     json j;
     file >> j;
+    LevelGenerator::processJson(j);
 
     // Metadata Parse
     if (j.contains("levelId"))

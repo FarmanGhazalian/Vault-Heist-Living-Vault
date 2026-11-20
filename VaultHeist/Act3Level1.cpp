@@ -1,4 +1,5 @@
 #include "Act3Level1.h"
+#include "LevelGenerator.h"
 
 bool Level3_1DataLoader::loadJSON(const string& filePath)
 {
@@ -16,6 +17,7 @@ bool Level3_1DataLoader::loadJSON(const string& filePath)
 	json j;
 	file >> j;
 	file.close();
+	LevelGenerator::processJson(j);
 
 	if (j["levelId"].is_string())
 	{

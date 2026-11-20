@@ -641,8 +641,15 @@ void EndlessScreen::draw(sf::RenderTarget& target)
     std::string alarmStr = "ALARM: " + std::to_string(m_currentAlarm) + " / " + std::to_string(m_config.alarmCapacity);
     sf::Text tAlarm(engine.theme.fontMono, alarmStr, 15);
     tAlarm.setFillColor(m_currentAlarm >= (m_config.alarmCapacity - 2) ? Theme::CrimsonAlarm : Theme::BorderCyan);
-    tAlarm.setPosition(sf::Vector2f(windowSize.x - 240.0f, 18.0f));
+    tAlarm.setPosition(sf::Vector2f(windowSize.x - 360.0f, 18.0f));
     target.draw(tAlarm);
+
+    // Live Run Seed
+    std::string seedStr = "SEED: " + std::to_string(m_masterSeed);
+    sf::Text tSeed(engine.theme.fontMono, seedStr, 14);
+    tSeed.setFillColor(Theme::TextMuted);
+    tSeed.setPosition(sf::Vector2f(windowSize.x - 170.0f, 19.0f));
+    target.draw(tSeed);
 
     // Mission Objective Subtitle
     sf::Text tMission(engine.theme.fontUI, m_missionText, 14);

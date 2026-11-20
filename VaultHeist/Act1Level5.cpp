@@ -1,5 +1,6 @@
 #include<iostream>
 #include"Act1Level5.h"
+#include"LevelGenerator.h"
 using namespace std;
 
 
@@ -20,6 +21,7 @@ bool Level5DataLoader::loadJSON(const string& filePath)
 
 	json j;
 	file >> j;
+	LevelGenerator::processJson(j);
 
     if (j.contains("levelId"))
     {

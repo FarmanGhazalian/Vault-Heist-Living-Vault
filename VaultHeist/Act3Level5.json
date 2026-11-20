@@ -3,5 +3,13 @@
   "levelName": "K-th Smallest Treasure",
   "optimalSteps": 3,
   "k": 3,
-  "keys": [20, 10, 30, 5, 15]
+  "seed": 42,
+  "generator": {
+    "type": "act3_avl",
+    "targetCase": "kth",
+    "count": 5,
+    "k": 3,
+    "minValue": 10,
+    "maxValue": 80
+  }
 }

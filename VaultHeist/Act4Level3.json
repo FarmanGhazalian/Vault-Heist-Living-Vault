@@ -2,5 +2,12 @@
   "levelId": "4.3",
   "levelName": "Extract the Greatest Treasure",
   "optimalSteps": 8,
-  "values": [90, 80, 70, 40, 30]
+  "seed": 42,
+  "generator": {
+    "type": "act4_heap",
+    "condition": "already_heap",
+    "count": 5,
+    "minValue": 20,
+    "maxValue": 99
+  }
 }

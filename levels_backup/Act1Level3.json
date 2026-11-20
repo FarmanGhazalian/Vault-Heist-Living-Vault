@@ -1,0 +1,8 @@
+{
+  "levelId": "1.3",
+  "levelName": "Alarm Spreads Upward",
+  "optimalSteps": 6,
+  "totalNodes": 5,
+  "preorderSequence": [ 1, 2, 4, 5, 3 ],
+  "inorderSequence": [ 4, 2, 5, 1, 3 ]
+}

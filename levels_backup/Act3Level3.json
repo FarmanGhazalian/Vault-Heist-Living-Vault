@@ -1,0 +1,6 @@
+{
+  "levelId": "3.3",
+  "levelName": "Identify then Rotate",
+  "optimalSteps": 2,
+  "keys": [10, 20, 30]
+}

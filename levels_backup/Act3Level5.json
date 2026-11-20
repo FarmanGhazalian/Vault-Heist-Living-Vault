@@ -1,0 +1,7 @@
+{
+  "levelId": "3.5",
+  "levelName": "K-th Smallest Treasure",
+  "optimalSteps": 3,
+  "k": 3,
+  "keys": [20, 10, 30, 5, 15]
+}

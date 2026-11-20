@@ -1,0 +1,7 @@
+{
+  "levelId": "4.4",
+  "levelName": "Race Against the Guards",
+  "optimalSteps": 8,
+  "timeLimit": 60,
+  "values": [90, 80, 70, 40, 30]
+}

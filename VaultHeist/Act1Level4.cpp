@@ -1,5 +1,6 @@
 #include<iostream>
 #include"Act1Level4.h"
+#include"LevelGenerator.h"
 
 void L4_data::generate()
 {
@@ -17,6 +18,7 @@ bool Level4DataLoader::loadJSON(const string& filePath)
 
 	json j;
 	file >> j;
+	LevelGenerator::processJson(j);
 
 	if (j.contains("levelId"))
 	{

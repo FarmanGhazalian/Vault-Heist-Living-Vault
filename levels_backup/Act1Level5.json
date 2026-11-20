@@ -1,0 +1,8 @@
+{
+  "levelId": "1.5",
+  "title": "Mirror the Vault",
+  "totalNodes": 7,
+  "optimalSteps": 3,
+  "preorderSequence": [ 1, 2, 4, 5, 3, 6, 7 ],
+  "inorderSequence": [ 4, 2, 5, 1, 6, 3, 7 ]
+}

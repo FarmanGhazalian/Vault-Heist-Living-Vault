@@ -1,6 +1,7 @@
 #include<iostream>
 #include"Act1Level1.h"
 #include"nlohmann/json.hpp"
+#include"LevelGenerator.h"
 
 
 bool Level1DataLoader::getTotalNodes(const string& filePath)
@@ -13,6 +14,7 @@ bool Level1DataLoader::getTotalNodes(const string& filePath)
     json data;
     file >> data;
     file.close();
+    LevelGenerator::processJson(data);
     totalNodes = data["totalNodes"];
     return true;
 }
@@ -28,6 +30,7 @@ bool Level1DataLoader::loadJSON(const string& filePath)
     json data;
     file >> data;
     file.close();
+    LevelGenerator::processJson(data);
 
     // 3. Metadata Extract karein
     rootId = data["rootId"];

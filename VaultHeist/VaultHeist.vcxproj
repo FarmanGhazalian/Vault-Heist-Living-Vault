@@ -150,6 +150,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="LevelGenerator.cpp" />
     <ClCompile Include="Act1Level1.cpp" />
     <ClCompile Include="Act1Level2.cpp" />
     <ClCompile Include="Act1Level3.cpp" />

@@ -2,5 +2,12 @@
   "levelId": "4.1",
   "levelName": "Activate the Vault",
   "optimalSteps": 4,
-  "values": [12, 35, 18, 42, 20, 25, 30]
+  "seed": 42,
+  "generator": {
+    "type": "act4_heap",
+    "condition": "random",
+    "count": 7,
+    "minValue": 10,
+    "maxValue": 50
+  }
 }

@@ -1,0 +1,7 @@
+{
+  "levelId": "2.5",
+  "levelName": "The Lazy Architect",
+  "optimalSteps": 9,
+  "keys": [10, 20, 30, 40, 50, 60, 70],
+  "targets": [30, 60]
+}

@@ -1,0 +1,7 @@
+{
+  "levelId": "2.2",
+  "levelName": "Stash Loot",
+  "optimalSteps": 10,
+  "initialKeys": [50, 30, 70, 20, 80],
+  "insertKeys": [40, 65, 10]
+}

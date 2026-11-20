@@ -4,5 +4,11 @@
   "optimalSteps": 4,
   "lo": 25,
   "hi": 65,
-  "keys": [50, 30, 70, 20, 40, 60, 80]
+  "seed": 42,
+  "generator": {
+    "type": "act2_bst",
+    "count": 7,
+    "minValue": 10,
+    "maxValue": 90
+  }
 }

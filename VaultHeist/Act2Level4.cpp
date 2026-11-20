@@ -1,4 +1,5 @@
 #include "Act2Level4.h"
+#include "LevelGenerator.h"
 
 bool Level2_4DataLoader::loadJSON(const string& filePath)
 {
@@ -16,6 +17,7 @@ bool Level2_4DataLoader::loadJSON(const string& filePath)
 	json j;
 	file >> j;
 	file.close();
+	LevelGenerator::processJson(j);
 
 	if (j["levelId"].is_string())
 	{
