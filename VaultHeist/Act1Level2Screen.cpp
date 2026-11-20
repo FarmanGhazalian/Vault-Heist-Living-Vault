@@ -191,13 +191,17 @@ void Act1Level2Screen::reapplyActionSilently(const PlayerAction& act)
 
 void Act1Level2Screen::handleEvent(const sf::Event& event)
 {
-    LevelScreenBase::handleEvent(event);
-
+    // Resize always passes through
     if (auto* resized = event.getIf<sf::Event::Resized>())
     {
+        LevelScreenBase::handleEvent(event);
         layoutTrayAndSlots(resized->size.x, resized->size.y);
+        return;
     }
 
+    // --- Token drag intercept: check BEFORE base handler to prevent canvas pan ---
+
+    // Mouse press: if a token is hit, start drag and skip base handler
     if (auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>())
     {
         if (mouseBtn->button == sf::Mouse::Button::Left && !m_bridge.isFinished())
@@ -214,24 +218,33 @@ void Act1Level2Screen::handleEvent(const sf::Event& event)
                     {
                         m_draggedIndex = static_cast<int>(i);
                         m_tokens[i].isDragging = true;
+                        m_isPanning = false;
                         m_engine.audio.playClick();
-                        break;
+                        return; // consume event, do not call base handler
                     }
                 }
             }
         }
+        // No token hit, let base handler deal with it (panning, buttons, etc.)
+        LevelScreenBase::handleEvent(event);
+        return;
     }
 
+    // Mouse move: if dragging a token, update token pos and skip base panning
     if (auto* mouseMove = event.getIf<sf::Event::MouseMoved>())
     {
-        sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
         if (m_draggedIndex != -1)
         {
+            sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
             m_tokens[m_draggedIndex].currPos = mpos;
             m_hoveredSlotIndex = getSlotAtPosition(mpos);
+            return; // consume, no panning
         }
+        LevelScreenBase::handleEvent(event);
+        return;
     }
 
+    // Mouse release: if dropping a token, handle drop and skip base handler
     if (auto* mouseRelease = event.getIf<sf::Event::MouseButtonReleased>())
     {
         if (mouseRelease->button == sf::Mouse::Button::Left && m_draggedIndex != -1)
@@ -261,7 +274,6 @@ void Act1Level2Screen::handleEvent(const sf::Event& event)
                     tok.currPos = slot.pos;
                     slot.placedVal = tok.val;
 
-                    // Spawn child slots
                     TreeSlot leftSlot{ tok.val, 0, slot.pos + sf::Vector2f(-75.0f, 70.0f), -1, true };
                     TreeSlot rightSlot{ tok.val, 1, slot.pos + sf::Vector2f(75.0f, 70.0f), -1, true };
                     m_slots.push_back(leftSlot);
@@ -313,8 +325,15 @@ void Act1Level2Screen::handleEvent(const sf::Event& event)
 
             m_draggedIndex = -1;
             m_hoveredSlotIndex = -1;
+            return; // consume, do not let base handler clear pan state
         }
+        // Not dropping a token, let base handler deal with it
+        LevelScreenBase::handleEvent(event);
+        return;
     }
+
+    // All other events (keyboard, scroll, etc.) go to base handler
+    LevelScreenBase::handleEvent(event);
 }
 
 void Act1Level2Screen::update(float dt)
