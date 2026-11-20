@@ -1,0 +1,132 @@
+Starting TestSuite execution...
+
+=== BinaryTree ===
+[PASS] Empty tree root is null
+[PASS] Empty tree iterative traversals return null
+[PASS] Empty tree height == 0
+[PASS] Empty tree Validator check
+[PASS] Single node preorder rec == iter
+[PASS] Single node inorder rec == iter
+[PASS] Single node postorder rec == iter
+[PASS] Single node levelOrder
+[PASS] Single node height == 1
+[PASS] Single node diameter
+[PASS] Single node Validator check
+[PASS] Left-skewed preorder rec == iter
+[PASS] Left-skewed inorder rec == iter
+[PASS] Left-skewed postorder rec == iter
+[PASS] Skewed tree height check
+[PASS] Left-skewed Validator check
+[PASS] buildFromPreIn valid structure
+[PASS] buildFromPosIn valid structure
+[PASS] Reconstruction round trip: pre/in vs post/in are identical
+[PASS] Full tree height == 3
+[PASS] Full tree diameter check
+[PASS] LCA(4, 5) == 2
+[PASS] LCA(4, 7) == 1
+[PASS] pathTo(5) correct path
+[PASS] Mirrored tree differs from original
+[PASS] Double mirrored tree equals original
+[PASS] Symmetric tree returns true
+[PASS] Asymmetric tree returns false
+
+=== BST ===
+[PASS] BST insert 50
+[PASS] BST valid after insert 50
+[PASS] BST insert 30
+[PASS] BST property holds after inserting 30
+[PASS] BST insert 70
+[PASS] BST property holds after inserting 70
+[PASS] BST insert 20
+[PASS] BST property holds after inserting 20
+[PASS] BST insert 40
+[PASS] BST property holds after inserting 40
+[PASS] BST insert 60
+[PASS] BST property holds after inserting 60
+[PASS] BST insert 80
+[PASS] BST property holds after inserting 80
+[PASS] BST duplicate rejected (50)
+[PASS] BST duplicate rejected (20)
+[PASS] BST search found key 40
+[PASS] BST search not found key 999
+[PASS] BST findMin == 20
+[PASS] BST findMax == 80
+[PASS] BST inorderSuccessor(50) == 60
+[PASS] BST predecessor(50) == 40
+[PASS] BST rangeQuery [25, 65] count == 4 (30, 40, 50, 60)
+[PASS] BST empty rangeQuery [100, 200] count == 0
+[PASS] BST full rangeQuery [0, 100] count == 7
+[PASS] BST 1st smallest == 20
+[PASS] BST 4th smallest == 50
+[PASS] BST delete missing key returns false
+[PASS] BST deleteCase(20) identified as leaf (case 0)
+[PASS] BST delete leaf (20)
+[PASS] BST valid after leaf delete
+[PASS] BST deleteCase(30) identified as one child (case 1)
+[PASS] BST delete node with one child (30)
+[PASS] BST valid after one child delete
+[PASS] BST deleteCase(70) identified as two children (case 2)
+[PASS] BST delete node with two children (70)
+[PASS] BST valid after two children delete
+[PASS] BST delete root (50)
+[PASS] BST valid after root delete
+
+=== AVLTree ===
+[PASS] LL rotation root == 20
+[PASS] LL rotation children (10, 30)
+[PASS] LL rotation Validator::isAVL passed
+[PASS] RR rotation root == 20
+[PASS] RR rotation children (10, 30)
+[PASS] RR rotation Validator::isAVL passed
+[PASS] LR rotation root == 20
+[PASS] LR rotation children (10, 30)
+[PASS] LR rotation Validator::isAVL passed
+[PASS] RL rotation root == 20
+[PASS] RL rotation children (10, 30)
+[PASS] RL rotation Validator::isAVL passed
+[PASS] Deleted key 40
+[PASS] AVL balanced after deletion causing rotation (heavy child BF=0)
+[PASS] AVL isBalanced maintained across 200 random operations
+[PASS] AVL stored heights match recomputed heights
+[PASS] AVL stored sizes match recomputed sizes
+[PASS] AVL findKth agrees with sorted reference array
+[PASS] Empty AVL tree root is null
+[PASS] Empty AVL is valid
+[PASS] Single node inserted
+[PASS] Single node root == 10
+[PASS] Single node AVL valid
+[PASS] Duplicate key 10 rejected
+
+=== MaxHeap ===
+[PASS] Empty buildMaxHeap isMaxHeap == true
+[PASS] Single element buildMaxHeap
+[PASS] Duplicates buildMaxHeap isMaxHeap == true
+[PASS] Already-a-heap buildMaxHeap isMaxHeap == true
+[PASS] Reverse-sorted buildMaxHeap isMaxHeap == true
+[PASS] Random buildMaxHeap isMaxHeap == true
+[PASS] Heap property holds after each incremental insert & siftUp
+[PASS] extractMax returned 50
+[PASS] Remaining active heap is still valid after 1st extractMax
+[PASS] extractMax returned 40
+[PASS] Remaining active heap is still valid after 2nd extractMax
+[PASS] extractMax from empty heap handled safely (returns -1)
+[PASS] heapSort: Empty array
+[PASS] heapSort: Single element
+[PASS] heapSort: Duplicates
+[PASS] heapSort: Negatives included
+[PASS] heapSort: Already sorted
+[PASS] heapSort: Reverse sorted
+[PASS] heapSort: Random elements
+
+=== Save and load ===
+[PASS] Empty tree serialize/deserialize round trip
+[PASS] Single node serialize/deserialize round trip
+[PASS] Skewed tree serialize/deserialize preserves structure
+[PASS] Random tree serialize/deserialize matches original structure exactly
+[PASS] Heap active size & count preserved
+[PASS] Heap active region round trip is valid
+[PASS] Loaded AVL tree passes Validator after updateHeights & updateSizes
+[PASS] Loaded AVL root height == 2
+[PASS] Loaded AVL root size == 3
+
+Tests: 119 passed, 0 failed.
