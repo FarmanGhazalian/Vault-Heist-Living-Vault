@@ -298,6 +298,17 @@ ToastManager::ToastManager()
 
 void ToastManager::addToast(const std::string& message, int type)
 {
+	// Deduplicate: skip if the most recent toast has the same message and was just added
+	if (!toasts.empty())
+	{
+		const Toast& last = toasts.back();
+		float elapsed = last.totalTime - last.timeRemaining;
+		if (last.message == message && last.type == type && elapsed < 0.15f)
+		{
+			return; // duplicate within same frame / rapid double-fire
+		}
+	}
+
 	Toast t;
 	t.message = message;
 	t.type = type;

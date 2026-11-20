@@ -135,17 +135,24 @@ void TreeRenderer::drawNodeTooltip(sf::RenderTarget& target, const Theme& theme,
     float boxW = 130.0f;
     float boxH = hideHeight ? 48.0f : 64.0f;
 
-    // Keep tooltip inside target window
-    sf::Vector2f targetSize(static_cast<float>(target.getSize().x), static_cast<float>(target.getSize().y));
-    if (pos.x + boxW > targetSize.x - 10.0f)
+    // Keep tooltip inside the current view (works correctly after pan/zoom)
+    const sf::View& curView = target.getView();
+    sf::Vector2f viewCenter = curView.getCenter();
+    sf::Vector2f viewSize = curView.getSize();
+    float viewLeft = viewCenter.x - viewSize.x * 0.5f;
+    float viewTop = viewCenter.y - viewSize.y * 0.5f;
+    float viewRight = viewCenter.x + viewSize.x * 0.5f;
+    float viewBottom = viewCenter.y + viewSize.y * 0.5f;
+
+    if (pos.x + boxW > viewRight - 10.0f)
     {
         pos.x = hoverNode->position.x - boxW - Theme::NodeRadius - 14.0f;
     }
-    if (pos.y + boxH > targetSize.y - 10.0f)
+    if (pos.y + boxH > viewBottom - 10.0f)
     {
-        pos.y = targetSize.y - boxH - 10.0f;
+        pos.y = viewBottom - boxH - 10.0f;
     }
-    if (pos.y < 10.0f) pos.y = 10.0f;
+    if (pos.y < viewTop + 10.0f) pos.y = viewTop + 10.0f;
 
     sf::RectangleShape box(sf::Vector2f(boxW, boxH));
     box.setPosition(pos);

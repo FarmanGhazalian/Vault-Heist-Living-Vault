@@ -130,7 +130,7 @@ void Act2Level1Screen::handleEvent(const sf::Event& event)
         sf::Vector2f mpos(static_cast<float>(mouseMove->position.x), static_cast<float>(mouseMove->position.y));
         if (m_rootNode && m_canvasBounds.contains(mpos))
         {
-            m_hoverNode = m_treeRenderer.getNodeAtPosition(m_rootNode, mpos);
+            m_hoverNode = m_treeRenderer.getNodeAtPosition(m_rootNode, canvasToWorld(mouseMove->position));
         }
     }
 }

@@ -1232,6 +1232,8 @@ void SandboxScreen::draw(sf::RenderTarget& target)
     // Hover Tooltip with Key, Height (leaf=0), Balance Factor
     if (m_hoveredNode && m_canvasBounds.contains(sf::Vector2f(static_cast<float>(sf::Mouse::getPosition(engine.window).x), static_cast<float>(sf::Mouse::getPosition(engine.window).y))))
     {
+        target.setView(canvasView);
         TreeRenderer::drawNodeTooltip(target, engine.theme, m_root, m_hoveredNode);
+        target.setView(originalView);
     }
 }
