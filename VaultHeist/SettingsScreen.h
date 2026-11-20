@@ -21,6 +21,12 @@ private:
 
     Button btnResetProgress;
 
+    Button btnBenchmark;
+    Button btnTestSuite;
+
+    bool m_benchmarkRunning = false;
+    bool m_testsRunning = false;
+
     void updateLayout(float w, float h);
     void updateSpeedButtons();
 

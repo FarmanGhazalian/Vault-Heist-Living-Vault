@@ -3,8 +3,11 @@
 #include "GameEngine.h"
 #include "SettingsManager.h"
 #include "AnimationController.h"
+#include "Benchmark.h"
+#include "TestSuite.h"
 #include <cmath>
 #include <algorithm>
+#include <thread>
 
 SettingsScreen::SettingsScreen(GameEngine& gameEngine)
     : engine(gameEngine),
@@ -15,7 +18,9 @@ SettingsScreen::SettingsScreen(GameEngine& gameEngine)
       btnSpeed10("1.0x", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(70.0f, 38.0f)), BTN_PRIMARY),
       btnSpeed15("1.5x", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(70.0f, 38.0f)), BTN_SECONDARY),
       btnSpeed20("2.0x", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(70.0f, 38.0f)), BTN_SECONDARY),
-      btnResetProgress("RESET CAMPAIGN PROGRESS", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(260.0f, 42.0f)), BTN_DANGER)
+      btnResetProgress("RESET CAMPAIGN PROGRESS", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(260.0f, 42.0f)), BTN_DANGER),
+      btnBenchmark("RUN BENCHMARK", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(170.0f, 40.0f)), BTN_SECONDARY),
+      btnTestSuite("RUN TEST CASES", sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(170.0f, 40.0f)), BTN_SECONDARY)
 {
     btnAudioToggle.label = engine.audio.isMuted() ? "AUDIO: MUTED" : "AUDIO: ON";
     updateSpeedButtons();
@@ -57,7 +62,16 @@ void SettingsScreen::updateLayout(float w, float h)
 
     // Centered Reset Progress Button
     float rstW = 260.0f;
-    btnResetProgress.bounds = sf::FloatRect(sf::Vector2f(std::round(cx - rstW * 0.5f), spY + 110.0f), sf::Vector2f(rstW, 42.0f));
+    btnResetProgress.bounds = sf::FloatRect(sf::Vector2f(std::round(cx - rstW * 0.5f), spY + 95.0f), sf::Vector2f(rstW, 38.0f));
+
+    // Centered Diagnostics Row (RUN BENCHMARK & RUN TEST CASES)
+    float diagW = 175.0f;
+    float diagSpacing = 20.0f;
+    float diagTotalW = 2.0f * diagW + diagSpacing;
+    float diagStartX = std::round(cx - diagTotalW * 0.5f);
+    float diagY = spY + 185.0f;
+    btnBenchmark.bounds = sf::FloatRect(sf::Vector2f(diagStartX, diagY), sf::Vector2f(diagW, 40.0f));
+    btnTestSuite.bounds = sf::FloatRect(sf::Vector2f(diagStartX + diagW + diagSpacing, diagY), sf::Vector2f(diagW, 40.0f));
 }
 
 void SettingsScreen::onResize(unsigned int width, unsigned int height)
@@ -74,6 +88,8 @@ void SettingsScreen::handleEvent(const sf::Event& event)
     btnSpeed15.handleEvent(event);
     btnSpeed20.handleEvent(event);
     btnResetProgress.handleEvent(event);
+    btnBenchmark.handleEvent(event);
+    btnTestSuite.handleEvent(event);
 
     if (btnBack.isClicked())
     {
@@ -119,6 +135,44 @@ void SettingsScreen::handleEvent(const sf::Event& event)
         return;
     }
 
+    if (btnBenchmark.isClicked() && !m_benchmarkRunning)
+    {
+        btnBenchmark.resetClick();
+        engine.audio.playClick();
+        m_benchmarkRunning = true;
+        btnBenchmark.enabled = false;
+        btnBenchmark.label = "BENCHMARKING...";
+
+        std::thread([this]() {
+            Benchmark::runAll("benchmark_results.csv");
+            m_benchmarkRunning = false;
+            btnBenchmark.enabled = true;
+            btnBenchmark.label = "RUN BENCHMARK";
+            engine.showToast("Benchmark complete, saved to benchmark_results.csv", TOAST_INFO);
+        }).detach();
+        return;
+    }
+
+    if (btnTestSuite.isClicked() && !m_testsRunning)
+    {
+        btnTestSuite.resetClick();
+        engine.audio.playClick();
+        m_testsRunning = true;
+        btnTestSuite.enabled = false;
+        btnTestSuite.label = "TESTING...";
+
+        std::thread([this]() {
+            int p = 0, f = 0;
+            TestSuite::runAll("test_report.txt", &p, &f);
+            m_testsRunning = false;
+            btnTestSuite.enabled = true;
+            btnTestSuite.label = "RUN TEST CASES";
+            std::string msg = "Tests complete (" + std::to_string(p) + "/" + std::to_string(p + f) + " passed), saved to test_report.txt";
+            engine.showToast(msg, f == 0 ? TOAST_CORRECT : TOAST_ERROR);
+        }).detach();
+        return;
+    }
+
     if (const auto* kp = event.getIf<sf::Event::KeyPressed>())
     {
         if (kp->code == sf::Keyboard::Key::Escape)
@@ -150,9 +204,9 @@ void SettingsScreen::draw(sf::RenderTarget& target)
 
     // Main Panel Container
     float pw = std::min(680.0f, windowSize.x - 60.0f);
-    float ph = 400.0f;
+    float ph = 480.0f;
     float px = std::round(cx - pw * 0.5f);
-    float py = 100.0f;
+    float py = 90.0f;
     sf::FloatRect panelBounds(sf::Vector2f(px, py), sf::Vector2f(pw, ph));
 
     engine.theme.drawPanel(target, panelBounds, Theme::BorderCyan, 1.2f);
@@ -162,7 +216,7 @@ void SettingsScreen::draw(sf::RenderTarget& target)
     sf::Text audioLabel(engine.theme.fontUI, "MASTER AUDIO SYSTEM", 15);
     audioLabel.setFillColor(Theme::BorderCyan);
     sf::FloatRect alb = audioLabel.getLocalBounds();
-    audioLabel.setPosition(sf::Vector2f(std::round(cx - alb.size.x * 0.5f - alb.position.x), py + 30.0f));
+    audioLabel.setPosition(sf::Vector2f(std::round(cx - alb.size.x * 0.5f - alb.position.x), py + 25.0f));
     target.draw(audioLabel);
 
     btnAudioToggle.draw(target, engine.theme);
@@ -171,7 +225,7 @@ void SettingsScreen::draw(sf::RenderTarget& target)
     sf::Text speedLabel(engine.theme.fontUI, "GLOBAL ANIMATION SPEED", 15);
     speedLabel.setFillColor(Theme::BorderCyan);
     sf::FloatRect slb = speedLabel.getLocalBounds();
-    speedLabel.setPosition(sf::Vector2f(std::round(cx - slb.size.x * 0.5f - slb.position.x), py + 130.0f));
+    speedLabel.setPosition(sf::Vector2f(std::round(cx - slb.size.x * 0.5f - slb.position.x), py + 115.0f));
     target.draw(speedLabel);
 
     btnSpeed05.draw(target, engine.theme);
@@ -183,8 +237,18 @@ void SettingsScreen::draw(sf::RenderTarget& target)
     sf::Text resetLabel(engine.theme.fontUI, "SESSION PROGRESSION", 15);
     resetLabel.setFillColor(Theme::BorderCyan);
     sf::FloatRect rlb = resetLabel.getLocalBounds();
-    resetLabel.setPosition(sf::Vector2f(std::round(cx - rlb.size.x * 0.5f - rlb.position.x), py + 230.0f));
+    resetLabel.setPosition(sf::Vector2f(std::round(cx - rlb.size.x * 0.5f - rlb.position.x), py + 205.0f));
     target.draw(resetLabel);
 
     btnResetProgress.draw(target, engine.theme);
+
+    // Section 4: Diagnostics & Benchmarks
+    sf::Text diagLabel(engine.theme.fontUI, "SYSTEM DIAGNOSTICS & BENCHMARKS", 15);
+    diagLabel.setFillColor(Theme::BorderCyan);
+    sf::FloatRect dlb = diagLabel.getLocalBounds();
+    diagLabel.setPosition(sf::Vector2f(std::round(cx - dlb.size.x * 0.5f - dlb.position.x), py + 295.0f));
+    target.draw(diagLabel);
+
+    btnBenchmark.draw(target, engine.theme);
+    btnTestSuite.draw(target, engine.theme);
 }

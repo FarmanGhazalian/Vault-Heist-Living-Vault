@@ -214,6 +214,9 @@
     <ClCompile Include="PlayerNameScreen.cpp" />
     <ClCompile Include="SandboxScreen.cpp" />
     <ClCompile Include="EndlessScreen.cpp" />
+    <ClCompile Include="Validator.cpp" />
+    <ClCompile Include="TestSuite.cpp" />
+    <ClCompile Include="Benchmark.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BST.h" />
@@ -283,6 +286,9 @@
     <ClInclude Include="PlayerNameScreen.h" />
     <ClInclude Include="SandboxScreen.h" />
     <ClInclude Include="EndlessScreen.h" />
+    <ClInclude Include="Validator.h" />
+    <ClInclude Include="TestSuite.h" />
+    <ClInclude Include="Benchmark.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="endless_config.json" />
