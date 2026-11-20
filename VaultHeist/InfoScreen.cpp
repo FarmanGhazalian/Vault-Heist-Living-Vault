@@ -26,7 +26,7 @@ void InfoScreen::updateLayout(float w, float h)
 	float px = (w - pw) * 0.5f;
 	float py = 90.0f;
 
-	std::string pTitle = (mode == MODE_LEADERBOARD) ? "TERMINAL // LOCAL AGENT ARCHIVES" : "SYSTEM MANUAL // FIELD AGENT DIRECTIVES";
+	std::string pTitle = (mode == MODE_LEADERBOARD) ? "TERMINAL - LOCAL AGENT ARCHIVES" : "SYSTEM MANUAL - FIELD AGENT DIRECTIVES";
 	contentPanel = Panel(sf::FloatRect(sf::Vector2f(px, py), sf::Vector2f(pw, ph)), pTitle, Theme::BorderCyan, 1.2f);
 }
 
@@ -74,7 +74,7 @@ void InfoScreen::draw(sf::RenderTarget& target)
 	float cx = windowSize.x * 0.5f;
 
 	// Screen Header Title
-	std::string hTitle = (mode == MODE_LEADERBOARD) ? "CYBER-VAULT ARCHIVES // LEADERBOARD" : "OPERATOR MANUAL // HOW TO PLAY";
+	std::string hTitle = (mode == MODE_LEADERBOARD) ? "CYBER-VAULT ARCHIVES - LEADERBOARD" : "OPERATOR MANUAL - HOW TO PLAY";
 	sf::Text title(engine.theme.fontUI, hTitle, 26);
 	title.setFillColor(Theme::TextPrimary);
 	sf::FloatRect tb = title.getLocalBounds();
@@ -89,11 +89,37 @@ void InfoScreen::draw(sf::RenderTarget& target)
 
 	if (mode == MODE_LEADERBOARD)
 	{
-		// Table Headers: Rank, Player, Mode, Waves or Stars, Score
-		sf::Text headers(engine.theme.fontMono, "RANK      PLAYER          MODE            WAVES / STARS   SCORE", 13);
-		headers.setFillColor(Theme::AccentYellow);
-		headers.setPosition(sf::Vector2f(px, py));
-		target.draw(headers);
+		float colX0 = px;
+		float colX1 = px + 80.0f;
+		float colX2 = px + 250.0f;
+		float colX3 = px + 440.0f;
+		float colX4 = px + 630.0f;
+
+		// Column Headers: Rank, Player, Mode, Waves / Stars, Score
+		sf::Text hRank(engine.theme.fontMono, "RANK", 13);
+		hRank.setFillColor(Theme::AccentYellow);
+		hRank.setPosition(sf::Vector2f(colX0, py));
+		target.draw(hRank);
+
+		sf::Text hPlayer(engine.theme.fontMono, "PLAYER", 13);
+		hPlayer.setFillColor(Theme::AccentYellow);
+		hPlayer.setPosition(sf::Vector2f(colX1, py));
+		target.draw(hPlayer);
+
+		sf::Text hMode(engine.theme.fontMono, "MODE", 13);
+		hMode.setFillColor(Theme::AccentYellow);
+		hMode.setPosition(sf::Vector2f(colX2, py));
+		target.draw(hMode);
+
+		sf::Text hWaves(engine.theme.fontMono, "WAVES / STARS", 13);
+		hWaves.setFillColor(Theme::AccentYellow);
+		hWaves.setPosition(sf::Vector2f(colX3, py));
+		target.draw(hWaves);
+
+		sf::Text hScore(engine.theme.fontMono, "SCORE", 13);
+		hScore.setFillColor(Theme::AccentYellow);
+		hScore.setPosition(sf::Vector2f(colX4, py));
+		target.draw(hScore);
 
 		sf::VertexArray div(sf::PrimitiveType::Lines, 2);
 		div[0].position = sf::Vector2f(px, py + 24.0f);
@@ -117,17 +143,34 @@ void InfoScreen::draw(sf::RenderTarget& target)
 			for (size_t i = 0; i < records.size(); ++i)
 			{
 				const auto& r = records[i];
-				std::ostringstream oss;
-				oss << std::left << "#" << std::setw(9) << (i + 1)
-				    << std::setw(16) << r.name.substr(0, 14)
-				    << std::setw(16) << r.mode.substr(0, 14)
-				    << std::setw(16) << r.waves_or_stars.substr(0, 14)
-				    << std::right << std::setw(6) << r.score;
+				sf::Color rowColor = (i == 0) ? Theme::AccentYellow : ((i < 3) ? Theme::BorderCyan : Theme::TextPrimary);
 
-				sf::Text rowText(engine.theme.fontMono, oss.str(), 13);
-				rowText.setFillColor(i == 0 ? Theme::AccentYellow : (i < 3 ? Theme::BorderCyan : Theme::TextPrimary));
-				rowText.setPosition(sf::Vector2f(px, rowY));
-				target.draw(rowText);
+				sf::Text tRank(engine.theme.fontMono, "#" + std::to_string(i + 1), 13);
+				tRank.setFillColor(rowColor);
+				tRank.setPosition(sf::Vector2f(colX0, rowY));
+				target.draw(tRank);
+
+				sf::Text tPlayer(engine.theme.fontMono, r.name.substr(0, 14), 13);
+				tPlayer.setFillColor(rowColor);
+				tPlayer.setPosition(sf::Vector2f(colX1, rowY));
+				target.draw(tPlayer);
+
+				sf::Text tMode(engine.theme.fontMono, r.mode.substr(0, 16), 13);
+				tMode.setFillColor(rowColor);
+				tMode.setPosition(sf::Vector2f(colX2, rowY));
+				target.draw(tMode);
+
+				sf::Text tWaves(engine.theme.fontMono, r.waves_or_stars.substr(0, 14), 13);
+				tWaves.setFillColor(rowColor);
+				tWaves.setPosition(sf::Vector2f(colX3, rowY));
+				target.draw(tWaves);
+
+				sf::Text tScore(engine.theme.fontMono, std::to_string(r.score), 13);
+				tScore.setFillColor(rowColor);
+				tScore.setStyle(sf::Text::Bold);
+				tScore.setPosition(sf::Vector2f(colX4, rowY));
+				target.draw(tScore);
+
 				rowY += 26.0f;
 			}
 		}
