@@ -4,6 +4,8 @@
   "optimalSteps": 5,
   "totalNodes": 7,
   "seed": 42,
+  "roomA": 0,
+  "roomB": 0,
   "generator": {
     "type": "act1_tree",
     "count": 7,

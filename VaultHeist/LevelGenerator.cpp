@@ -144,7 +144,7 @@ bool LevelGenerator::generateAct1Tree(nlohmann::json& j, uint32_t seed, const nl
     j["inorderSequence"] = in;
 
     // Level 1.4 requires roomA and roomB
-    if (j.contains("roomA") || gen.contains("roomA"))
+    if (j.contains("roomA") || gen.contains("roomA") || j.value("levelId", "") == "1.4")
     {
         // Pick two distinct leaf/descendant nodes deterministically
         if (count >= 4)
