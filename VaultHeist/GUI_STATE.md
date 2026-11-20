@@ -16,6 +16,21 @@
   - **4. Button Bar Layout**: Implemented shared `LevelScreenBase::layoutButtonBar(...)` helper. Centered bottom action buttons (`HINT`, `UNDO`, `REPLAY`, `RESET`) in one horizontally centered row directly under the canvas bounding box with equal dimensions and spacing.
   - **5. Fresh Start & Dev Unlock Toggle**: Removed disk file reading (`savegame.dat`) at startup. Every session starts fresh with only Level 1.1 unlocked, 0 stars, and no progress written to disk. Added session-wide `Ctrl+Shift+U` toggle which unlocks all levels (1.1–4.5) and toggles back to the fresh start state. Winning a level unlocks the next level for the active session only.
   - **6. Zoom & Pan**: Mouse wheel zoom is anchored to the mouse cursor using world coordinates delta shift. Dragging empty canvas background with left mouse (or middle/right/space+drag) pans freely in all directions without bounding clamping. Fit-to-view button resets zoom to 1.0 and recenters view.
+- **Part 2 — Settings, Result Screen, Player Name, Leaderboard**:
+  - `PlayerNameScreen`: Prompts for player codename before main menu on start (max 12 chars, default "Player", `TextEntered` event only).
+  - `SettingsScreen` & `SettingsManager`: Controls `settings.json` (audio toggle, animation speed multipliers `0.5x`, `1.0x`, `1.5x`, `2.0x` via `AnimationController`, Reset Progress with confirmation popup).
+  - `LeaderboardManager` & `InfoScreen`: Maintains top 10 records in `leaderboard.json` (Rank, Player, Mode, Waves/Stars, Score). Survives missing/corrupt file.
+  - `LevelResultModal`: Displays stars (1-3), steps vs optimal, penalties, final score, and leaderboard rank notification (`"New high score, rank N"` or `"Score did not reach the top 10"`). Buttons: Retry, Next Level (advances acts/levels, campaign map after 4.5), Back to Campaign, Replay on loss.
+- **Part 3 — Sandbox Mode**:
+  - `SandboxScreen`: Free play laboratory supporting Binary Tree, BST, AVL Tree, and Max-Heap.
+  - Number input boxes (Value, Low, High) with `TextEntered` handling and negative numbers.
+  - Operations per structure: Insert, Delete, Search, Traversals (animated), Range Query (with dimmed out-of-range), AVL Rotate Left/Right & Auto-Balance toggle with balance factor badges, Max-Heap with Synchronized Array Strip (active vs sorted regions), and Binary Tree Mirror.
+  - Event log panel, Undo/Replay/Reset toolbar, speed multipliers, and hover tooltips.
+- **Part 4 — Endless Mode**:
+  - `EndlessScreen` & `endless_config.json`: Procedural infinite seeded wave generator alternating Binary Tree, BST, AVL, and Max-Heap solvable tasks.
+  - HUD telemetry: Wave Number, Current Score, Segmented Alarm Meter, Mission Objective text.
+  - Alarm penalties: +1 wrong traversal/heap swap, +2 and -50 points wrong rotation. Clearing wave awards bonus score and recovers 2 alarm points.
+  - Game Over dialog with performance stats, high score leaderboard submission, Retry, Leaderboard, and Back to Main Menu. Confirm modal on Abort/Escape.
 
 ## 2. Public Interface of Shared Classes
 
