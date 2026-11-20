@@ -1,5 +1,35 @@
 [
     {
+        "mode": "LEVEL 1.2: DECODE THE BLUEPRINT",
+        "name": "PlayerFarman",
+        "score": 950,
+        "waves_or_stars": "3 Stars"
+    },
+    {
+        "mode": "LEVEL 1.3: ALARM SPREADS UPWARD",
+        "name": "PlayerFarman",
+        "score": 940,
+        "waves_or_stars": "3 Stars"
+    },
+    {
+        "mode": "LEVEL 1.4: WHERE ESCAPE ROUTES MEET",
+        "name": "PlayerFarman",
+        "score": 940,
+        "waves_or_stars": "3 Stars"
+    },
+    {
+        "mode": "LEVEL 1.1: VAULT PATROL",
+        "name": "PlayerFarman",
+        "score": 910,
+        "waves_or_stars": "3 Stars"
+    },
+    {
+        "mode": "LEVEL 1.1: VAULT PATROL",
+        "name": "PlayerFarman",
+        "score": 910,
+        "waves_or_stars": "3 Stars"
+    },
+    {
         "mode": "LEVEL 1.1: VAULT PATROL",
         "name": "PlayerFarman",
         "score": 910,
