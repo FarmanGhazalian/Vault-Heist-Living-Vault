@@ -210,9 +210,9 @@ void EndlessScreen::buildBTWave(int nodeCount, std::mt19937& rng)
         if (std::find(vals.begin(), vals.end(), v) == vals.end()) vals.push_back(v);
     }
 
-    BinaryTree bt;
-    for (int v : vals) bt.insert(v);
-    m_root = bt.getRoot();
+    m_btBackend.destroyTree();
+    for (int v : vals) m_btBackend.insert(v);
+    m_root = m_btBackend.getRoot();
 
     std::uniform_int_distribution<int> idxDist(0, nodeCount - 1);
     m_targetKey = vals[idxDist(rng)];
@@ -229,9 +229,9 @@ void EndlessScreen::buildBSTWave(int nodeCount, std::mt19937& rng)
         if (std::find(vals.begin(), vals.end(), v) == vals.end()) vals.push_back(v);
     }
 
-    BST bst;
-    for (int v : vals) bst.insert(v);
-    m_root = bst.getRoot();
+    m_bstBackend.destroyTree();
+    for (int v : vals) m_bstBackend.insert(v);
+    m_root = m_bstBackend.getRoot();
 
     std::uniform_int_distribution<int> idxDist(0, nodeCount - 1);
     m_targetKey = vals[idxDist(rng)];

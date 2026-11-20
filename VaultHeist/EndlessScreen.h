@@ -68,6 +68,8 @@ private:
     TreeRenderer m_treeRenderer;
 
     AVL m_avlBackend;
+    BinaryTree m_btBackend;
+    BST m_bstBackend;
     std::vector<int> m_heapValues;
     int m_heapActiveCount;
 

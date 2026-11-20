@@ -562,6 +562,7 @@ void BinaryTree::destroytreeHelper(TreeNode* root)
 void BinaryTree::destroyTree()
 {
 	destroytreeHelper(root);
+	root = nullptr;
 }
 
 TreeNode* BinaryTree::generateRandomtree(int n)

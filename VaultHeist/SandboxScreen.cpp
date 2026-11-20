@@ -761,6 +761,7 @@ void SandboxScreen::handleEvent(const sf::Event& event)
         m_selectedNode = nullptr;
         m_hoveredNode = nullptr;
         m_animSequence.clear();
+        m_animCurrentIndex = -1;
         m_inRangeKeys.clear();
         m_prunedKeys.clear();
         m_historyKeys.clear();
